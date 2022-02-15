@@ -5,7 +5,7 @@ load "isoline"
 load "gsl"
 
 //include <iostream>;
-verbosity=0;
+verbosity=1;
 
 // PHYSICAL PARAMS
 real Lc=.2;

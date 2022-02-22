@@ -12,6 +12,7 @@ string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/lon
 string pathDir;
 
 // Physiscal Parameters
+// Values from the estimation done by Ricard. Not working, problems with remeshing
 real cut;						   			// Angular length of the cutted portion of the circle
 real Lc = 25.;							// Nematic length, sqrt(K/a)
 real lambda = 707.; 				// Hydodynamic length, sqrt(eta/xi)
@@ -19,7 +20,19 @@ real La = 200.; 						// Active length, |zeta|/zi
 real Rc = 0.5*(3*Lc+La);		// Critical radius
 real R0 = 200.;							// Effective radius
 real Ri;										// Adimensionalized initial radius of the domain, depends on cut
-real tau = 2.e4;							// Timescale corresponding to the advance of a flat front, eta/(zi*Lc)
+real tau = 2.e4;						// Timescale corresponding to the advance of a flat front, eta/(zi*Lc)
+
+/* // Working values from Ido's simulation. Tuned to produce the same mesh.
+// Physiscal Parameters
+real cut;
+real Lc = .125;
+real lambda = 10.;
+real La = 1.;
+real Rc = 0.5*(3*Lc+La);
+real R0 = 1.;
+real Ri;
+real tau = 50;
+*/
 
 // Adimensionalized Parameters
 real a = La/Lc; 	    			// Active and Nematic length ratio

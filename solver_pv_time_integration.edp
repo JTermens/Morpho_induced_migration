@@ -19,7 +19,7 @@ real lambda = 707.; 				// Hydodynamic length, sqrt(eta/xi)
 real La = 200.; 						// Active length, |zeta|/zi
 real Rc = 0.5*(3*Lc+La);		// Critical radius
 real R0 = 200.;							// Effective radius
-real Ri;										// Adimensionalized initial radius of the domain, depends on cut
+real Rini;									// Adimensionalized initial (outer) radius of the domain, depends on cut
 real tau = 2.e4;						// Timescale corresponding to the advance of a flat front, eta/(zi*Lc)
 
 /* // Working values from Ido's simulation. Tuned to produce the same mesh.
@@ -40,6 +40,8 @@ real b = pow(R0/lambda,2);	// R0 and hydrodynamic length ratio
 real c = R0/Lc; 		 		 		// R0 and nematic length ratio
 
 // Numerical Parameters
+real ThickOutMesh =  Lc/R0;	// Adimensionalized initial (inner) radius of the domain
+real inth = 0.1;						// Inner mesh radius threshold
 real obd = 50.;  						// Outer boundary mesh density
 real ibd = 15.;	 						// Inner boundary mesh density
 real dt = 0.05/tau;	 				// Time step
@@ -55,8 +57,8 @@ ofstream pathFile ("Paths.txt");
 for (int i=9; i<NumSimul; i++){
 
 	cut = (i+1)*pi/10.; // Initial cut for each simulation
-	Ri = sqrt(2*pi/(2*pi - cut + sin(cut))); // formula derived from the shape of the domain
-	//Ri *= (Rc/R0); // Begin at the wetting transition of the circle
+	Rini = sqrt(2*pi/(2*pi - cut + sin(cut))); // formula derived from the shape of the domain
+	//Rini *= (Rc/R0); // Begin at the wetting transition of the circle
 
 	cout << "Simulation " << (i+1) << ", cut = " << cut/pi << "pi rad\n";
 
@@ -67,20 +69,20 @@ for (int i=9; i<NumSimul; i++){
 		exec("mkdir "+pathDir);
 		{ ofstream ff (pathDir+"/Params.csv") ;
 			 ff.fixed;
-			 ff << "L_c,L_a,lambda,R0,Ri,cut,tau,dt,dsave" << endl ;//
-			 ff << Lc<<","<<La<<","<<lambda<<","<<R0<<","<<Ri<<","<<cut<<","<<tau<<","<<dt<<","<<dsave<< endl ;
+			 ff << "L_c,L_a,lambda,R0,Rini,cut,tau,dt,dsave" << endl ;//
+			 ff << Lc<<","<<La<<","<<lambda<<","<<R0<<","<<Rini<<","<<cut<<","<<tau<<","<<dt<<","<<dsave<< endl ;
 		}
 	}
 
 	mesh T,Tb;
-	if(Ri*(1-cos(pi-cut/2.)) > 2*Lc/R0){ // Ensures enough space for Lc
+	if(Rini*(1-cos(pi-cut/2.)) > 2*ThickOutMesh){ // Ensures enough space for Lc and the inner mesh
 		real t0 = (pi-cut)/2.;
-		real t0L = -asin((Lc/R0-Ri*sin(t0))/(Ri-Lc/R0));
-		border Gamma(t=-t0,pi+t0){x=Ri*cos(t);y=Ri*sin(t);label=1;}
-		border GammaB(t=-Ri*cos(t0),Ri*cos(t0)){x=t;y=-Ri*sin(t0);label=1;}
-	  border Gamma2(t=-t0L,pi+t0L){x=(Ri-Lc/R0)*cos(t);y=(Ri-Lc/R0)*sin(t);label=2;}
-		border Gamma2B(t=-(Ri-Lc/R0)*cos(t0L),(Ri-Lc/R0)*cos(t0L)){x=t;y=Lc/R0-Ri*sin(t0);label=2;}
-	  T=buildmesh(Gamma(obd*Ri*(pi+2*t0))+GammaB(obd*2*Ri*cos(t0))+Gamma2(ibd*(Ri-Lc/R0)*(pi+2*t0L))+Gamma2B(ibd*2*(Ri-Lc/R0)*cos(t0L)));
+		real t0L = -asin((ThickOutMesh-Rini*sin(t0))/(Rini-ThickOutMesh));
+		border Gamma(t=-t0,pi+t0){x=Rini*cos(t);y=Rini*sin(t);label=1;}
+		border GammaB(t=-Rini*cos(t0),Rini*cos(t0)){x=t;y=-Rini*sin(t0);label=1;}
+	  border Gamma2(t=-t0L,pi+t0L){x=(Rini-ThickOutMesh)*cos(t);y=(Rini-ThickOutMesh)*sin(t);label=2;}
+		border Gamma2B(t=-(Rini-ThickOutMesh)*cos(t0L),(Rini-ThickOutMesh)*cos(t0L)){x=t;y=ThickOutMesh-Rini*sin(t0);label=2;}
+	  T=buildmesh(Gamma(obd*Rini*(pi+2*t0))+GammaB(obd*2*Rini*cos(t0))+Gamma2(ibd*(Rini-ThickOutMesh)*(pi+2*t0L))+Gamma2B(ibd*2*(Rini-ThickOutMesh)*cos(t0L)));
 		T=change(T, rmInternalEdges=1);
 		Tb=emptymesh(T);
 	}
@@ -92,9 +94,9 @@ for (int i=9; i<NumSimul; i++){
 /*
  	mesh T, Tb; // Circular domain
 	{
-		border Gamma(t=0,2*pi){x=Ri*cos(t);y=Ri*sin(t);label=1;}
-		border Gamma2(t=0,2*pi){x=(Ri-Lc/R0)*cos(t);y=(Ri-Lc/R0)*sin(t);label=2;}
-		T=buildmesh(Gamma(obd*Ri*2*pi)+Gamma2(ibd*(Ri-Lc/R0)*2*pi));
+		border Gamma(t=0,2*pi){x=Rini*cos(t);y=Rini*sin(t);label=1;}
+		border Gamma2(t=0,2*pi){x=(Rini-ThickOutMesh)*cos(t);y=(Rini-ThickOutMesh)*sin(t);label=2;}
+		T=buildmesh(Gamma(obd*Rini*2*pi)+Gamma2(ibd*(Rini-ThickOutMesh)*2*pi));
 		T=change(T, rmInternalEdges=1);
 		Tb=emptymesh(T);
 	}
@@ -244,7 +246,7 @@ for (int i=9; i<NumSimul; i++){
 		real intpy=(lambda*lambda/tau)*int2d(T)(p2)/Volume; //SCALED Int p_y (TO COMPARE WITH Vcm_x)
 		// PLOT V
 		if (verbosity) {
-			plot(T,V, value = true, fill = true, nbiso = 64, wait = false, bb=[[-1.2*Ri,-1.2*Ri],[1.2*Ri,1.2*Ri]],
+			plot(T,V, value = true, fill = true, nbiso = 64, wait = false, bb=[[-1.2*Rini,-1.2*Rini],[1.2*Rini,1.2*Rini]],
 					cmm = "t="+(dt*iter)+";  Vol/Vol0="+(Volume/Volume0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
 												+"), (vx,vy)=("+(Xcm-XcmP)/dt+","+(Ycm-YcmP)/dt+")"
 												+"), Vol^-1(xi/xi)int p=("+intpx+","+intpy+")" );
@@ -289,7 +291,7 @@ for (int i=9; i<NumSimul; i++){
 			B[] = ong ? 0 : B[];
 			distance(T,B,d[]);
 			// B.2. GET NEW INNER BOUNDARY VERTICES (ISO is the contour d==Lc)
-			real[int,int] ISO(3,1); int nc=isoline(T,d,iso=Lc,close=1,ISO,smoothing=Lc/2.,ratio=1.e-0);
+			real[int,int] ISO(3,1); int nc=isoline(T,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
 			real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
 			// B.3(a). LINEAR INTERPOLATION OF ISO (simple and robust)
 			border Inner(t=0,1){ P=Curve(ISO,t);label=2;}

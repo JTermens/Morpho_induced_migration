@@ -1,0 +1,342 @@
+// PACKAGES FOR ADVANCED REMESHING SCHEME
+load "Curvature"
+load "distance"
+load "isoline"
+load "gsl"
+
+//include <iostream>;
+verbosity=0;
+
+int NumSimul = 1;
+string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/circular_hole";
+string pathDir;
+string SimulName;
+
+// Physiscal Parameters
+// Values from the estimation done by Ricard.
+real Lc = 25.;							// Nematic length, sqrt(K/a)
+real lambda = 707.; 				// Hydodynamic length, sqrt(eta/xi)
+real La = 200.; 						// Active length, |zeta|/zi
+real Rc = 0.5*(3*Lc+La);		// Critical radius
+real R0 = 1000;							// Effective radius, tissue size
+real tau = 2.e4;						// Timescale corresponding to the advance of a flat front, eta/(zi*Lc)
+
+real Rext;									// Adimensionalized external radius of the domain
+real Rint = 150;						// Adimensionalized internal radius of the domain
+// real fracRint = 0.05;		  // Rint = fracRint*Rext
+
+// Adimensionalized Parameters
+real a = La/Lc; 	    			// Active and Nematic length ratio
+real b = pow(R0/lambda,2);	// R0 and hydrodynamic length ratio
+real c = R0/Lc; 		 		 		// R0 and nematic length ratio
+
+// Numerical Parameters
+real ThickOutMesh;					// Thickness of the outer mesh
+real ThickInMesh;						// Thickness of the inner mesh
+real inth = 0.1;						// Inner mesh radius threshold
+real obd = 120.;  						// Outer boundary mesh density
+real ibd = 15.;	 						// Inner boundary mesh density
+real dt = 0.02;	 						// Time step
+int Niter = 2001; 					// Number of iterations
+
+// Save parameters
+bool bsave = 1;   					// To save or not
+int dsave = 2;   					// Save frame gap
+
+
+// Simulations Loop, each one has different initial conditions
+for (int i=0; i<NumSimul; i++){
+
+	Rext = R0/R0;
+	Rint = Rint/R0;
+	ThickOutMesh = max(Lc/R0,0.05*Rext);
+	ThickInMesh = max(Lc/R0,0.15*Rext);
+	SimulName = "hole_Ri150_correlated";
+
+	mesh T, Tb; // Circular domain
+	int LabelOuter = 1;
+	int LabelHole = 2;
+	int[int] LabelInner = [3,4];
+	{
+		border Outer(t=0,2*pi){x=Rext*cos(t);y=Rext*sin(t);label=LabelOuter;}
+		border Hole(t=0,2*pi){x=Rint*cos(t);y=Rint*sin(t);label=LabelHole;}
+		border Inner1(t=0,2*pi){x=(Rext-ThickOutMesh)*cos(t);y=(Rext-ThickOutMesh)*sin(t);label=LabelInner[0];}
+		border Inner2(t=0,2*pi){x=(Rint+ThickInMesh)*cos(t);y=(Rint+ThickInMesh)*sin(t);label=LabelInner[1];}
+		T=buildmesh(Outer(ibd*Rext*2*pi)
+							+ Hole(-obd*Rint*2*pi)
+							/*+ Inner1(ibd*(Rext-ThickOutMesh)*2*pi)*/
+							+ Inner2(-ibd*(Rint+ThickInMesh)*2*pi));
+		T=change(T, rmInternalEdges=1);
+		Tb=emptymesh(T);
+	}
+
+	if(bsave){
+		// the results folder
+		pathDir = rootDir+"/"+SimulName;//(i+1)+"pi10";
+		exec("mkdir "+pathDir);
+		{ ofstream ff (pathDir+"/Params.csv") ;
+			 ff.fixed;
+			 ff << "L_c,L_a,lambda,R0,Rint,"+/*Rini,cut,*/"tau,dt,dsave" << endl ;//
+			 ff << Lc<<","<<La<<","<<lambda<<","<<R0<<","<<Rint<<","/*<<Rini<<","<<cut<<","*/<<tau<<","<<dt<<","<<dsave<< endl ;
+		}
+	}
+
+	real Volume0=int2d(T)(1.); // Inital Volume of the Fluid Domain
+	real Volume=Volume0;
+	real Xcm0=int2d(T)(x)/Volume; //Initial x_cm
+	real Ycm0=int2d(T)(y)/Volume; //Initial y_cm
+	real XcmP=Xcm0;
+	real YcmP=Ycm0;
+	real Xcm=Xcm0;
+	real Ycm=Ycm0;
+
+	if (verbosity) {
+		plot(T,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  Vol0="+Volume0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
+	}
+
+	//FEM SPACES
+	fespace Pol(T, [P2, P2]);					// FOR POLARITY VECTOR
+	fespace Pola(T, P2 );							// FOR |p| (not essential, just visualization)
+	fespace Vel(T, [P1b, P1b]);				// FOR VELOCITY VECTOR
+	fespace Dh(T, P1);								// FOR DISTANCE FUNCTION (REMESHING SCHEME) AND DATA EXPORTS
+
+	//MACROS
+	macro pD [pD1, pD2]	// P2 EXTENSION DIRICHLET DATA
+	macro p [p1, p2] 		// POLARITY VECTOR FIELD
+	macro q [q1, q2] 		// POLARITY TEST FUNCTIONS
+	macro V [V1, V2] 		// VELOCITY FIELD
+	macro U [U1, U2] 		// VELOCITY TEST FUNCTIONS
+	macro grad(u) [dx(u),dy(u)]							// GRADIENT OF SCALAR
+	macro Grad(u1,u2) [dx(u1),dy(u1),dx(u2),dy(u2)] 	// GRADIENT OF VECTOR
+	macro GradT(u1,u2) [dx(u1),dx(u2),dy(u1),dy(u2)] 	// GRAD VEC TRANSPOSE
+	macro pp(p1,p2) [p1*p1,p1*p2,p2*p1,p2*p2] 			// ACTIVE STRESS TENSOR
+
+	// P2 EXTENSION OF POLARITY DIRICHLET DATA
+	varf bndDirichlet(p, q) = on(1,2, p1 = N.x) + on(1,2, p2 = N.y);// + on(2, p1 = N.x) + on(2, p2 = N.y);
+	Pol pD=[0,0];
+	pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
+
+	if (verbosity) {
+		plot(pD, value = true, fill = true, nbiso=64, wait=true, cmm = "pD");
+		plot(pD1, value = true, fill = true, nbiso=64, wait=true, cmm = "pDx");
+		plot(pD2, value = true, fill = true, nbiso=64, wait=true, cmm = "pDy");
+	}
+
+	// BILINEAR AND LINEAR VARIATIONAL FORMS P (Modified Homogeneous Drirchlet problem for p-pD)
+	varf ap(p, q) = int2d(T)(  grad(p1)'*grad(q1) + grad(p2)'*grad(q2) )  + int2d(T)(c*c*(p'*q)) + on(1,2, p1 = 0.0) + on(1,2, p2=0.0);//+ on(2, p1=0.0) + on(2, p2=0.0);
+	varf lp(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*c*(pD'*q))  + on(1,2, p1 = 0.0) + on(1,2, p2=0.0);//+ on(2, p1=0.0) + on(2, p2=0.0);
+
+	// ASSEMBLY P
+	matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
+	real[int] bp = lp(0, Pol); // RHS
+
+	// P SOLUTION WITH VANISHING DIRICHLET DATA
+	real[int] sol(Pol.ndof);
+	//set(Ap,solver=sparsesolver);
+	sol=Ap^-1*bp;
+	Pol p=[0,0];
+	p1[]=sol(0:Pol.ndof-1);
+
+	if (verbosity) {
+		plot(T,p1, value = true, fill = true, nbiso=64, wait=true, cmm = "dpx = px-pDx");
+		plot(T,p2, value = true, fill = true, nbiso=64, wait=true, cmm = "dpy = py-pDy");
+	}
+
+	// P SOLUTION
+	p = p + pD;
+
+	if (verbosity) {
+		plot(T,p1, value = true, fill = true, nbiso = 64, wait = true, cmm = "px");
+		plot(T,p2, value = true, fill = true, nbiso = 64, wait = true, cmm = "py");
+		plot(T,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)");
+		// ABS P
+		Pola pABS = sqrt(p1(x,y)^2 + p2(x,y)^2);
+		plot(T,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
+	}
+
+// EXPORT DATA
+/*{ 	ofstream ff (pathDir+"/xy_pxpy.txt") ;
+		ff.fixed;[[-2*Rini,-2*Rini],[2*Rini,2*Rini]]
+		for ( int i=0;i< T.nt ;i ++) {
+				for ( int j =0; j <3; j ++) {
+					ff 	<< T [i][ j ].x<<" " <<T [i][ j ].y<<" "
+						<< p1(T [i][ j ].x,T [i][ j ].y)<<" " << p2(T [i][ j ].x,T [i][ j ].y) << endl ;//
+					ff <<"\n";
+				}
+		}
+	}*/
+
+	// BILINEAR AND LINEAR VARIATIONAL FORMS V
+	varf av(V, U) = int2d(T)( ((Grad(V1,V2)+GradT(V1,V2))'*Grad(U1,U2)) )  + int2d(T)( b*(V'*U) ); //-viscosity-friction
+	varf lv(V, U) = int2d(T)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( c*(p'*U) ); //contractility+activetraction
+
+	//ASSEMBLY V
+	matrix Av = av(Vel, Vel);
+	real[int] bv = lv(0, Vel);
+
+	// V SOLUTION
+	real[int] solV(Vel.ndof);
+	//set(Av,solver=sparsesolver);
+	solV=Av^-1*bv;
+	Vel V=[0,0];
+	V1[]=solV(0:Vel.ndof-1);
+
+	if (verbosity) {
+		plot(T,V1, value = true, fill = true, nbiso = 64, wait = true, cmm = "vx");
+		plot(T,V2, value = true, fill = true, nbiso = 64, wait = true, cmm = "vy");
+		plot(T,V, value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)");
+	}
+
+	// ITERATE TIMEcout<<Rext<<"\n"<<Rint<<endl;
+	for (int iter=0 ; iter<Niter ; iter++) {
+
+		if (iter % 100 == 0 && iter > 0) {
+			cout << iter << " out of " << Niter << " iterations completed" << endl;
+		}
+
+		// P2 EXTENSION OF POLARITY DIRICHLET DATA
+		varf bndDirichlet(p, q) = on(1,2, p1 = N.x) + on(1,2, p2 = N.y);
+		Pol pD=[0,0];
+		pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
+
+		// ASSEMBLY P
+		varf lp(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*c*(pD'*q)) + on(1,2, p1 = 0.0) + on(1,2, p2=0.0);
+		matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS MATRIX
+		real[int] bp = lp(0, Pol); 			// RHS
+
+		// P SOLUTION WITH VANISHING DIRICHLET DATA
+		real[int] sol(Pol.ndof);
+		//set(Ap,solver=sparsesolvenetr);
+		sol=Ap^-1*bp;
+		Pol p=[0,0];
+		p1[]=sol(0:Pol.ndof-1);
+		// P SOLUTION
+		p = p + pD;
+
+		// ASSEMBLY V
+		varf lv(V, U) = int2d(T)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( c*(p'*U) );
+		matrix Av = av(Vel, Vel);  			// LHS MATRIX
+		real[int] bv = lv(0, Vel);			// RHS
+		// V SOLUTION
+		real[int] solV(Vel.ndof);
+		//set(Av,solver=sparsesolver);
+		solV=Av^-1*bv;
+		Vel V=[0,0];
+		V1[]=solV(0:Vel.ndof-1);
+
+		real Volume=int2d(T)(1.); // CURRENT AREA
+		real Xcm=int2d(T)(x)/Volume; // CURRENT Xcm
+		real Ycm=int2d(T)(y)/Volume; // CURRENT Ycm
+		real intpx=(lambda*lambda/tau)*int2d(T)(p1)/Volume; // SCALED Int p_x (TO COMPARE WITH Vcm_x)
+		real intpy=(lambda*lambda/tau)*int2d(T)(p2)/Volume; //SCALED Int p_y (TO COMPARE WITH Vcm_x)
+		// PLOT V
+		// if (verbosity) {
+		plot(T,V, value = true, fill = true, nbiso = 64, bb=[[-4*Rint,-4*Rint],[4*Rint,4*Rint]]/*[[-2*Rini,-2*Rini],[2*Rini,2*Rini]]*/,
+				cmm = "t="+(dt*iter)+";  Vol/Vol0="+(Volume/Volume0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
+											+"), (vx,vy)=("+(Xcm-XcmP)/dt+","+(Ycm-YcmP)/dt+")"
+											+"), Vol^-1(xi/xi)int p=("+intpx+","+intpy+")" );
+		//}
+
+		// EXPORT DATA
+		if(iter % dsave == 0 && bsave==1){
+					savemesh(T,pathDir+"/LastMesh.msh"); 					// TO LOAD AND RESTART SIMULATION FROM LAST CONFIGURATION
+					ofstream ff (pathDir+"/Rend"+(1000000+iter)+".txt") ; 	// SAVE {x, y, p1(x,y), p2(x,y), V1(x,y), V2(x,y)} ON EACH TRIANGLE TRIPLET (convienient but many duplicates)
+					ff.fixed;
+					for ( int i=0;i< T . nt ;i ++){
+						for ( int j =0; j <3; j ++){
+							ff << T [i][ j ].x<<" " <<T [i][ j ].y<<" "
+								<< p1(T [i][ j ].x,T [i][ j ].y)<<" " << p2(T [i][ j ].x,T [i][ j ].y)<<" "
+								<< V1(T [i][ j ].x,T [i][ j ].y)<<" " << V2(T [i][ j ].x,T [i][ j ].y) << endl ;//
+							ff <<"\n";
+						}
+					}
+		}
+
+		// MOVE MESH
+		T = movemesh(T,[x+dt*V1,y+dt*V2]);
+
+		// REMESHING - OPTIONAL (choose between A.1(a)-(c) for outer & hole and between B.3(a)-(c) for inner)
+
+		// Re-Mesh Boundaries
+		// Outer boundary
+		// A.1. GET OUTER BOUNDARY VERTICES (bO)
+		real[int,int] bO(3,1); real lO=extractborder(T,LabelOuter,bO); // lO is the permiter of bO
+		// A.2(a). LINEAR INTERPOLATION OF bO (simple and robust, but bad for preserving shape integrity)
+		/* border Outer(t=0,1){ P=Curve(bO,t);label=LabelOuter;}
+		int nO = round(obd*lO);  */						// new number of elements (prescribed density obd)
+		// A.2(b). VERTEX PRESERVING INTERPOLATION OF bO (no remesh of outer boundary, probably best)
+		border Outer(t=0,1){ P=Curve(bO,bO(2,round(t*(bO.m-1)))/lO);label=LabelOuter;}
+		int nO = bO.m-1; 								// keep number of elements
+		// A.2(c). SPLINE INTERPOLATION OF bO (for remeshing outer boundary smoothly)
+		/* gslspline splineXO(gslinterpakima, bO(2, :), bO(0, :)); 	// x(s) akima spline
+		gslspline splineYO(gslinterpakima, bO(2, :), bO(1, :)); 	// y(s) akima spline
+		border Outer(t=0,lO){x=splineXO(t);y=splineYO(t);label=LabelOuter;}
+		int nO = round(obd*lO);  	*/				// new number of elements (prescribed density obd)
+
+		// Hole boundary
+		// A.1. GET OUTER BOUNDARY VERTICES (bH)
+		real[int,int] bH(3,1); real lH=extractborder(T,LabelHole,bH);
+		// A.2(a). LINEAR INTERPOLATION OF bH
+		/* border Hole(t=0,1){ P=Curve(bH,t);label=LabelHole;}
+		int nH = round(obd*lH); */
+		// A.2(b). VERTEX PRESERVING INTERPOLATION OF bH
+		/* border Hole(t=0,1){ P=Curve(bH,bH(2,round(t*(bH.m-1)))/lH);label=LabelHole;}
+		int nH = bH.m-1; */
+		// A.2(c). SPLINE INTERPOLATION OF bH
+		gslspline splineXH(gslinterpakima, bH(2, :), bH(0, :));
+		gslspline splineYH(gslinterpakima, bH(2, :), bH(1, :));
+		border Hole(t=0,lH){x=splineXH(t);y=splineYH(t);label=LabelHole;}
+		int nH = round(obd*lH);
+
+		// Inner boundaries
+		// B.1. DISTANCE FUNCTION (d is the minimal distance to the boundary)
+			// varf vong(B, d)= on(LabelOuter,B=1);
+			// real[int] ong=vong(0,Dh);
+			// Dh B =1, d;
+			// B[] = ong ? 0 : B[];
+			// distance(T,B,d[]);
+			// // B.2. GET NEW INNER BOUNDARY VERTICES (ISO1 is the contour d==ThickOutMesh)
+			// real[int,int] ISO(3,1); int nc=isoline(T,d,iso=ThickOutMesh,close=0,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
+			// real l1=ISO(2,ISO.m-1); // l1 is the perimeter of ISO1
+			// // B.3(a). LINEAR INTERPOLATION OF ISO1 (simple and robust)
+			// border Inner1(t=0,1){P=Curve(ISO,t);label=LabelInner[0];}
+			// int n1 = round(ibd*l1); 					// new number of elements (prescribed density ibd)
+		// B.3(b). VERTEX PRESERVING INTERPOLATION OF ISO1 (not ideal for this purpose, as we wish to impose uniform internal density)
+		/* border Inner1(t=0,1){ P=Curve(ISO1,ISO1(2,round(t*(ISO1.m-1)))/l1);label=LabelInner[0];}
+		int n1 = ISO1.m-1;    		*/				// keep number of elements
+		// B.3(c). SPLINE INTERPOLATION OF ISO1 (for remeshing inner boundary smoothly, probably overkill for this purpose)
+		/* gslspline splineXISO1(gslinterpakima, ISO1(2, :), ISO1(0, :)); 	// x(s) akima spline
+		gslspline splineYISO1(gslinterpakima, ISO1(2, :), ISO1(1, :)); 	// y(s) akima spline
+		border Inner1(t=0,l1){x=splineXISO1(t);y=splineYISO1(t);label=LabelInner[0];}
+		int n1 = round(ibd*l1);  	*/				// new number of elements (prescribed density ibd)
+
+		// B.1. DISTANCE FUNCTION (d2 is the minimal distance to the boundary)
+		varf vong2(B2, d2)= on(LabelHole,B2=1);
+		real[int] ong2=vong2(0,Dh);
+		Dh B2 =1, d2;
+		B2[] = ong2 ? 0 : B2[];
+		distance(T,B2,d2[]);
+		// B.2. GET NEW INNER BOUNDARY VERTICES (ISO2 is the contour d==ThickInMesh)
+		real[int,int] ISO2(3,1); int nc2=isoline(T,d2,iso=ThickInMesh,close=0,ISO2,smoothing=ThickInMesh/2.,ratio=1.e-0);
+		real l2=ISO2(2,ISO2.m-1); // l2 is the perimeter of ISO2
+		// B.3(a). LINEAR INTERPOLATION OF ISO2 (simple and robust)
+		border Inner2(t=0,1){ P=Curve(ISO2,t);label=LabelInner[1];}
+		int n2 = round(ibd*l2); 						// new number of elements (prescribed density ibd)
+		// B.3(b). VERTEX PRESERVING INTERPOLATION OF ISO2 (not ideal for this purpose, as we wish to impose uniform internal density)
+		/* border Inner2(t=0,1){ P=Curve(ISO2,ISO2(2,round(t*(ISO2.m-1)))/l2);label=LabelInner[1];}
+		int n2 = ISO2.m-1;  */ 							// keep number of elements
+		// B.3(c). SPLINE INTERPOLATION OF ISO2 (for remeshing inner boundary smoothly, probably overkill for this purpose)
+		/* gslspline splineXISO2(gslinterpakima, ISO2(2, :), ISO2(0, :)); 	// x(s) akima spline
+		gslspline splineYISO2(gslinterpakima, ISO2(2, :), ISO2(1, :)); 	// y(s) akima spline
+		border Inner2(t=0,l2){x=splineXISO2(t);y=splineYISO2(t);label=LabelInner[1];}
+		int n2 = round(ibd*l2);  */						// new number of elements (prescribed density ibd)
+
+		// C. BUILD NEW MESH
+		T=buildmesh(Outer(nO)+Hole(nH)+/*Inner1(n1)+*/Inner2(n2),fixedborder=1);
+		T=change(T,rmInternalEdges=1);
+
+		XcmP=Xcm; // PREVIOUS Xcm
+		YcmP=Ycm; // PREVIOUS Ycm
+	}
+
+}

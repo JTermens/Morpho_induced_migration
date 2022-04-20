@@ -5,10 +5,10 @@ load "isoline"
 load "gsl"
 
 //include <iostream>;
-verbosity=1;
+verbosity=0;
 
 int NumSimul = 1;
-string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/prova";
+string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/rigid_solid_correction";
 string pathDir;
 string SimulName;
 
@@ -39,7 +39,7 @@ real dt = 0.01;	 						// Time step
 int Niter = 1001; 					// Number of iterations
 
 // Save parameters
-bool bsave = 0;   					// To save or not
+bool bsave = 1;   					// To save or not
 int dsave = 4;   						// Save frame gap
 
 
@@ -47,7 +47,7 @@ int dsave = 4;   						// Save frame gap
 for (int i=0; i<NumSimul; i++){
 
 	cut = 1.*pi/3.; // Initial cut for each simulation
-	SimulName = "1pi3_no_vorticity_v2";
+	SimulName = "1pi3_smoothdomain02";
 	Rini = sqrt(2*pi/(2*pi - cut + sin(cut)))*(Rc/R0); // formula derived from the shape of the domain
 	Rini += -0.02; // Begin at the wetting transition of the circle
 
@@ -142,7 +142,7 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 		// the results folder
 		pathDir = rootDir+"/"+SimulName;//(i+1)+"pi10";
 		exec("mkdir "+pathDir);
-		exec("mkdir "+pathDir+"/VorticityGIF");
+		// exec("mkdir "+pathDir+"/VorticityGIF");
 		{ ofstream ff (pathDir+"/Params.csv") ;
 			 ff.fixed;
 			 ff << "L_c,L_a,lambda,R0,Rini,cut,tau,dt,dsave" << endl ;//

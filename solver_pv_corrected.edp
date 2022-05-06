@@ -5,25 +5,26 @@ load "isoline"
 load "gsl"
 
 //include <iostream>;
-verbosity=1;
+verbosity=0;
 
 int NumSimul = 1;
-string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/prova";
+string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Lc_change";
 string pathDir;
 string SimulName;
 
 // Physiscal Parameters
 // Values from the estimation done by Ricard.
 real cut;						   			// Angular length of the cutted portion of the circle
-real Lc = 25.;							// Nematic length, sqrt(K/a)
-real lambda = 707.; 				// Hydodynamic length, sqrt(eta/xi). lambda = 10 => eta = 10 kPa/s
+real Lc = 25.*2;							// Nematic length, sqrt(K/a)
+real lambda = 707.; 				// Hydodynamic length, sqrt(eta/xi)
 real La = 200; 							// Active length, |zeta|/zi
 real Rc = 0.5*(3*Lc+La);		// Critical radius
-real R0 = 200.;							// Effective radius
-real Rini;									// Adimensionalized initial radius of the domain, depends on cut
-real fracRarc = 0.2;				// Rarc = fracRarc*Rini
+real R0;										// Effective radius
+real fracRarc = 0.2;				// Rarc = fracRarc*1
 real tau = 2.e4;						// Timescale corresponding to the advance of a flat front, eta/(zi*Lc)
 
+R0 = sqrt(2*pi/(2*pi - cut + sin(cut)))*Rc; // formula derived from the shape of the domain
+R0 += -.02; // Begin at the wetting transition of the circle
 
 // Adimensionalized Parameters
 real a = La/Lc; 	    			// Active and Nematic length ratio
@@ -39,7 +40,7 @@ real dt = 0.01;	 						// Time step
 int Niter = 1001; 					// Number of iterations
 
 // Save parameters
-bool bsave = 0;   					// To save or not
+bool bsave = 1;   					// To save or not
 int dsave = 4;   						// Save frame gap
 
 
@@ -47,25 +48,23 @@ int dsave = 4;   						// Save frame gap
 for (int i=0; i<NumSimul; i++){
 
 	cut = 1.*pi/3.; // Initial cut for each simulation
-	SimulName = "1pi3_no_vorticity_v2";
-	Rini = sqrt(2*pi/(2*pi - cut + sin(cut)))*(Rc/R0); // formula derived from the shape of the domain
-	Rini += -0.02; // Begin at the wetting transition of the circle
+	SimulName = "1pi3_Lc_double";
 
-	cout << "Simulation " << (i+1) << ", cut = " << cut/pi << "pi rad\n";
+	cout << "Simulation " << (i+1) << ", cut = " << cut/pi << "pi rad" << ", R0 = " << R0 << endl;
 
 mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
-	real Rarc = fracRarc*Rini;
+	real Rarc = fracRarc;
 	real t0 = (pi-cut)/2.;
-	real t0L = asin((Rini*sin(t0)-ThickOutMesh)/(Rini-ThickOutMesh));
-	real t1 = asin((Rini*sin(t0)-Rarc)/(Rini-Rarc));
-	real Ox = (Rini-Rarc)*cos(t1);
-	real Oy = -(Rini-Rarc)*sin(t1);
-	border Gamma(t=-t1,pi+t1){x=Rini*cos(t);y=Rini*sin(t);label=1;}
+	real t0L = asin((sin(t0)-ThickOutMesh)/(1-ThickOutMesh));
+	real t1 = asin((sin(t0)-Rarc)/(1-Rarc));
+	real Ox = (1-Rarc)*cos(t1);
+	real Oy = -(1-Rarc)*sin(t1);
+	border Gamma(t=-t1,pi+t1){x=cos(t);y=sin(t);label=1;}
 	border GammaB(t=-Ox,Ox){x=t;y=Oy-Rarc;label=1;}
   border GammaArc1(t=-pi/2.,-t1){x=Ox+Rarc*cos(t); y=Oy+Rarc*sin(t); label=1;}
 	border GammaArc2(t=pi+t1, 3.*pi/2.){x=-Ox+Rarc*cos(t); y=Oy+Rarc*sin(t); label=1;}
 
-	T=buildmesh( Gamma(obd*Rini*(pi+2*t1))
+	T=buildmesh( Gamma(obd*(pi+2*t1))
 							+GammaB(obd*2*Ox)
 							+GammaArc1(obd*Rarc*(pi/2.-t1))
 							+GammaArc2(obd*Rarc*(pi/2.-t1))
@@ -85,7 +84,7 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 	border Inner(t=0,1){ P=Curve(ISO,t);label=2;}
 	int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
 	// C. BUILD NEW MESH
-	T=buildmesh( Gamma(obd*Rini*(pi+2*t1))
+	T=buildmesh( Gamma(obd*(pi+2*t1))
 							+GammaB(1*obd*2*Ox)
 							+GammaArc1(obd*Rarc*(pi/2.-t1))
 							+GammaArc2(obd*Rarc*(pi/2.-t1))
@@ -140,13 +139,12 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 
 	if(bsave){
 		// the results folder
-		pathDir = rootDir+"/"+SimulName;//(i+1)+"pi10";
+		pathDir = rootDir+"/"+SimulName;
 		exec("mkdir "+pathDir);
-		exec("mkdir "+pathDir+"/VorticityGIF");
 		{ ofstream ff (pathDir+"/Params.csv") ;
 			 ff.fixed;
-			 ff << "L_c,L_a,lambda,R0,Rini,cut,tau,dt,dsave" << endl ;//
-			 ff << Lc<<","<<La<<","<<lambda<<","<<R0<<","<<Rini<<","<<cut<<","<<tau<<","<<dt<<","<<dsave<< endl ;
+			 ff << "L_c,L_a,lambda,R0,cut,tau,dt,dsave" << endl ;//
+			 ff << Lc<<","<<La<<","<<lambda<<","<<R0<<","<<cut<<","<<tau<<","<<dt<<","<<dsave<< endl ;
 		}
 	}
 
@@ -281,7 +279,6 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 		real[int] solVor(Vor.ndof);
 		solVor=AVor^-1*bVor;
 		Vor Omega=solVor(0:Vor.ndof-1);
-		//Omega=solVor(0:Vor.ndof-1);
 
 		real avgOmega = int2d(T)(Omega)/Volume;
 
@@ -289,9 +286,33 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 		Vel Vcorr = [0,0];
 		Vcorr = V-.5*avgOmega*Theta;
 
+	// Compute the divergence and curl of the corrected velocity for the posterior analysis
+	// Divergence
+	varf aDiv(Diver, g) = int2d(T)(Diver*g);
+	varf lDiv(Diver, g) = int2d(T)((dx(V1corr)+dy(V2corr))*g);
+
+	matrix ADiv = aDiv(Vor, Vor);		// LHS matrix
+	real[int] bDiv = lDiv(0, Vor);	// RHS vector
+
+	real[int] solDiv(Vor.ndof);
+	solDiv=ADiv^-1*bDiv;
+	Vor Diver=solDiv(0:Vor.ndof-1);
+
+	// Curl (Vorticity)
+	varf aCurl(Curl, g) = int2d(T)(Curl*g);
+	varf lCurl(Curl, g) = int2d(T)((dx(V2corr)-dy(V1corr))*g);
+
+	matrix ACurl = aCurl(Vor, Vor);		// LHS matrix
+	real[int] bCurl = lCurl(0, Vor);	// RHS vector
+
+	real[int] solCurl(Vor.ndof);
+	solCurl=ACurl^-1*bCurl;
+	Vor Curl=solCurl(0:Vor.ndof-1);
+
 	// Vorticity  and corrected velocity plots
 	if (verbosity) {
-		plot(T,Omega, value = true, fill = true, nbiso = 64, wait = true, cmm = "Curl(V)");
+		plot(T,Diver, value = true, fill = true, nbiso = 64, wait = true, cmm = "Div(V)");
+		plot(T,Curl, value = true, fill = true, nbiso = 64, wait = true, cmm = "Curl(V)");
 		plot(T,V1corr, value = true, fill = true, nbiso = 64, wait = true, cmm = "vxcorr");
 		plot(T,V2corr, value = true, fill = true, nbiso = 64, wait = true, cmm = "vycorr");
 		plot(T,Vcorr, value = true, fill = true, nbiso = 64, wait = true, cmm = "Vcorr");
@@ -370,10 +391,33 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 			Vel Vcorr = [0,0];
 			Vcorr = V-.5*avgOmega*Theta;
 
+		// Compute the divergence and curl of the corrected velocity for the posterior analysis
+		// Divergence
+		varf aDiv(Diver, g) = int2d(T)(Diver*g);
+		varf lDiv(Diver, g) = int2d(T)((dx(V1corr)+dy(V2corr))*g);
+
+		matrix ADiv = aDiv(Vor, Vor);		// LHS matrix
+		real[int] bDiv = lDiv(0, Vor);	// RHS vector
+
+		real[int] solDiv(Vor.ndof);
+		solDiv=ADiv^-1*bDiv;
+		Vor Diver=solDiv(0:Vor.ndof-1);
+
+		// Curl (Vorticity)
+		varf aCurl(Curl, g) = int2d(T)(Curl*g);
+		varf lCurl(Curl, g) = int2d(T)((dx(V2corr)-dy(V1corr))*g);
+
+		matrix ACurl = aCurl(Vor, Vor);		// LHS matrix
+		real[int] bCurl = lCurl(0, Vor);	// RHS vector
+
+		real[int] solCurl(Vor.ndof);
+		solCurl=ACurl^-1*bCurl;
+		Vor Curl=solCurl(0:Vor.ndof-1);
+
 
 		// PLOT V
 		//if (verbosity) {
-			plot(T,Vcorr, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2*Rini,-2*Rini],[2*Rini,2*Rini]],
+			plot(T,Vcorr, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
 					cmm = "t="+(dt*iter)+";  Vol/Vol0="+(Volume/Volume0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
 												+"), (vx,vy)=("+(Xcm-XcmP)/dt+","+(Ycm-YcmP)/dt+")"
 												+"), Vol^-1(xi/xi)int p=("+intpx+","+intpy+")" );
@@ -389,8 +433,8 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 				for ( int j =0; j <3; j ++){
 					ff << T [i][j].x<<" " <<T [i][j].y<<" "
 						<< p1(T [i][j].x,T [i][j].y)<<" " << p2(T [i][j].x,T [i][j].y) <<" "
-						<< V1corr(T [i][j].x,T [i][j].y)<<" " << V2corr(T [i][j].x,T [i][j].y) <</*" "
-						<< Omega(T [i][j].x,T [i][j].y)<<*/ endl ;//
+						<< V1corr(T [i][j].x,T [i][j].y)<<" " << V2corr(T [i][j].x,T [i][j].y) <<" "
+						<< Diver(T [i][j].x,T [i][j].y)<<" " <<  Curl(T [i][j].x,T [i][j].y) << endl ;//
 					ff <<"\n";
 				}
 			}

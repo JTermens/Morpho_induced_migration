@@ -7,7 +7,6 @@ load "gsl"
 //include <iostream>;
 verbosity=0;
 
-int NumSimul = 1;
 string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Lc_change";
 string pathDir;
 string SimulName;
@@ -15,21 +14,40 @@ string SimulName;
 // Physiscal Parameters
 // Values from the estimation done by Ricard.
 real cut;						   			// Angular length of the cutted portion of the circle
-real Lc = 25.*2;							// Nematic length, sqrt(K/a)
+real Lc;										// Nematic length, sqrt(K/a)
+real nu=1./8.;							// Adimensionalized Lc, set to 1/8 as 25/200 = 1/8 (Ricard's estimation)
 real lambda = 707.; 				// Hydodynamic length, sqrt(eta/xi)
 real La = 200; 							// Active length, |zeta|/zi
-real Rc = 0.5*(3*Lc+La);		// Critical radius
-real R0;										// Effective radius
-real fracRarc = 0.2;				// Rarc = fracRarc*1
+real Rc;										// Critical radius Rc = (3Lc+La)/2
+real R0;										// Initial radius, lengthscale of the problem
+real fracRarc = 0.2;				// adimensionalized radius used to smooth the domain vertices
 real tau = 2.e4;						// Timescale corresponding to the advance of a flat front, eta/(zi*Lc)
 
-R0 = sqrt(2*pi/(2*pi - cut + sin(cut)))*Rc; // formula derived from the shape of the domain
-R0 += -.02; // Begin at the wetting transition of the circle
+cut = 1.*pi/3.; // Initial cut for each simulation
+SimulName = "1pi3_Lc_new";
 
-// Adimensionalized Parameters
+// To start the simulations close to the wetting transition we impose that the domain's area is the
+// same to the one of a circle with critial radius Rc. The shape_factor gives the domain radius so
+// that its area is the same to the one of a unit circle.
+real shapefactor = sqrt(2*pi/(2*pi - cut + sin(cut))); // Shape factor
+cout << shapefactor<< endl;
+
+// Then, the initial radius, R0, would be R0 = shapefactor*Rc +- d, but Rc=Rc(Lc,La), so to
+// control Lc as a fraction of the radius, Lc=nu*R0, we need to solve R0 = shape_factor*Rc(R0) +- d,
+// which gives:
+R0 = .5*shapefactor*La/(1-1.5*shapefactor*nu);
+
+// then add +- d to perturb the radius and ensure closeness to the wetting transition
+R0 += -.01;
+
+// Finally, compute the adimensionalized Lc and, in turn, Rc
+Lc = nu*R0;
+Rc = 0.5*(3*Lc+La);
+
+// Problem Parameters
 real a = La/Lc; 	    			// Active and Nematic length ratio
 real b = pow(R0/lambda,2);	// R0 and hydrodynamic length ratio
-real c = R0/Lc; 		 		 		// R0 and nematic length ratio
+real c = 1/nu; 		 		 		  // R0 and nematic length ratio
 
 // Numerical Parameters
 real ThickOutMesh =  Lc/R0;	// Thickness of the outer mesh
@@ -43,16 +61,9 @@ int Niter = 1001; 					// Number of iterations
 bool bsave = 1;   					// To save or not
 int dsave = 4;   						// Save frame gap
 
+cout << "Simul: " << "cut = " << cut/pi << "pi rad" << ", R0 = " << R0 << ", Rc = " << Rc << endl;
 
-// Simulations Loop, each one has different initial conditions
-for (int i=0; i<NumSimul; i++){
-
-	cut = 1.*pi/3.; // Initial cut for each simulation
-	SimulName = "1pi3_Lc_double";
-
-	cout << "Simulation " << (i+1) << ", cut = " << cut/pi << "pi rad" << ", R0 = " << R0 << endl;
-
-mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
+mesh T,Tb; // Perturbations of the circular domain, smoth with straigh cut (chord)
 	real Rarc = fracRarc;
 	real t0 = (pi-cut)/2.;
 	real t0L = asin((sin(t0)-ThickOutMesh)/(1-ThickOutMesh));
@@ -70,195 +81,257 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 							+GammaArc2(obd*Rarc*(pi/2.-t1))
 							);
 
-	// Transform a dense mesh into an adaptive one
-	fespace Dini(T, P1);								// Distance function to define the contour region of the mesh
+// Transform a dense mesh into an adaptive one
+fespace Dini(T, P1);	// Distance function to define the contour region of the mesh
 
-	varf vong(B, d)= on(1,B=1);
-	real[int] ong=vong(0,Dini);
-	Dini B =1, d;
-	B[] = ong ? 0 : B[];
-	distance(T,B,d[]);
-	// B.2. GET NEW INNER BOUNDARY VERTICES (ISO is the contour d==Lc)
-	real[int,int] ISO(3,1); int nc=isoline(T,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
-	real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
-	border Inner(t=0,1){ P=Curve(ISO,t);label=2;}
-	int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
-	// C. BUILD NEW MESH
-	T=buildmesh( Gamma(obd*(pi+2*t1))
-							+GammaB(1*obd*2*Ox)
-							+GammaArc1(obd*Rarc*(pi/2.-t1))
-							+GammaArc2(obd*Rarc*(pi/2.-t1))
-							+Inner(nI),fixedborder=1
-							);
-	T=change(T,rmInternalEdges=1);
-	Tb=emptymesh(T);
+varf vong(B, d)= on(1,B=1);
+real[int] ong=vong(0,Dini);
+Dini B =1, d;
+B[] = ong ? 0 : B[];
+distance(T,B,d[]);
+// Get the new inner boundary vertices (ISO is the contaur d==nu)
+real[int,int] ISO(3,1); int nc=isoline(T,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
+real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
+border Inner(t=0,1){ P=Curve(ISO,t);label=2;}
+int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
+// C. BUILD NEW MESH
+T=buildmesh( Gamma(obd*(pi+2*t1))
+						+GammaB(1*obd*2*Ox)
+						+GammaArc1(obd*Rarc*(pi/2.-t1))
+						+GammaArc2(obd*Rarc*(pi/2.-t1))
+						+Inner(nI),fixedborder=1
+						);
+T=change(T,rmInternalEdges=1);
+Tb=emptymesh(T);
 
-	/*mesh T,Tb; // Perturbations of the circular domain, sharp points
-	if(Rini*(1-cos(pi-cut/2.)) > 2*ThickOutMesh){ // Ensures enough space for Lc and the inner mesh
-		real t0 = (pi-cut)/2.;
-		real t0L = -asin((ThickOutMesh-Rini*sin(t0))/(Rini-ThickOutMesh));
-		border Gamma(t=-t0,pi+t0){x=Rini*cos(t);y=Rini*sin(t);label=1;}
-		border GammaB(t=-Rini*cos(t0),Rini*cos(t0)){x=t;y=-Rini*sin(t0);label=1;}
-	  border Gamma2(t=-t0L,pi+t0L){x=(Rini-ThickOutMesh)*cos(t);y=(Rini-ThickOutMesh)*sin(t);label=2;}
-		border Gamma2B(t=-(Rini-ThickOutMesh)*cos(t0L),(Rini-ThickOutMesh)*cos(t0L)){x=t;y=ThickOutMesh-Rini*sin(t0);label=2;}
-	  T=buildmesh(Gamma(obd*Rini*(pi+2*t0))+GammaB(obd*2*Rini*cos(t0))+Gamma2(ibd*(Rini-ThickOutMesh)*(pi+2*t0L))+Gamma2B(ibd*2*(Rini-ThickOutMesh)*cos(t0L)));
-		T=change(T, rmInternalEdges=1);
-		Tb=emptymesh(T);
+if(bsave){
+	// the results folder
+	pathDir = rootDir+"/"+SimulName;
+	exec("mkdir "+pathDir);
+	{ ofstream ff (pathDir+"/Params.csv") ;
+		 ff.fixed;
+		 ff << "L_c,L_a,lambda,R0,cut,tau,dt,dsave" << endl ;//
+		 ff << Lc<<","<<La<<","<<lambda<<","<<R0<<","<<cut<<","<<tau<<","<<dt<<","<<dsave<< endl ;
 	}
-	else {
-		cout << "The domain with R0 = "+R0+"; Lc = "+Lc+"; angle cut = "+cut+" is ill-posed." << endl;
-		exit(1);
-	}*/
+}
 
-	/*mesh T,Tb; // Bean domain
-	{
-		real arclength = 3.931702;
-		real t1 = 3*pi/4. + pi/4.;
-		real t2 = 3*pi/4. - pi/4.;
-		border Gamma(t=0,pi){x=Rini*(pow(cos(t+t1),3)+pow(sin(t+t2),3))*cos(t);
-										no_tension_remesh		 y=Rini*(pow(cos(t+t1),3)+pow(sin(t+t2),3))*sin(t);
-												 label=1;}
-		border Gamma2(t=0,pi){x=(Rini-ThickOutMesh)*(pow(cos(t+t1),3)+pow(sin(t+t2),3))*cos(t);
-													y=(Rini-ThickOutMesh)*(pow(cos(t+t1),3)+pow(sin(t+t2),3))*sin(t);
-													label=2;}
-		T=buildmesh(Gamma(obd*Rini*arclength)+Gamma2(ibd*(Rini-ThickOutMesh)*arclength));
-		T=change(T, rmInternalEdges=1);
-		Tb=emptymesh(T);
-	}*/
-	/*
-	mesh T, Tb; // Circular domain
-	{
-		border Gamma(t=0,2*pi){x=Rini*cos(t);y=Rini*sin(t);label=1;}
-		border Gamma2(t=0,2*pi){x=(Rini-ThickOutMesh)*cos(t);y=(Rini-ThickOutMesh)*sin(t);label=2;}
-		// T=buildmesh(Gamma(obd*Rini*2*pi)+Gamma2(ibd*(Rini-ThickOutMesh)*2*pi));
-		// T=change(T, rmInternalEdges=1);
-		T = buildmesh(Gamma(obd*2*pi*Rini)+Gamma2(ibd*2*pi*(Rini-ThickOutMesh)));
-		T=change(T, rmInternalEdges=1);
-		Tb=emptymesh(T);
-	}*/
+real Area0=int2d(T)(1.); // Inital Area of the Fluid Domain
+real Area=Area0;
+real Xcm0=int2d(T)(x)/Area; //Initial x_cm
+real Ycm0=int2d(T)(y)/Area; //Initial y_cm
+real XcmP=Xcm0;
+real YcmP=Ycm0;
+real Xcm=Xcm0;
+real Ycm=Ycm0;
 
-	if(bsave){
-		// the results folder
-		pathDir = rootDir+"/"+SimulName;
-		exec("mkdir "+pathDir);
-		{ ofstream ff (pathDir+"/Params.csv") ;
-			 ff.fixed;
-			 ff << "L_c,L_a,lambda,R0,cut,tau,dt,dsave" << endl ;//
-			 ff << Lc<<","<<La<<","<<lambda<<","<<R0<<","<<cut<<","<<tau<<","<<dt<<","<<dsave<< endl ;
-		}
-	}
+if (verbosity) {
+	plot(T,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
+}
 
-	real Volume0=int2d(T)(1.); // Inital Volume of the Fluid Domain
-	real Volume=Volume0;
-	real Xcm0=int2d(T)(x)/Volume; //Initial x_cm
-	real Ycm0=int2d(T)(y)/Volume; //Initial y_cm
-	real XcmP=Xcm0;
-	real YcmP=Ycm0;
-	real Xcm=Xcm0;
-	real Ycm=Ycm0;
+//FEM spaces
+fespace Pol(T, [P2, P2]);					// For polarity vector
+fespace Pola(T, P2 );							// For |p| (not essential, just visualization)
+fespace Vel(T, [P1b, P1b]);				// For velocity vector
+fespace Dh(T, P1);								// For distance function (remeshing scheme) and data exports
+fespace Vor(T,P1b);								// To compute the vorticity and divergence of the velocity
 
-	if (verbosity) {
-		plot(T,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  Vol0="+Volume0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
-	}
+//Macros
+macro Theta [Theta1, Theta2]											// (Ycm-y, x-Xcm); normal to r-Rcm
+macro pD [pD1, pD2]																// P2 extension for Dirichlet data
+macro p [p1, p2] 																	// Polarity vector field
+macro q [q1, q2] 																	// Polarity test functions
+macro V [V1, V2] 																	// Velocity field
+macro Vcorr [V1corr, V2corr] 											// Corrected velocity field
+macro U [U1, U2] 																	// Velocity test functions
+macro grad(u) [dx(u),dy(u)]												// Gradient of a sclar
+macro Grad(u1,u2) [dx(u1),dy(u1),dx(u2),dy(u2)] 	// Gradient of a vector
+macro GradT(u1,u2) [dx(u1),dx(u2),dy(u1),dy(u2)] 	// Grad vector transpose
+macro pp(p1,p2) [p1*p1,p1*p2,p2*p1,p2*p2] 				// Active stress tensor
 
-	//FEM SPACES
-	fespace Pol(T, [P2, P2]);					// FOR POLARITY VECTOR
-	fespace Pola(T, P2 );							// FOR |p| (not essential, just visualization)
-	fespace Vel(T, [P1b, P1b]);				// FOR VELOCITY VECTOR
-	fespace Dh(T, P1);								// FOR DISTANCE FUNCTION (REMESHING SCHEME) AND DATA EXPORTS
-	fespace Vor(T,P1b);								// To compute the vorticity of the velocity
+// P2 extension of polarity Dirichlet data
+varf bndDirichlet(p, q) = on(1,2, p1 = N.x) + on(1,2, p2 = N.y);// + on(2, p1 = N.x) + on(2, p2 = N.y);
+Pol pD=[0,0];
+pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
 
-	//MACROS
-	macro Theta [Theta1, Theta2]											// (Ycm-y, x-Xcm); normal to r-Rcm
-	macro pD [pD1, pD2]																// P2 EXTENSION DIRICHLET DATA
-	macro p [p1, p2] 																	// POLARITY VECTOR FIELD
-	macro q [q1, q2] 																	// POLARITY TEST FUNCTIONS
-	macro V [V1, V2] 																	// VELOCITY FIELD
-	macro Vcorr [V1corr, V2corr] 											// CORRECTED VELOCITY FIELD
-	macro U [U1, U2] 																	// VELOCITY TEST FUNCTIONS
-	macro grad(u) [dx(u),dy(u)]												// GRADIENT OF SCALAR
-	macro Grad(u1,u2) [dx(u1),dy(u1),dx(u2),dy(u2)] 	// GRADIENT OF VECTOR
-	macro GradT(u1,u2) [dx(u1),dx(u2),dy(u1),dy(u2)] 	// GRAD VEC TRANSPOSE
-	macro pp(p1,p2) [p1*p1,p1*p2,p2*p1,p2*p2] 				// ACTIVE STRESS TENSOR
+if (verbosity) {
+	plot(pD1, value = true, fill = true, nbiso=64, wait=true, cmm = "pDx");
+	plot(pD2, value = true, fill = true, nbiso=64, wait=true, cmm = "pDy");
+}
+// Bilinear and linear variational forms P (Modified Homogeneous Drirchlet problem for p-pD)
+varf ap(p, q) = int2d(T)(  grad(p1)'*grad(q1) + grad(p2)'*grad(q2) )  + int2d(T)(c*c*(p'*q)) + on(1,2, p1 = 0.0) + on(1,2, p2=0.0);//+ on(2, p1=0.0) + on(2, p2=0.0);
+varf lp(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*c*(pD'*q))  + on(1,2, p1 = 0.0) + on(1,2, p2=0.0);//+ on(2, p1=0.0) + on(2, p2=0.0);
 
-	// P2 EXTENSION OF POLARITY DIRICHLET DATA
-	varf bndDirichlet(p, q) = on(1,2, p1 = N.x) + on(1,2, p2 = N.y);// + on(2, p1 = N.x) + on(2, p2 = N.y);
-	Pol pD=[0,0];
-	pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
+// Assembly P
+matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
+real[int] bp = lp(0, Pol); // RHS
 
-	if (verbosity) {
-		plot(pD1, value = true, fill = true, nbiso=64, wait=true, cmm = "pDx");
-		plot(pD2, value = true, fill = true, nbiso=64, wait=true, cmm = "pDy");
-	}
+// P solution with vanishing Dirichlet data
+real[int] solP(Pol.ndof);
+//set(Ap,solver=sparsesolver);
+solP=Ap^-1*bp;
+Pol p=[0,0];
+p1[]=solP(0:Pol.ndof-1);
 
-	// BILINEAR AND LINEAR VARIATIONAL FORMS P (Modified Homogeneous Drirchlet problem for p-pD)
-	varf ap(p, q) = int2d(T)(  grad(p1)'*grad(q1) + grad(p2)'*grad(q2) )  + int2d(T)(c*c*(p'*q)) + on(1,2, p1 = 0.0) + on(1,2, p2=0.0);//+ on(2, p1=0.0) + on(2, p2=0.0);
-	varf lp(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*c*(pD'*q))  + on(1,2, p1 = 0.0) + on(1,2, p2=0.0);//+ on(2, p1=0.0) + on(2, p2=0.0);
+if (verbosity) {
+	plot(T,p1, value = true, fill = true, nbiso=64, wait=true, cmm = "dpx = px-pDx");
+	plot(T,p2, value = true, fill = true, nbiso=64, wait=true, cmm = "dpy = py-pDy");
+}
 
-	// ASSEMBLY P
-	matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
-	real[int] bp = lp(0, Pol); // RHS
+// P solution
+p = p + pD;
 
-	// P SOLUTION WITH VANISHING DIRICHLET DATA
-	real[int] solP(Pol.ndof);
-	//set(Ap,solver=sparsesolver);
-	solP=Ap^-1*bp;
-	Pol p=[0,0];
-	p1[]=solP(0:Pol.ndof-1);
-
-	if (verbosity) {
-		plot(T,p1, value = true, fill = true, nbiso=64, wait=true, cmm = "dpx = px-pDx");
-		plot(T,p2, value = true, fill = true, nbiso=64, wait=true, cmm = "dpy = py-pDy");
-	}
-
-	// P SOLUTION
-	p = p + pD;
-
-	if (verbosity) {
-		plot(T,p1, value = true, fill = true, nbiso = 64, wait = true, cmm = "px");
-		plot(T,p2, value = true, fill = true, nbiso = 64, wait = true, cmm = "py");
-		plot(T,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)");
-		// ABS P
-		Pola pABS = sqrt(p1(x,y)^2 + p2(x,y)^2);
-		plot(T,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
-	}
+if (verbosity) {
+	plot(T,p1, value = true, fill = true, nbiso = 64, wait = true, cmm = "px");
+	plot(T,p2, value = true, fill = true, nbiso = 64, wait = true, cmm = "py");
+	plot(T,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)");
+	// Abs(P)
+	Pola pABS = sqrt(p1(x,y)^2 + p2(x,y)^2);
+	plot(T,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
+}
 
 // EXPORT DATA
 /*{ 	ofstream ff (pathDir+"/xy_pxpy.txt") ;
-		ff.fixed;
-		for ( int i=0;i< T.nt ;i ++) {
-				for ( int j =0; j <3; j ++) {
-					ff 	<< T [i][ j ].x<<" " <<T [i][ j ].y<<" "
-						<< p1(T [i][ j ].x,T [i][ j ].y)<<" " << p2(T [i][ j ].x,T [i][ j ].y) << endl ;//
-					ff <<"\n";
-				}
-		}
-	}*/
+	ff.fixed;
+	for ( int i=0;i< T.nt ;i ++) {
+			for ( int j =0; j <3; j ++) {
+				ff 	<< T [i][ j ].x<<" " <<T [i][ j ].y<<" "
+					<< p1(T [i][ j ].x,T [i][ j ].y)<<" " << p2(T [i][ j ].x,T [i][ j ].y) << endl ;//
+				ff <<"\n";
+			}
+	}
+}*/
 
-	// BILINEAR AND LINEAR VARIATIONAL FORMS V
-	varf av(V, U) = int2d(T)( ((Grad(V1,V2)+GradT(V1,V2))'*Grad(U1,U2)) )  + int2d(T)( b*(V'*U) ); //-viscosity-friction
-	varf lv(V, U) = int2d(T)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( c*(p'*U) ); //contractility+activetraction
+// Bilinear and linear variational forms V
+varf av(V, U) = int2d(T)( ((Grad(V1,V2)+GradT(V1,V2))'*Grad(U1,U2)) )  + int2d(T)( b*(V'*U) ); // -viscosity -friction
+varf lv(V, U) = int2d(T)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( c*(p'*U) ); //contractility +active traction
 
-	//ASSEMBLY V
-	matrix Av = av(Vel, Vel);
-	real[int] bv = lv(0, Vel);
+// Assembly V
+matrix Av = av(Vel, Vel);
+real[int] bv = lv(0, Vel);
 
-	// V SOLUTION
+// V solution
+real[int] solV(Vel.ndof);
+//set(Av,solver=sparsesolver);
+solV=Av^-1*bv;
+Vel V=[0,0];
+V1[]=solV(0:Vel.ndof-1);
+
+if (verbosity) {
+	plot(T,V1, value = true, fill = true, nbiso = 64, wait = true, cmm = "vx");
+	plot(T,V2, value = true, fill = true, nbiso = 64, wait = true, cmm = "vy");
+	plot(T,V, value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)");
+}
+
+// CORRECT THE VELOCITY BY SUBSTRACTING THE RIGID SOLID ROTATION
+// 1. Compute Theta = (Ycm-y, x-Xcm)
+	varf aTheta(Theta, U) = int2d(T)(Theta'*U);
+	varf lTheta(Theta, U) = int2d(T)([Ycm-y,x-Xcm]'*U);
+
+	matrix ATheta = aTheta(Vel, Vel); // LHS matrix
+	real[int] bTheta = lTheta(0, Vel); // RHS
+
+	real[int] solTheta(Vel.ndof);
+	solTheta=ATheta^-1*bTheta;
+	Vel Theta = [0,0];
+	Theta1[]=solTheta(0:Vel.ndof-1);
+
+// 2. Compute the vorticity and average it
+	varf aVor(Omega, g) = int2d(T)(Omega*g);
+	varf lVor(Omega, g) = int2d(T)((dx(V2)-dy(V1))*g);
+
+	matrix AVor = aVor(Vor, Vor);		// LHS matrix
+	real[int] bVor = lVor(0, Vor);	// RHS vector
+
+	real[int] solVor(Vor.ndof);
+	solVor=AVor^-1*bVor;
+	Vor Omega=solVor(0:Vor.ndof-1);
+
+	real avgOmega = int2d(T)(Omega)/Area; // Average vorticity
+
+// 3. Substract the rigid solid rotation
+	Vel Vcorr = [0,0];
+	Vcorr = V-.5*avgOmega*Theta;
+
+// Compute the divergence and curl of the corrected velocity for the posterior analysis
+// Divergence
+varf aDiv(Diver, g) = int2d(T)(Diver*g);
+varf lDiv(Diver, g) = int2d(T)((dx(V1corr)+dy(V2corr))*g);
+
+matrix ADiv = aDiv(Vor, Vor);		// LHS matrix
+real[int] bDiv = lDiv(0, Vor);	// RHS vector
+
+real[int] solDiv(Vor.ndof);
+solDiv=ADiv^-1*bDiv;
+Vor Diver=solDiv(0:Vor.ndof-1);
+
+// Curl (Vorticity)
+varf aCurl(Curl, g) = int2d(T)(Curl*g);
+varf lCurl(Curl, g) = int2d(T)((dx(V2corr)-dy(V1corr))*g);
+
+matrix ACurl = aCurl(Vor, Vor);		// LHS matrix
+real[int] bCurl = lCurl(0, Vor);	// RHS vector
+
+real[int] solCurl(Vor.ndof);
+solCurl=ACurl^-1*bCurl;
+Vor Curl=solCurl(0:Vor.ndof-1);
+
+// Vorticity  and corrected velocity plots
+if (verbosity) {
+	plot(T,Diver, value = true, fill = true, nbiso = 64, wait = true, cmm = "Div(V)");
+	plot(T,Curl, value = true, fill = true, nbiso = 64, wait = true, cmm = "Curl(V)");
+	plot(T,V1corr, value = true, fill = true, nbiso = 64, wait = true, cmm = "vxcorr");
+	plot(T,V2corr, value = true, fill = true, nbiso = 64, wait = true, cmm = "vycorr");
+	plot(T,Vcorr, value = true, fill = true, nbiso = 64, wait = true, cmm = "Vcorr");
+}
+
+
+// Iterate time
+for (int iter=0 ; iter<Niter ; iter++) {
+
+	if (iter % 100 == 0 && iter > 0) {
+		cout << iter << " out of " << Niter << " iterations completed" << endl;
+	}
+
+	// P2 extension of polarity Dirichlet data
+	varf bndDirichlet(p, q) = on(1, p1 = N.x) + on(1, p2 = N.y);
+	Pol pD=[0,0];
+	pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
+
+	// Assemblay P
+	varf lp(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*c*(pD'*q))  + on(1, p1 = 0.0) + on(1, p2=0.0);
+	matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS matrix
+	real[int] bp = lp(0, Pol); 			// RHS
+
+	// P solution with vanishing Dirichlet data
+	real[int] sol(Pol.ndof);
+	//set(Ap,solver=sparsesolvenetr);
+	sol=Ap^-1*bp;
+	Pol p=[0,0];
+	p1[]=sol(0:Pol.ndof-1);
+
+	// P solution
+	p = p + pD;
+
+	// Assembly V
+	varf lv(V, U) = int2d(T)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( c*(p'*U) );
+	matrix Av = av(Vel, Vel);  			// LHS matrix
+	real[int] bv = lv(0, Vel);			// RHS
+
+	// V solution
 	real[int] solV(Vel.ndof);
 	//set(Av,solver=sparsesolver);
 	solV=Av^-1*bv;
 	Vel V=[0,0];
 	V1[]=solV(0:Vel.ndof-1);
 
-	if (verbosity) {
-		plot(T,V1, value = true, fill = true, nbiso = 64, wait = true, cmm = "vx");
-		plot(T,V2, value = true, fill = true, nbiso = 64, wait = true, cmm = "vy");
-		plot(T,V, value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)");
-	}
+	real Area=int2d(T)(1.); // Current Area
+	real Xcm=int2d(T)(x)/Area; // Current Xcm
+	real Ycm=int2d(T)(y)/Area; // Current Ycm
+	real intpx=(lambda*lambda/tau)*int2d(T)(p1)/Area; // Scaled Int p_x (To compare with Vcm_x)
+	real intpy=(lambda*lambda/tau)*int2d(T)(p2)/Area; //Scaled Int p_y (To compare with Vcm_x)
 
 	// CORRECT THE VELOCITY BY SUBSTRACTING THE RIGID SOLID ROTATION
 	// 1. Compute Theta = (Ycm-y, x-Xcm)
-		varf aTheta(Theta, U) = int2d(T)(Theta'*U);
 		varf lTheta(Theta, U) = int2d(T)([Ycm-y,x-Xcm]'*U);
 
 		matrix ATheta = aTheta(Vel, Vel); // LHS matrix
@@ -270,7 +343,6 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 		Theta1[]=solTheta(0:Vel.ndof-1);
 
 	// 2. Compute the vorticity and average it
-		varf aVor(Omega, g) = int2d(T)(Omega*g);
 		varf lVor(Omega, g) = int2d(T)((dx(V2)-dy(V1))*g);
 
 		matrix AVor = aVor(Vor, Vor);		// LHS matrix
@@ -279,8 +351,9 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 		real[int] solVor(Vor.ndof);
 		solVor=AVor^-1*bVor;
 		Vor Omega=solVor(0:Vor.ndof-1);
+		//Omega=solVor(0:Vor.ndof-1);
 
-		real avgOmega = int2d(T)(Omega)/Volume;
+		real avgOmega = int2d(T)(Omega)/Area;
 
 	// 3. Substract the rigid solid rotation
 		Vel Vcorr = [0,0];
@@ -309,183 +382,78 @@ mesh T,Tb; // Perturbations of the circular domain, smoth with 1/f = 0
 	solCurl=ACurl^-1*bCurl;
 	Vor Curl=solCurl(0:Vor.ndof-1);
 
-	// Vorticity  and corrected velocity plots
-	if (verbosity) {
-		plot(T,Diver, value = true, fill = true, nbiso = 64, wait = true, cmm = "Div(V)");
-		plot(T,Curl, value = true, fill = true, nbiso = 64, wait = true, cmm = "Curl(V)");
-		plot(T,V1corr, value = true, fill = true, nbiso = 64, wait = true, cmm = "vxcorr");
-		plot(T,V2corr, value = true, fill = true, nbiso = 64, wait = true, cmm = "vycorr");
-		plot(T,Vcorr, value = true, fill = true, nbiso = 64, wait = true, cmm = "Vcorr");
-	}
 
+	// Plot V
+	//if (verbosity) { // Show it always, regardless of the verbosity
+		plot(T,Vcorr, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
+				cmm = "t="+(dt*iter)+";  A/A0="+(Area/Area0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
+											+"), (vx,vy)=("+(Xcm-XcmP)/dt+","+(Ycm-YcmP)/dt+")"
+											+"), A^-1(xi/xi)int p=("+intpx+","+intpy+")" );
+	//}
 
-	// ITERATE TIME
-	for (int iter=0 ; iter<Niter ; iter++) {
+	// Export data
+	if(iter % dsave == 0 && bsave==1){
 
-		if (iter % 100 == 0 && iter > 0) {
-			cout << iter << " out of " << Niter << " iterations completed" << endl;
-		}
-
-		// P2 EXTENSION OF POLARITY DIRICHLET DATA
-		varf bndDirichlet(p, q) = on(1, p1 = N.x) + on(1, p2 = N.y);
-		Pol pD=[0,0];
-		pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
-
-		// ASSEMBLY P
-		varf lp(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*c*(pD'*q))  + on(1, p1 = 0.0) + on(1, p2=0.0);
-		matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS MATRIX
-		real[int] bp = lp(0, Pol); 			// RHS
-
-		// P SOLUTION WITH VANISHING DIRICHLET DATA
-		real[int] sol(Pol.ndof);
-		//set(Ap,solver=sparsesolvenetr);
-		sol=Ap^-1*bp;
-		Pol p=[0,0];
-		p1[]=sol(0:Pol.ndof-1);
-		// P SOLUTION
-		p = p + pD;
-
-		// ASSEMBLY V
-		varf lv(V, U) = int2d(T)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( c*(p'*U) );
-		matrix Av = av(Vel, Vel);  			// LHS MATRIX
-		real[int] bv = lv(0, Vel);			// RHS
-		// V SOLUTION
-		real[int] solV(Vel.ndof);
-		//set(Av,solver=sparsesolver);
-		solV=Av^-1*bv;
-		Vel V=[0,0];
-		V1[]=solV(0:Vel.ndof-1);
-
-		real Volume=int2d(T)(1.); // CURRENT AREA
-		real Xcm=int2d(T)(x)/Volume; // CURRENT Xcm
-		real Ycm=int2d(T)(y)/Volume; // CURRENT Ycm
-		real intpx=(lambda*lambda/tau)*int2d(T)(p1)/Volume; // SCALED Int p_x (TO COMPARE WITH Vcm_x)
-		real intpy=(lambda*lambda/tau)*int2d(T)(p2)/Volume; //SCALED Int p_y (TO COMPARE WITH Vcm_x)
-
-		// CORRECT THE VELOCITY BY SUBSTRACTING THE RIGID SOLID ROTATION
-		// 1. Compute Theta = (Ycm-y, x-Xcm)
-			varf lTheta(Theta, U) = int2d(T)([Ycm-y,x-Xcm]'*U);
-
-			matrix ATheta = aTheta(Vel, Vel); // LHS matrix
-			real[int] bTheta = lTheta(0, Vel); // RHS
-
-			real[int] solTheta(Vel.ndof);
-			solTheta=ATheta^-1*bTheta;
-			Vel Theta = [0,0];
-			Theta1[]=solTheta(0:Vel.ndof-1);
-
-		// 2. Compute the vorticity and average it
-			varf lVor(Omega, g) = int2d(T)((dx(V2)-dy(V1))*g);
-
-			matrix AVor = aVor(Vor, Vor);		// LHS matrix
-			real[int] bVor = lVor(0, Vor);	// RHS vector
-
-			real[int] solVor(Vor.ndof);
-			solVor=AVor^-1*bVor;
-			Vor Omega=solVor(0:Vor.ndof-1);
-			//Omega=solVor(0:Vor.ndof-1);
-
-			real avgOmega = int2d(T)(Omega)/Volume;
-
-		// 3. Substract the rigid solid rotation
-			Vel Vcorr = [0,0];
-			Vcorr = V-.5*avgOmega*Theta;
-
-		// Compute the divergence and curl of the corrected velocity for the posterior analysis
-		// Divergence
-		varf aDiv(Diver, g) = int2d(T)(Diver*g);
-		varf lDiv(Diver, g) = int2d(T)((dx(V1corr)+dy(V2corr))*g);
-
-		matrix ADiv = aDiv(Vor, Vor);		// LHS matrix
-		real[int] bDiv = lDiv(0, Vor);	// RHS vector
-
-		real[int] solDiv(Vor.ndof);
-		solDiv=ADiv^-1*bDiv;
-		Vor Diver=solDiv(0:Vor.ndof-1);
-
-		// Curl (Vorticity)
-		varf aCurl(Curl, g) = int2d(T)(Curl*g);
-		varf lCurl(Curl, g) = int2d(T)((dx(V2corr)-dy(V1corr))*g);
-
-		matrix ACurl = aCurl(Vor, Vor);		// LHS matrix
-		real[int] bCurl = lCurl(0, Vor);	// RHS vector
-
-		real[int] solCurl(Vor.ndof);
-		solCurl=ACurl^-1*bCurl;
-		Vor Curl=solCurl(0:Vor.ndof-1);
-
-
-		// PLOT V
-		//if (verbosity) {
-			plot(T,Vcorr, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
-					cmm = "t="+(dt*iter)+";  Vol/Vol0="+(Volume/Volume0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
-												+"), (vx,vy)=("+(Xcm-XcmP)/dt+","+(Ycm-YcmP)/dt+")"
-												+"), Vol^-1(xi/xi)int p=("+intpx+","+intpy+")" );
-		//}
-
-		// EXPORT DATA
-		if(iter % dsave == 0 && bsave==1){
-
-			savemesh(T,pathDir+"/LastMesh.msh"); 					// TO LOAD AND RESTART SIMULATION FROM LAST CONFIGURATION
-			ofstream ff (pathDir+"/Rend"+(1000000+iter)+".txt") ; 	// SAVE {x, y, p1(x,y), p2(x,y), V1(x,y), V2(x,y)} ON EACH TRIANGLE TRIPLET (convienient but many duplicates)
-			ff.fixed;
-			for ( int i=0;i< T . nt ;i ++){
-				for ( int j =0; j <3; j ++){
-					ff << T [i][j].x<<" " <<T [i][j].y<<" "
-						<< p1(T [i][j].x,T [i][j].y)<<" " << p2(T [i][j].x,T [i][j].y) <<" "
-						<< V1corr(T [i][j].x,T [i][j].y)<<" " << V2corr(T [i][j].x,T [i][j].y) <<" "
-						<< Diver(T [i][j].x,T [i][j].y)<<" " <<  Curl(T [i][j].x,T [i][j].y) << endl ;//
-					ff <<"\n";
-				}
+		savemesh(T,pathDir+"/LastMesh.msh"); 					// To load and restart the simualtion from the last configuration
+		// Save {x, y, p1(x,y), p2(x,y), V1corr(x,y), V2corr(x,y), Div(Vcorr)(x,y), Curl(Vcorr)(x,y)}
+		// on each triangle triplet (convienient but many duplicates)
+		ofstream ff (pathDir+"/Rend"+(1000000+iter)+".txt") ;
+		ff.fixed;
+		for ( int i=0;i< T . nt ;i ++){
+			for ( int j =0; j <3; j ++){
+				ff << T [i][j].x<<" " <<T [i][j].y<<" "
+					<< p1(T [i][j].x,T [i][j].y)<<" " << p2(T [i][j].x,T [i][j].y) <<" "
+					<< V1corr(T [i][j].x,T [i][j].y)<<" " << V2corr(T [i][j].x,T [i][j].y) <<" "
+					<< Diver(T [i][j].x,T [i][j].y)<<" " <<  Curl(T [i][j].x,T [i][j].y) << endl ;//
+				ff <<"\n";
 			}
 		}
-
-		// MOVE MESH
-		// real minT0 = checkmovemesh(T, [x, y]);
-		// real minT = checkmovemesh(T, [x+dt*V1,y+dt*V2]);
-		// cout << "Min triangle area before: "+minT0+" & after: "+minT<<endl;
-		T = movemesh(T,[x+dt*V1corr,y+dt*V2corr]);
-
-		// REMESHING - OPTIONAL (choose between A.1(a)-(c) for outer and between B.3(a)-(c) for inner)
-		// A.1. GET OUTER BOUNDARY VERTICES (b1)
-		real[int,int] b1(3,1); real l1=extractborder(T,1,b1); // l1 is the permiter of b1
-		// A.2(a). LINEAR INTERPOLATION OF b1 (simple and robust, but bad for preserving shape integrity)
-		/* border Outer(t=0,1){ P=Curve(b1,t);label=1;}
-		int nO = round(obd*l1);  */						// new number of elements (prescribed density obd)
-		// A.2(b). VERTEX PRESERVING INTERPOLATION OF b1 (no remesh of outer boundary, probably best)
-		/*border Outer(t=0,1){ P=Curve(b1,b1(2,round(t*(b1.m-1)))/l1);label=1;}
-		int nO = b1.m-1; 				*/				// keep number of elements
-		// A.2(c). SPLINE INTERPOLATION OF b1 (for remeshing outer boundary smoothly)
-		gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
-		gslspline splineY(gslinterpakima, b1(2, :), b1(1, :)); 	// y(s) akima spline
-		border Outer(t=0,l1){x=splineX(t);y=splineY(t);label=1;}
-		int nO = round(obd*l1);  						// new number of elements (prescribed density obd)
-		// B.1. DISTANCE FUNCTION (d is the minimal distance to the boundary)
-		varf vong(B, d)= on(1,B=1);
-		real[int] ong=vong(0,Dh);
-		Dh B =1, d;
-		B[] = ong ? 0 : B[];
-		distance(T,B,d[]);
-		// B.2. GET NEW INNER BOUNDARY VERTICES (ISO is the contour d==Lc)
-		real[int,int] ISO(3,1); int nc=isoline(T,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
-		real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
-		// B.3(a). LINEAR INTERPOLATION OF ISO (simple and robust)
-		border Inner(t=0,1){ P=Curve(ISO,t);label=2;}
-		int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
-		// B.3(b). VERTEX PRESERVING INTERPOLATION OF ISO (not ideal for this purpose, as we wish to impose uniform internal density)
-		/* border Inner(t=0,1){ P=Curve(ISO,ISO(2,round(t*(ISO.m-1)))/l2);label=2;}
-		int nI = ISO.m-1;  */ 							// keep number of elements
-		// B.3(c). SPLINE INTERPOLATION OF ISO (for remeshing inner boundary smoothly, probably overkill for this purpose)
-		/* gslspline splineXISO(gslinterpakima, ISO(2, :), ISO(0, :)); 	// x(s) akima spline
-		gslspline splineYISO(gslinterpakima, ISO(2, :), ISO(1, :)); 	// y(s) akima spline
-		border Inner(t=0,l2){x=splineXISO(t);y=splineYISO(t);label=2;}
-		int nI = round(ibd*l2);  */						// new number of elements (prescribed density ibd)
-		// C. BUILD NEW MESH
-		T=buildmesh(Outer(nO)+Inner(nI),fixedborder=1);
-		T=change(T,rmInternalEdges=1);
-
-		XcmP=Xcm; // PREVIOUS Xcm
-		YcmP=Ycm; // PREVIOUS Ycm
 	}
 
+	// Move mesh
+	// real minT0 = checkmovemesh(T, [x, y]); // to check for flipped triangles
+	// real minT = checkmovemesh(T, [x+dt*V1,y+dt*V2]);
+	// cout << "Min triangle area before: "+minT0+" & after: "+minT<<endl;
+	T = movemesh(T,[x+dt*V1corr,y+dt*V2corr]);
+
+	// REMESHING - OPTIONAL (choose between A.1(a)-(c) for outer and between B.3(a)-(c) for inner)
+	// A.1. GET OUTER BOUNDARY VERTICES (b1)
+	real[int,int] b1(3,1); real l1=extractborder(T,1,b1); // l1 is the permiter of b1
+	// A.2(a). LINEAR INTERPOLATION OF b1 (simple and robust, but bad for preserving shape integrity)
+	/* border Outer(t=0,1){ P=Curve(b1,t);label=1;}
+	int nO = round(obd*l1);  */						// new number of elements (prescribed density obd)
+	// A.2(b). VERTEX PRESERVING INTERPOLATION OF b1 (no remesh of outer boundary, probably best)
+	/*border Outer(t=0,1){ P=Curve(b1,b1(2,round(t*(b1.m-1)))/l1);label=1;}
+	int nO = b1.m-1; 				*/				// keep number of elements
+	// A.2(c). SPLINE INTERPOLATION OF b1 (for remeshing outer boundary smoothly)
+	gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
+	gslspline splineY(gslinterpakima, b1(2, :), b1(1, :)); 	// y(s) akima spline
+	border Outer(t=0,l1){x=splineX(t);y=splineY(t);label=1;}
+	int nO = round(obd*l1);  						// new number of elements (prescribed density obd)
+	// B.1. DISTANCE FUNCTION (d is the minimal distance to the boundary)
+	varf vong(B, d)= on(1,B=1);
+	real[int] ong=vong(0,Dh);
+	Dh B =1, d;
+	B[] = ong ? 0 : B[];
+	distance(T,B,d[]);
+	// B.2. GET NEW INNER BOUNDARY VERTICES (ISO is the contour d==Lc)
+	real[int,int] ISO(3,1); int nc=isoline(T,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
+	real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
+	// B.3(a). LINEAR INTERPOLATION OF ISO (simple and robust)
+	border Inner(t=0,1){ P=Curve(ISO,t);label=2;}
+	int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
+	// B.3(b). VERTEX PRESERVING INTERPOLATION OF ISO (not ideal for this purpose, as we wish to impose uniform internal density)
+	/* border Inner(t=0,1){ P=Curve(ISO,ISO(2,round(t*(ISO.m-1)))/l2);label=2;}
+	int nI = ISO.m-1;  */ 							// keep number of elements
+	// B.3(c). SPLINE INTERPOLATION OF ISO (for remeshing inner boundary smoothly, probably overkill for this purpose)
+	/* gslspline splineXISO(gslinterpakima, ISO(2, :), ISO(0, :)); 	// x(s) akima spline
+	gslspline splineYISO(gslinterpakima, ISO(2, :), ISO(1, :)); 	// y(s) akima spline
+	border Inner(t=0,l2){x=splineXISO(t);y=splineYISO(t);label=2;}
+	int nI = round(ibd*l2);  */						// new number of elements (prescribed density ibd)
+	// C. BUILD NEW MESH
+	T=buildmesh(Outer(nO)+Inner(nI),fixedborder=1);
+	T=change(T,rmInternalEdges=1);
+
+	XcmP=Xcm; // PREVIOUS Xcm
+	YcmP=Ycm; // PREVIOUS Ycm
 }

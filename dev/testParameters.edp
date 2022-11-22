@@ -1,0 +1,4 @@
+// testParameters.edp
+
+int foo = 1;
+int bar = 2.1;

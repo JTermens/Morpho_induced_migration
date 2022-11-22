@@ -1,0 +1,42 @@
+// PACKAGES FOR ADVANCED REMESHING SCHEME
+load "Curvature"
+load "distance"
+load "isoline"
+load "gsl"
+
+//include <iostream>;
+
+//include parametersFile;
+int nSimul = 1;
+
+// Mesh
+mesh Th = square(2, 2);
+
+real Area0 = int2d(Th)(1.); // Inital Area of the Fluid Domain
+real Areai  = Th.measure;
+real Xcm0  = int2d(Th)(x)/Area0; //Initial x_cm
+real Ycm0  = int2d(Th)(y)/Area0; //Initial y_cm
+
+plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  A0="+Area0+", A="+Areai+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
+
+cout << "// Hack to get vertex coordinates" << endl;
+{
+  int NbVertices = Th.nv;
+  cout << "Number of vertices = " << NbVertices << endl;
+
+  for (int i = 0; i < NbVertices; i++){
+    cout << "{" << Th(i).x << "," << Th(i).y << "} " << Th(i).label << endl;
+  }
+}
+
+cout << "// Print mesh connectivity " << endl;
+{
+    int NbTriangles = Th.nt;
+    for (int k = 0; k < NbTriangles; k++)
+        cout << "{" << int(Th[k][0])+1 << "," << int(Th[k][1])+1
+             << "," << int(Th[k][2])+1<< "}"<< endl;
+}
+
+for (int i=0; i<nSimul; i++){
+  cout << "Simul "+i << endl;
+}

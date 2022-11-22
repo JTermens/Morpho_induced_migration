@@ -7,90 +7,45 @@ load "gsl"
 //include <iostream>;
 verbosity=0;
 
-// Physiscal Parameters
-// Values from the estimation done by Ricard.
-real cut;						   			// Angular length of the cutted portion of the circle
-real R0 = 1.;								// Effective radius
-real Lc = .2;								// Nematic length, sqrt(K/a)
-real lambda = 10.; 					// Hydodynamic length, sqrt(eta/xi)
-real La = 1.; 							// Active length, |zeta|/zi
-real Lg = 0.1/Lc;						// Tension length, gamma/(Lc*zi)
-real Rc = 0.5*(3*Lc+La);		// Critical radius
-real Rini;									// Adimensionalized initial radius of the domain, depends on cut
-real tscale = 50;						// Timescale corresponding to the advance of a flat front, eta/(zi*Lc)
-
-// Adimensionalized Parameters
-real a = La/Lc; 	    			// Active and Nematic length ratio
-real b = pow(R0/lambda,2);	// R0 and hydrodynamic length ratio
-real c = R0/Lc; 		 				// R0 and nematic length ratio
-real lg = Lg/R0;						// Adimsensionalized tension length
-
-// Numerical Parameters
-real ThickOutMesh =  Lc/R0;	// Thickness of the outer mesh
-real inth = 0.1;						// Inner mesh radius threshold
-real obd = 50.;  						// Outer boundary mesh density
-real ibd = 15.;	 						// Inner boundary mesh density
-real dt = 0.05/tscale;	 		// Time step
-int Ni = 201; 							// Number of iterations
-
-// Save parameters
-bool bsave = 0;   					// To save or not
-int dsave = 2;   						// Save frame gap
-
-/*
 // PHYSICAL PARAMS
-real cut;						   			// Angular length of the cutted portion of the circle
 real Lc=.2;
 real c=1./(Lc*Lc);
 real eta=10.; 	// VISCOSITY
 real xi=0.1; 	// FRICTION
 real zeta=-1; 	// CONTRACTILITY
-real zi=1; 		// TRACTION
+real zi=eta/Lc; 		// TRACTION
 real gamma=0.1; // TENSION
-real R0 = 1.;
-real Rc=sqrt(2)*0.5*(3*Lc-zeta/zi); // INITIAL RADIUS
-real Rini;
+real R0=1.2;//sqrt(2)*0.5*(3*Lc-zeta/zi); // INITIAL RADIUS
 
 // NUMERICAL PARAMS
-real ThickOutMesh =  Lc;	// Thickness of the outer mesh
-real obd=50.; 	// OUTER BOUNDARY MESH DENSITY
-real ibd=15;  	// INNER BOUNDARY MESH DENSITY
+real obd=50/R0; 	// OUTER BOUNDARY MESH DENSITY
+real ibd=15/R0;  	// INNER BOUNDARY MESH DENSITY
 real dt=0.05;   // TIME STEP
 int Ni=201;  // NUMBER OF ITERATIONS
 
 // SAVE PARAMS
 bool bsave=0;  	// TO SAVE OR NOT
 int dsave=2;   	// SAVE FRAME GAP
-*/
 if(bsave){
 	{ ofstream ff ("Params.csv") ;
 		 ff.fixed;
-		 ff << "L_c,L_a,lambda,L_g,R0,Rini,cut,tscale,dt,dsave" << endl ;//
-		 ff << Lc<<","<<La<<","<<lambda<<","<<Lg<<","<<R0<<","<<Rini<<","<<cut<<","<<tscale<<","<<dt<<","<<dsave<< endl ;
+		 ff << "L_c,eta,xi,zeta,zeta_i,R0,dt,dsave" << endl ;//
+		 ff << Lc<<","<<eta<<","<<xi<<","<<zeta<<","<<zi<<","<<R0<<","<<dt<<","<<dsave<< endl ;
 	}
 }
 
-cut = pi;//(i+1)*pi/10.; // Initial cut for each simulation
-Rini = sqrt(2*pi/(2*pi - cut + sin(cut))); // formula derived from the shape of the domain
-Rini *= (Rc/R0);
-
 mesh T,Tb;
-if(Rini*(1-cos(pi-cut/2.)) > 2*ThickOutMesh){ // Ensures enough space for Lc and the inner mesh
-	real t0 = (pi-cut)/2.;
-	real t0L = -asin((ThickOutMesh-Rini*sin(t0))/(Rini-ThickOutMesh));
-	border Gamma(t=-t0,pi+t0){x=Rini*cos(t);y=Rini*sin(t);label=1;}
-	border GammaB(t=-Rini*cos(t0),Rini*cos(t0)){x=t;y=-Rini*sin(t0);label=1;}
-	border Gamma2(t=-t0L,pi+t0L){x=(Rini-ThickOutMesh)*cos(t);y=(Rini-ThickOutMesh)*sin(t);label=2;}
-	border Gamma2B(t=-(Rini-ThickOutMesh)*cos(t0L),(Rini-ThickOutMesh)*cos(t0L)){x=t;y=ThickOutMesh-Rini*sin(t0);label=2;}
-	T=buildmesh(Gamma(obd*Rini*(pi+2*t0))+GammaB(obd*2*Rini*cos(t0))+Gamma2(ibd*(Rini-ThickOutMesh)*(pi+2*t0L))+Gamma2B(ibd*2*(Rini-ThickOutMesh)*cos(t0L)));
+{
+	border Gamma(t=0,pi){x=R0*cos(t);y=R0*sin(t);label=1;}
+	border GammaB(t=-R0,R0){x=t;y=0.;label=1;}
+  border Gamma2(t=asin(Lc/(R0-Lc)),pi-asin(Lc/(R0-Lc))){x=(R0-Lc)*cos(t);y=(R0-Lc)*sin(t);label=2;}
+	border Gamma2B(t=-(R0-Lc)*cos(asin(Lc/(R0-Lc))),(R0-Lc)*cos(asin(Lc/(R0-Lc)))){x=t;y=Lc;label=2;}
+  	T=buildmesh(Gamma(obd*R0*pi)+GammaB(obd*R0*2)+Gamma2(ibd*(R0-Lc)*(pi-2.*asin(Lc/(R0-Lc))))+Gamma2B(ibd*(R0-Lc)*cos(asin(Lc/(R0-Lc)))*2));
 	T=change(T, rmInternalEdges=1);
 	Tb=emptymesh(T);
 }
-else {
-	cout << "The domain with R0 = "+Rini+"; Lc = "+Lc+"; angle cut = "+cut+" is ill-posed." << endl;
-	exit(1);
-}
-//mesh T = square(10, 10);
+// mesh T = square(R0*obd, R0*obd);
+// mesh Tb=emptymesh(T);
 
 real Volume0=int2d(T)(1.); // Inital Volume of the Fluid Domain
 real Volume=Volume0;
@@ -138,17 +93,17 @@ plot(pD1, value = true, fill = true, nbiso=64, wait=true, cmm = "pDx");
 plot(pD2, value = true, fill = true, nbiso=64, wait=true, cmm = "pDy");
 
 // BILINEAR AND LINEAR VARIATIONAL FORMS P (Modified Homogeneous Drirchlet problem for p-pD)
-varf ap(p, q) = int2d(T)(  grad(p1)'*grad(q1) + grad(p2)'*grad(q2) )  + int2d(T)(c*c*(p'*q)) + on(1, p1 = 0.0) + on(1, p2=0.0);
-varf lp(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*c*(pD'*q))  + on(1, p1 = 0.0) + on(1, p2=0.0);
+varf a(p, q) = int2d(T)(  grad(p1)'*grad(q1) + grad(p2)'*grad(q2) )  + int2d(T)(c*(p'*q)) + on(1, p1 = 0.0) + on(1, p2=0.0);
+varf l(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*(pD'*q))  + on(1, p1 = 0.0) + on(1, p2=0.0);
 
 // ASSEMBLY P
-matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
-real[int] bp = lp(0, Pol); // RHS
+matrix A = a(Pol, Pol, tgv = -2); // LHS matrix
+real[int] b = l(0, Pol); // RHS
 
 // P SOLUTION WITH VANISHING DIRICHLET DATA
 real[int] sol(Pol.ndof);
-//set(Ap,solver=sparsesolver);
-sol=Ap^-1*bp;
+//set(A,solver=sparsesolver);
+sol=A^-1*b;
 Pol p=[0,0];
 p1[]=sol(0:Pol.ndof-1);
 plot(T,p1, value = true, fill = true, nbiso=64, wait=true, cmm = "dpx = px-pDx");
@@ -165,7 +120,7 @@ Pola pABS = sqrt(p1(x,y)^2 + p2(x,y)^2);
 plot(T,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
 
 // EXPORT DATA
-/*{ 	ofstream ff ("xy_pxpy.txt") ;
+{ 	ofstream ff ("xy_pxpy.txt") ;
 	ff.fixed;
 	for ( int i=0;i< T.nt ;i ++) {
 			for ( int j =0; j <3; j ++) {
@@ -174,21 +129,21 @@ plot(T,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
 				ff <<"\n";
 			}
 	}
-}*/
+}
 
 // BILINEAR AND LINEAR VARIATIONAL FORMS V
-varf av(V, U) = int2d(T)( ((Grad(V1,V2)+GradT(V1,V2))'*Grad(U1,U2)) )  + int2d(T)( b*(V'*U) ); //-viscosity-friction
-varf lv(V, U) = int2d(T)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( c*(p'*U) ); //contractility+activetraction
+varf av(V, U) = int2d(T)( eta*((Grad(V1,V2)+GradT(V1,V2))'*Grad(U1,U2)) )  + int2d(T)( xi*(V'*U) ); //-viscosity-friction
+varf lv(V, U) = int2d(T)( zeta*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( zi*(p'*U) ); //contractility+activetraction
 // SURFACE TENSION (IMPLICIT CURVATURE SCHEME)
 Vel Vc;
 Tauh Tau,dTau;
 dSh	ds;
-varf asurface(V,U)=int1d(T,1,qforder=2)(lg*dt*
+varf asurface(V,U)=int1d(T,1,qforder=2)(gamma*dt*
 					((dtau(V)'*Nc)*(dtau(U)'*Nc)
 					+1.*(dtau(V)'*Tau)*(dtau(U)'*Tau))/ds);
 varf lsurface(V,U)=
-				-int1d(T,1,qforder=2)(lg*Tau'*dtau(U))
-				+int1d(T,1,qforder=2)(lg*dt*
+				-int1d(T,1,qforder=2)(gamma*Tau'*dtau(U))
+				+int1d(T,1,qforder=2)(gamma*dt*
                     ((dtau(Vc)'*Nc)*(dtau(U)'*Nc)
                     +1*(dtau(Vc)'*Tau)*(dtau(U)'*Tau))/ds)
 				//+int2d(ThFluid)([g,0]'*[U1,U2]) // GRAVITY
@@ -240,29 +195,28 @@ for (int ni=0 ; ni<Ni ; ni++) {
 	real Volume=int2d(T)(1.); // CURRENT AREA
 	real Xcm=int2d(T)(x)/Volume; // CURRENT Xcm
 	real Ycm=int2d(T)(y)/Volume; // CURRENT Ycm
-	real intpx=(lambda*lambda/tscale)*int2d(T)(p1)/Volume; // SCALED Int p_x (TO COMPARE WITH Vcm_x)
-	real intpy=(lambda*lambda/tscale)*int2d(T)(p2)/Volume; //SCALED Int p_y (TO COMPARE WITH Vcm_x)
+	real intpx=(zi/xi)*int2d(T)(p1)/Volume; // SCALED Int p_x (TO COMPARE WITH Vcm_x)
+	real intpy=(zi/xi)*int2d(T)(p2)/Volume; //SCALED Int p_y (TO COMPARE WITH Vcm_x)
 
 	// P2 EXTENSION OF POLARITY DIRICHLET DATA
 	varf bndDirichlet(p, q) = on(1, p1 = N.x) + on(1, p2 = N.y);
 	Pol pD=[0,0];
 	pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
-
 	// ASSEMBLY P
-	varf lp(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*c*(pD'*q))  + on(1, p1 = 0.0) + on(1, p2=0.0);
-	matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS MATRIX
-	real[int] bp = lp(0, Pol); 			// RHS
+	varf l(p, q) = -int2d(T)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(T)(c*(pD'*q))  + on(1, p1 = 0.0) + on(1, p2=0.0);
+	matrix A = a(Pol, Pol, tgv = -2); 	// LHS MATRIX
+	real[int] b = l(0, Pol); 			// RHS
 	// P SOLUTION WITH VANISHING DIRICHLET DATA
 	real[int] sol(Pol.ndof);
-	//set(Ap,solver=sparsesolver);
-	sol=Ap^-1*bp;
+	//set(A,solver=sparsesolver);
+	sol=A^-1*b;
 	Pol p=[0,0];
 	p1[]=sol(0:Pol.ndof-1);
 	// P SOLUTION
 	p = p + pD;
 
 	// ASSEMBLY V
-	varf lv(V, U) = int2d(T)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( c*(p'*U) ); //contractility+activetraction
+	varf lv(V, U) = int2d(T)( zeta*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(T)( zi*(p'*U) ); //contractility+activetraction
 	matrix Av = av(Vel, Vel);
 	real[int] bv = lv(0, Vel);
 	real[int] solV(Vel.ndof);
@@ -298,7 +252,7 @@ for (int ni=0 ; ni<Ni ; ni++) {
 	}
 
 	// PLOT V
-	plot(T,V, value = true, fill = true, nbiso = 64, wait = false, bb=[[-1.3*R0,-0.3*R0],[1.3*R0,1.3*R0]],
+	plot(T,V, value = true, fill = true, nbiso = 64, wait = false, bb=[[-1.3*R0,-1.3*R0],[1.3*R0,1.3*R0]],
 			cmm = "t="+(dt*ni)+";  Vol/Vol0="+(Volume/Volume0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
 										+"), (vx,vy)=("+(Xcm-XcmP)/dt+","+(Ycm-YcmP)/dt+")"
 										+"), Vol^-1(xi/xi)int p=("+intpx+","+intpy+")" );
@@ -342,7 +296,7 @@ for (int ni=0 ; ni<Ni ; ni++) {
 		B[] = ong ? 0 : B[];
 		distance(T,B,d[]);
 		// B.2. GET NEW INNER BOUNDARY VERTICES (ISO is the contour d==Lc)
-		real[int,int] ISO(3,1); int nc=isoline(T,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
+		real[int,int] ISO(3,1); int nc=isoline(T,d,iso=Lc,close=1,ISO,smoothing=Lc/2.,ratio=1.e-0);
 		real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
 		// B.3(a). LINEAR INTERPOLATION OF ISO (simple and robust)
 		border Inner(t=0,1){ P=Curve(ISO,t);label=2;}

@@ -1,0 +1,84 @@
+// Parameter file for MDA-MB-231 cells (human breast adenocarcionam)
+// Estimations done by Ricard Alert at Perez-González et al, Nat. Phys. 2019
+
+string rootDir =
+"/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/MDA-MB-231_Alert";
+
+string[int] SimulNames = [
+  "MDA-MB-231_1pi2_Rc", "MDA-MB-231_1pi2_halfRc", "MDA-MB-231_1pi2_doubleRc",
+  "MDA-MB-231_1pi4_Rc", "MDA-MB-231_1pi4_halfRc", "MDA-MB-231_1pi4_doubleRc",
+  "MDA-MB-231_1pi1_Rc", "MDA-MB-231_1pi1_halfRc", "MDA-MB-231_1pi1_doubleRc"
+  ];
+string[int] pathDirs(6);
+
+
+// Physiscal Parameters
+real h = 5;			// Monolayer heigth, [μm]
+real Lc = 25;			// Nematic length, sqrt(K/a), [μm]
+real eta = 25e3;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
+real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
+real zi = 0.15;			// Traction coefficient, [kPa/μm], 0.04-0.16 kPa/μm
+real zeta = -40;		// -Contractility coefficient, [kPa], 5-50 kPa
+real tscale = eta/(zi*Lc);   // Timescale corresponding to the advance of a flat front, [s]
+real Rc = (3*Lc+abs(zeta)/zi)/2;    // Critical radius of a circular monolayer, [μm]
+// If surface tension
+// real gamma = -5.;    // Surface tension, [mN/m]=[kPa·μm]
+
+// Numerical Parameters
+real obd = 60.;		// Outer boundary mesh density
+real ibd = 15.;		// Inner boundary mesh density
+real dt = 0.2;			// Adim. time step
+int NiterTime = 5000;		// Number of iterations
+int nSimul = 6;			// Number of simulations
+real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
+// If surface tension
+// real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
+// int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
+
+// Save parameters
+bool bsave = 0;			// To save or not
+int dsave = 10;			// Save frame gap
+
+// Domain parameters
+real[int] cut = [ // Angular length of the cutted portion of the circle
+  pi/2., pi/2., pi/2.
+  pi/4., pi/4., pi/4.
+  pi, pi, pi
+  ];
+// To start the simulations close to the wetting transition we impose that the domain's area is the
+// same to the one of a circle with critial radius Rc. The shape_factor gives the domain radius so
+// that its area is the same to the one of a unit circle.
+real[int] shapefactor = [ // Shape factor
+  sqrt(2*pi/(2*pi - cut[0] + sin(cut[0]))),
+  sqrt(2*pi/(2*pi - cut[2] + sin(cut[2]))),
+  sqrt(2*pi/(2*pi - cut[4] + sin(cut[4])))
+  ];
+
+real[int] R0 = [  // Initial radius of the monolayer [μm]
+  shapefactor[0]*Rc-2., .5*shapefactor[0]*Rc, 2*shapefactor[0]*Rc,
+  shapefactor[1]*Rc-2., .5*shapefactor[1]*Rc, 2*shapefactor[1]*Rc,
+  shapefactor[2]*Rc-2., .5*shapefactor[2]*Rc, 2*shapefactor[2]*Rc
+  ];
+
+real[int] AxisCut = [3.*pi/2.];	// Angles of the symmetry axis of each cut
+real fracRarc = 0.1;		// Adimensionalized radius used to smooth the domain vertices
+
+if(bsave){
+  for (int i=0; i<nSimul; i++){
+    // the results folder
+    pathDirs[i] = rootDir+"/"+SimulNames[i];
+    exec("mkdir "+pathDirs[i]);
+    exec("mkdir "+pathDirs[i]+"/solutions");	// Make and save the solutions in a separeted folder
+    exec("mkdir "+pathDirs[i]+"/meshes");	// Make and save the meshes in a separeted folder
+    { ofstream fileParameters (pathDirs[i]+"/parameters.csv");
+
+      fileParameters.fixed;
+      fileParameters << "R0,h,Lc,eta,xi,zi,zeta,tscale,cut,dt,dsave" /*<< ",gamma"*/ <<  endl;
+      // μ = \u03BC in unicode
+      fileParameters << "\mu m,\mu m,\mu m,kPa*s,kPa*s/\mu m^2,kPa/\mu m,kPa,s,rad,adim,adim" /*<< ",mN/m"*/ << endl;
+      fileParameters << R0[i]  << "," << h  << "," << Lc    << "," << eta << ","
+                     << xi     << "," << zi << "," << zeta  << "," << tscale << ","
+                     << cut[i] << "," << dt << "," << dsave /*<< "," << gamma*/ << endl;//
+    }
+  }
+}

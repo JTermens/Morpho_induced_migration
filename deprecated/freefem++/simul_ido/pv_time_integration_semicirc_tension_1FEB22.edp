@@ -13,13 +13,13 @@ real c=1./(Lc*Lc);
 real eta=10.; 	// VISCOSITY
 real xi=0.1; 	// FRICTION
 real zeta=-1; 	// CONTRACTILITY
-real zi=eta/Lc; 		// TRACTION
+real zi=1; 		// TRACTION
 real gamma=0.1; // TENSION
-real R0=1.2;//sqrt(2)*0.5*(3*Lc-zeta/zi); // INITIAL RADIUS
+real R0=sqrt(2)*0.5*(3*Lc-zeta/zi); // INITIAL RADIUS
 
 // NUMERICAL PARAMS
-real obd=50/R0; 	// OUTER BOUNDARY MESH DENSITY
-real ibd=15/R0;  	// INNER BOUNDARY MESH DENSITY
+real obd=50; 	// OUTER BOUNDARY MESH DENSITY
+real ibd=15;  	// INNER BOUNDARY MESH DENSITY
 real dt=0.05;   // TIME STEP
 int Ni=201;  // NUMBER OF ITERATIONS
 

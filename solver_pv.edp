@@ -5,7 +5,9 @@ load "isoline"
 load "gsl"
 
 //include <iostream>;
-include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/parameters.edp";
+//include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/MDA-MB-231_Alert/parameters.edp";
+include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/MDCK_MCF10a_Blanch/parameters.edp";
+//include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/A431_Pi-Jauma/parameters.edp";
 
 verbosity=0;
 
@@ -14,19 +16,23 @@ string pathDir;
 
 for (int i=0; i<nSimul; i++){
   SimulName = SimulNames[i];
-  pathDir = pathDirs[i];
+  if (bsave){
+    pathDir = pathDirs[i];
+  }
 
   // Problem Parameters
   real a = abs(zeta)/(zi*Lc); 	    		// Active |zeta|/zi and Nematic length ratio
-  real b = R0*R0*xi/eta;	              // R0 and hydrodynamic length sqrt(eta/xi) ratio
-  real c = R0/Lc;  		 		 		          // R0 and nematic length ratio
+  real b = R0[i]*R0[i]*xi/eta;	              // R0 and hydrodynamic length sqrt(eta/xi) ratio
+  real c = R0[i]/Lc;  		 		 		          // R0 and nematic length ratio
 
-  cout << "Simul: " << SimulName << ", R0 = " << R0 << ", Rc = " << Rc
-  << ", lambda = " << sqrt(eta/xi) << ", Lc = " << Lc
-  << ", saving = " << bsave << endl;
+  cout << "Simul: " << SimulName << ", saving = " << bsave << "\nR0 = " << R0[i] << ", Rc = " << Rc
+<< ", lambda = " << sqrt(eta/xi) << ", Lc = " << Lc << ", La = " << abs(zeta)/zi << ", tscale = " << tscale << endl;
+
 
   // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
   mesh Th,Thb;
+
+    real ThickOutMesh = Lc/R0[i];
    	real Rarc = fracRarc;
     real t1 = asin((sin(cut[i]/2.)-Rarc)/(1-Rarc));
 
@@ -43,13 +49,15 @@ for (int i=0; i<nSimul; i++){
    	border GammaArch0(t=0,1){x=cos(AxisCut[0]+t1+2*(pi-t1)*t);
    													 y=sin(AxisCut[0]+t1+2*(pi-t1)*t);label=1;}
 
-
    	Th=buildmesh(GammaArchMin0(obd*Rarc*t1)
    							+GammaCut0(obd*LenCut)
    							+GammaArchPlus0(obd*Rarc*t1)
    							+GammaArch0(obd*2*(pi-t1))
    							);
-
+/*
+    border Gamma(t=0,2*pi){x=cos(t); y=sin(t); label=1;}
+    Th = buildmesh(Gamma(2*pi*obd));
+*/
     // Smooth the outer boundary pieces
     real[int,int] b1(3,1); real l1=extractborder(Th,1,b1); // l1 is the permiter of b1
     gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
@@ -277,25 +285,22 @@ for (int i=0; i<nSimul; i++){
 
   	Nh [nx,ny]; // here the Dof of nx,ny are scramble .
   	nx[]=0;ny[]=0;
-  	int i=0;
-  	for (int k = 0; k < NbBoundaryElements; k++){
-  	  real[int] nprev(2), npost(2), nmean(2);
-  	  real lenprev, lenpost;
-  	  int kprev = k-1;
 
-  	  if (k==0) {kprev=NbBoundaryElements-1;}
+    real[int] nprev(2), npost(2), nmean(2);
+	  real lenprev, lenpost;
+	  nprev = [(yy[0]-yy[NbBoundaryElements-1]),-(xx[0]-xx[NbBoundaryElements-1])];
+	  lenprev = sqrt(pow(nprev[0],2)+pow(nprev[1],2));
 
-  	  nprev = [(yy[k]-yy[kprev]),-(xx[k]-xx[kprev])];
-  	  lenprev = sqrt(pow(nprev[0],2)+pow(nprev[1],2));
-  	  npost = [(yy[k+1]-yy[k]),-(xx[k+1]-xx[k])];
-  	  lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
+	  for (int k = 0; k < NbBoundaryElements; k++){
+	    npost = [(yy[k+1]-yy[k]),-(xx[k+1]-xx[k])];
+	    lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
 
-  	  nmean = nprev/(1+lenprev/lenpost) + npost/(1+lenpost/lenprev);
-  	  nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
+	    nmean = nprev/(1+lenprev/lenpost) + npost/(1+lenpost/lenprev);
+	    nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
 
-  		i=bcon(k);
-  		nx[](2*i)= nmean[0]; ny[](2*i+1) = nmean[1];
-  	}
+	  	nx[](2*bcon(k))= nmean[0]; ny[](2*bcon(k)+1) = nmean[1];
+	  	nprev = npost; lenprev = lenpost;
+	  }
 
   	// P2 extension of polarity Dirichlet data
   	varf bndDirichlet(pD, q) = on(1, pD1 = nx) + on(1, pD2 = ny);// + on(2, p1 = N.x) + on(2, p2 = N.y);
@@ -386,13 +391,13 @@ for (int i=0; i<nSimul; i++){
   	real DivTermsY = (int2d(Th)(y*DivV)-int2d(Th)(DivV)*Ycm)/Areai;	// Current value of the Div terms of V_y cm
 
   	// Plot V
-  	//if (verbosity) { // Show it always, regardless of the verbosity
+  	if (verbosity) { // Show it always, regardless of the verbosity
   	Pola vABS = sqrt(V1(x,y)^2 + V2(x,y)^2);
   		plot(/*Th,[NDerP1,NDerP2],/*CurlV*/vABS, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
   				cmm = "t="+(dt*iterTime)+";  A/A0="+(Areai/Area0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
   											+"), (vx,vy)=("+Vxcm+","+Vycm+")"
   											+"), A^-1(c/b)int p=("+(c/b)*Pxcm+","+(c/b)*Pycm+")");
-  	//}
+  	}
 
   	// Export data
   	if(iterTime % dsave == 0 && bsave==1){
@@ -477,8 +482,12 @@ for (int i=0; i<nSimul; i++){
       break;
     }
 
-  	XcmP=Xcm; // Previous Xcm
-  	YcmP=Ycm; // Previous Ycm
+    XcmP=Xcm; // Previous Xcm
+    YcmP=Ycm; // Previous Ycm
 
+    if(Areai > maxRateArea*Area0){
+      cout << "WARNING: Simulation "+SimulName+" stopped after "+iterTime+" iterations due to large area" << endl;
+      break;
+    }
   }
 }

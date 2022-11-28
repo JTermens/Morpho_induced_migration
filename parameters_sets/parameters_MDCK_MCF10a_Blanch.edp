@@ -1,6 +1,8 @@
 // Parameter file for MDCK/MCF10a cells
 // Estimations done by Carles Blanch at Blanch et al, Soft Matter 2017
 
+verbosity=0;
+
 string rootDir =
 "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/MDCK_MCF10a_Blanch";
 
@@ -27,7 +29,7 @@ real Rc = 89.5017; //(3*Lc+abs(zeta)/zi)/2;    // Critical radius of a circular 
 // Numerical Parameters
 real obd = 60.;		// Outer boundary mesh density
 real ibd = 15.;		// Inner boundary mesh density
-real dt = 0.1;			// Adim. time step
+real dt = 0.001;			// Adim. time step
 int NiterTime = 5000;		// Number of iterations
 int nSimul = 6;			// Number of simulations
 real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
@@ -41,8 +43,8 @@ int dsave = 10;			// Save frame gap
 
 // Domain parameters
 real[int] cut = [ // Angular length of the cutted portion of the circle
-  pi/2., pi/2., pi/2.
-  pi/4., pi/4., pi/4.
+  pi/2., pi/2., pi/2.,
+  pi/4., pi/4., pi/4.,
   pi, pi, pi
   ];
 // To start the simulations close to the wetting transition we impose that the domain's area is the
@@ -50,8 +52,8 @@ real[int] cut = [ // Angular length of the cutted portion of the circle
 // that its area is the same to the one of a unit circle.
 real[int] shapefactor = [ // Shape factor
   sqrt(2*pi/(2*pi - cut[0] + sin(cut[0]))),
-  sqrt(2*pi/(2*pi - cut[2] + sin(cut[2]))),
-  sqrt(2*pi/(2*pi - cut[4] + sin(cut[4])))
+  sqrt(2*pi/(2*pi - cut[3] + sin(cut[3]))),
+  sqrt(2*pi/(2*pi - cut[6] + sin(cut[6])))
   ];
 
   real[int] R0 = [  // Initial radius of the monolayer [μm]

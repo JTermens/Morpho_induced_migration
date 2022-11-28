@@ -6,10 +6,9 @@ load "gsl"
 
 //include <iostream>;
 //include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/MDA-MB-231_Alert/parameters.edp";
-include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/MDCK_MCF10a_Blanch/parameters.edp";
+//include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/MDCK_MCF10a_Blanch/parameters.edp";
 //include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/A431_Pi-Jauma/parameters.edp";
-
-verbosity=0;
+include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/tests_and_tension/parameters_Ricard.edp";
 
 string SimulName;
 string pathDir;
@@ -83,6 +82,7 @@ for (int i=0; i<nSimul; i++){
     Th=buildmesh(Outer(nO)+Inner(nI),fixedborder=1);
     Th=change(Th,rmInternalEdges=1);
     Thb=emptymesh(Th);
+
 
   real Area0=Th.measure; // Inital Area of the Fluid Domain
   real Areai=Area0;
@@ -444,13 +444,13 @@ for (int i=0; i<nSimul; i++){
   	/* border Outer(t=0,1){ P=Curve(b1,t);label=1;}
   	int nO = round(obd*l1);  */						// new number of elements (prescribed density obd)
   	// A.2(b). VERTEX PRESERVING INTERPOLATION OF b1 (no remesh of outer boundary, probably best)
-  	/*border Outer(t=0,1){ P=Curve(b1,b1(2,round(t*(b1.m-1)))/l1);label=1;}
-  	int nO = b1.m-1; 				*/				// keep number of elements
+  	border Outer(t=0,1){ P=Curve(b1,b1(2,round(t*(b1.m-1)))/l1);label=1;}
+  	int nO = b1.m-1; 								// keep number of elements
   	// A.2(c). SPLINE INTERPOLATION OF b1 (for remeshing outer boundary smoothly)
-  	gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
+  	/*gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
   	gslspline splineY(gslinterpakima, b1(2, :), b1(1, :)); 	// y(s) akima spline
   	border Outer(t=0,l1){x=splineX(t);y=splineY(t);label=1;}
-  	int nO = round(obd*l1);  						// new number of elements (prescribed density obd)
+  	int nO = round(obd*l1);  		*/				// new number of elements (prescribed density obd)
   	// B.1. DISTANCE FUNCTION (d is the minimal distance to the boundary)
   	varf vong(B, d)= on(1,B=1);
   	real[int] ong=vong(0,Dh);
@@ -465,7 +465,7 @@ for (int i=0; i<nSimul; i++){
   	int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
   	// B.3(b). VERTEX PRESERVING INTERPOLATION OF ISO (not ideal for this purpose, as we wish to impose uniform internal density)
   	/* border Inner(t=0,1){ P=Curve(ISO,ISO(2,round(t*(ISO.m-1)))/l2);label=2;}
-  	int nI = ISO.m-1;  */ 							// keep number of elements
+  	int nI = ISO.m-1;   	*/						// keep number of elements
   	// B.3(c). SPLINE INTERPOLATION OF ISO (for remeshing inner boundary smoothly, probably overkill for this purpose)
   	/* gslspline splineXISO(gslinterpakima, ISO(2, :), ISO(0, :)); 	// x(s) akima spline
   	gslspline splineYISO(gslinterpakima, ISO(2, :), ISO(1, :)); 	// y(s) akima spline
@@ -485,7 +485,7 @@ for (int i=0; i<nSimul; i++){
     XcmP=Xcm; // Previous Xcm
     YcmP=Ycm; // Previous Ycm
 
-    if(Areai > maxRateArea*Area0){
+    if(Areai > rateMaxArea*Area0){
       cout << "WARNING: Simulation "+SimulName+" stopped after "+iterTime+" iterations due to large area" << endl;
       break;
     }

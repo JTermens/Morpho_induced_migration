@@ -1,15 +1,17 @@
 // Parameter file for A431 cells (human epidermal carcinoma)
 // Estimations done by irina Pi at Pallarès et al, preprint
 
+verbosity=0;
+
 string rootDir =
 "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/A431_Pi-Jauma";
 
 string[int] SimulNames = [
-  "A431_1pi2_Rc", "A431_1pi2_doubleRc",
-  "A431_1pi4_Rc", "A431_1pi4_doubleRc",
-  "A431_1pi1_Rc", "A431_1pi1_doubleRc"
+  "A431_1pi2_doubleRc",
+  "A431_1pi4_doubleRc",
+  "A431_1pi1_doubleRc"
   ];
-string[int] pathDirs(6);
+string[int] pathDirs(3);
 
 
 // Physiscal Parameters
@@ -27,37 +29,37 @@ real Rc = 12.9439;//(3*Lc+abs(zeta)/zi)/2;    // Critical radius of a circular m
 // Numerical Parameters
 real obd = 60.;		// Outer boundary mesh density
 real ibd = 15.;		// Inner boundary mesh density
-real dt = 0.1;			// Adim. time step
+real dt = 0.001;			// Adim. time step
 int NiterTime = 5000;		// Number of iterations
-int nSimul = 6;			// Number of simulations
+int nSimul = 3;			// Number of simulations
 real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
 // If surface tension
 // real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
 // int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
 
 // Save parameters
-bool bsave = 0;			// To save or not
-int dsave = 2;			// Save frame gap
+bool bsave = 1;			// To save or not
+int dsave = 10;			// Save frame gap
 
 // Domain parameters
 real[int] cut = [ // Angular length of the cutted portion of the circle
-  pi/2., pi/2.,
-  pi/4., pi/4.,
-  pi, pi
+  pi/2.,
+  pi/4.,
+  pi
   ];
 // To start the simulations close to the wetting transition we impose that the domain's area is the
 // same to the one of a circle with critial radius Rc. The shape_factor gives the domain radius so
 // that its area is the same to the one of a unit circle.
 real[int] shapefactor = [ // Shape factor
   sqrt(2*pi/(2*pi - cut[0] + sin(cut[0]))),
-  sqrt(2*pi/(2*pi - cut[2] + sin(cut[2]))),
-  sqrt(2*pi/(2*pi - cut[4] + sin(cut[4])))
+  sqrt(2*pi/(2*pi - cut[1] + sin(cut[1]))),
+  sqrt(2*pi/(2*pi - cut[2] + sin(cut[2])))
   ];
 
 real[int] R0 = [  // Initial radius of the monolayer [μm]
-  shapefactor[0]*Rc, 2*shapefactor[0]*Rc),
-  shapefactor[1]*Rc, 2*shapefactor[1]*Rc),
-  shapefactor[2]*Rc, 2*shapefactor[2]*Rc)
+  2*shapefactor[0]*Rc,
+  2*shapefactor[1]*Rc,
+  2*shapefactor[2]*Rc
   ];
 
 real[int] AxisCut = [3.*pi/2.];	// Angles of the symmetry axis of each cut

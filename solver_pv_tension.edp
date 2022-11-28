@@ -5,7 +5,7 @@ load "isoline"
 load "gsl"
 
 //include <iostream>;
-include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/parameters.edp";
+include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/tests_and_tension/parameters_Ricard.edp";
 
 verbosity=0;
 
@@ -23,11 +23,13 @@ for (int i=0; i<nSimul; i++){
 	real lg = gamma/(zi*Lc*R0[i]);						// Surface tension to traction adimensionalized length
 
 
-  cout << "Simul: " << SimulName << << ", saving = " << bsave << "\nR0 = " << R0[i] << ", Rc = " << Rc
-  << ", lambda = " << sqrt(eta/xi) << ", Lc = " << Lc >> ", La = " << abs(zeta)/zi << ", tscale = " << tscale << endl;
+  cout << "Simul: " << SimulName << ", saving = " << bsave << "\nR0 = " << R0[i] << ", Rc = " << Rc
+  << ", lambda = " << sqrt(eta/xi) << ", Lc = " << Lc << ", La = " << abs(zeta)/zi << ", tscale = " << tscale << endl;
 
   // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
   mesh Th,Thb;
+
+    real ThickOutMesh = Lc/R0[i];
    	real Rarc = fracRarc;
     real t1 = asin((sin(cut[i]/2.)-Rarc)/(1-Rarc));
 
@@ -571,5 +573,9 @@ for (int i=0; i<nSimul; i++){
   	XcmP=Xcm; // Previous Xcm
   	YcmP=Ycm; // Previous Ycm
 
+    if(Areai > rateMaxArea*Area0){
+      cout << "WARNING: Simulation "+SimulName+" stopped after "+iterTime+" iterations due to large area" << endl;
+      break;
+    }
   }
 }

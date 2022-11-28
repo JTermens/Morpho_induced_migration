@@ -21,12 +21,14 @@ for (int i=0; i<nSimul; i++){
   real b = R0[i]*R0[i]*xi/eta;	              // R0 and hydrodynamic length sqrt(eta/xi) ratio
   real c = R0[i]/Lc;  		 		 		          // R0 and nematic length ratio
 
-  cout << "Simul: " << SimulName << << ", saving = " << bsave << "\nR0 = " << R0[i] << ", Rc = " << Rc
-  << ", lambda = " << sqrt(eta/xi) << ", Lc = " << Lc >> ", La = " << abs(zeta)/zi << ", tscale = " << tscale << endl;
+  cout << "Simul: " << SimulName << ", saving = " << bsave << "\nR0 = " << R0[i] << ", Rc = " << Rc
+  << ", lambda = " << sqrt(eta/xi) << ", Lc = " << Lc << ", La = " << abs(zeta)/zi << ", tscale = " << tscale << endl;
 
 
   // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
   mesh Th,Thb;
+
+    real ThickOutMesh = Lc/R0[i];
    	real Rarc = fracRarc;
     real t1 = asin((sin(cut[i]/2.)-Rarc)/(1-Rarc));
 
@@ -480,5 +482,10 @@ for (int i=0; i<nSimul; i++){
 
   	XcmP=Xcm; // PREVIOUS Xcm
   	YcmP=Ycm; // PREVIOUS Ycm
+
+    if(Areai > rateMaxArea*Area0){
+      cout << "WARNING: Simulation "+SimulName+" stopped after "+iterTime+" iterations due to large area" << endl;
+      break;
+    }
 	}
 }

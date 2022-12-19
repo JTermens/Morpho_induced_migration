@@ -15,16 +15,16 @@ string[int] pathDirs(6);
 
 
 // Physiscal Parameters
-//real h = 5;			// Monolayer heigth, [μm]
+real h = 5;			// Monolayer heigth, [μm]
 real Lc = 50;			// Nematic length, sqrt(K/a), [μm]
 real eta = 6.25e3;		// Monolayer viscosity, [kPa·s], fitted so that lambda = 250 μm
 real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
 real zi = 0.01;			// Traction coefficient, [kPa/μm],
-real zeta = -1;		// -Contractility coefficient, [kPa], low estimation
+real zeta = -2;		// -Contractility coefficient, [kPa], low estimation
 real tscale = eta/(zi*Lc);   // Timescale corresponding to the advance of a flat front, [s]
 real Rc = 89.5017; //(3*Lc+abs(zeta)/zi)/2;    // Critical radius of a circular monolayer, [μm] ** Computed with Mathematica
 // If surface tension
-// real gamma = -5.;    // Surface tension, [mN/m]=[kPa·μm]
+real gamma = -5.;    // Surface tension, [mN/m]=[kPa·μm]
 
 // Numerical Parameters
 real obd = 60.;		// Outer boundary mesh density
@@ -34,8 +34,8 @@ int NiterTime = 5000;		// Number of iterations
 int nSimul = 6;			// Number of simulations
 real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
 // If surface tension
-// real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
-// int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
+real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
+int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
 
 // Save parameters
 bool bsave = 0;			// To save or not
@@ -75,12 +75,12 @@ if(bsave){
     { ofstream fileParameters (pathDirs[i]+"/parameters.csv");
 
       fileParameters.fixed;
-      fileParameters << "R0,"/*<<"h,"*/<<"Lc,eta,xi,zi,zeta,tscale,cut,dt,dsave" /*<< ",gamma"*/ <<  endl;
+      fileParameters << "R0,h,Lc,eta,xi,zi,zeta,tscale,cut,dt,dsave" << ",gamma" <<  endl;
       // μ = \u03BC in unicode
-      fileParameters << "\mu m,"/*<<"\mu m,"*/<<"\mu m,kPa*s,kPa*s/\mu m^2,kPa/\mu m,kPa,s,rad,adim,adim" /*<< ",mN/m"*/ << endl;
-      fileParameters << R0[i]  /*<< "," << h  */<< "," << Lc    << "," << eta << ","
+      fileParameters << "\mu m,\mu m,\mu m,kPa*s,kPa*s/\mu m^2,kPa/\mu m,kPa,s,rad,adim,adim" << ",mN/m" << endl;
+      fileParameters << R0[i]  << "," << h  << "," << Lc    << "," << eta << ","
                      << xi     << "," << zi << "," << zeta  << "," << tscale << ","
-                     << cut[i] << "," << dt << "," << dsave /*<< "," << gamma*/ << endl;//
+                     << cut[i] << "," << dt << "," << dsave << "," << gamma << endl;//
     }
   }
 }

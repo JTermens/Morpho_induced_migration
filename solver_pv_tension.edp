@@ -5,7 +5,7 @@ load "isoline"
 load "gsl"
 
 //include <iostream>;
-include "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/tests_and_tension/parameters_Ricard.edp";
+include "/home/joan/Documents/Repositoris/Spontaneous_tissue_motility/parameters_sets/parameters_MDCK_MCF10a_Blanch.edp";
 
 verbosity=0;
 
@@ -13,14 +13,14 @@ string SimulName;
 string pathDir;
 
 for (int i=0; i<nSimul; i++){
-  SimulName = SimulNames[i];
-  pathDir = pathDirs[i];
+	SimulName = SimulNames[i];
+	pathDir = pathDirs[i];
 
-  // Problem Parameters
-  real a = abs(zeta)/(zi*Lc); 	    		// Active |zeta|/zi and Nematic length ratio
-  real b = R0[i]*R0[i]*xi/eta;	              // R0 and hydrodynamic length sqrt(eta/xi) ratio
-  real c = R0[i]/Lc;  		 		 		          // R0 and nematic length ratio
-	real lg = gamma/(zi*Lc*R0[i]);						// Surface tension to traction adimensionalized length
+	// Problem Parameters
+	real a = abs(zeta)/(zi*Lc);			// Active |zeta|/zi and Nematic length ratio
+	real b = R0[i]*R0[i]*xi/eta;		// R0 and hydrodynamic length sqrt(eta/xi) ratio
+	real c = R0[i]/Lc;							// R0 and nematic length ratio
+	real lg = gamma/(zi*Lc*R0[i]);	// Surface tension to traction adimensionalized length
 
 
   cout << "Simul: " << SimulName << ", saving = " << bsave << "\nR0 = " << R0[i] << ", Rc = " << Rc
@@ -29,55 +29,53 @@ for (int i=0; i<nSimul; i++){
   // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
   mesh Th,Thb;
 
-    real ThickOutMesh = Lc/R0[i];
-   	real Rarc = fracRarc;
-    real t1 = asin((sin(cut[i]/2.)-Rarc)/(1-Rarc));
+		real ThickOutMesh = Lc/R0[i];
+		real Rarc = fracRarc;
+		real t1 = asin((sin(cut[i]/2.)-Rarc)/(1-Rarc));
 
-   	real[int] OxPlus = [(1-Rarc)*cos(AxisCut[0]+t1)];
-   	real[int] OyPlus = [(1-Rarc)*sin(AxisCut[0]+t1)];
-   	real[int] OxMin = [(1-Rarc)*cos(AxisCut[0]-t1)];
-   	real[int] OyMin = [(1-Rarc)*sin(AxisCut[0]-t1)];
-   	real LenCut = sqrt((OxPlus[0]-OxMin[0])*(OxPlus[0]-OxMin[0]) + (OyPlus[0]-OyMin[0])*(OyPlus[0]-OyMin[0]));
+		real[int] OxPlus = [(1-Rarc)*cos(AxisCut[0]+t1)];
+		real[int] OyPlus = [(1-Rarc)*sin(AxisCut[0]+t1)];
+		real[int] OxMin = [(1-Rarc)*cos(AxisCut[0]-t1)];
+		real[int] OyMin = [(1-Rarc)*sin(AxisCut[0]-t1)];
+		real LenCut = sqrt((OxPlus[0]-OxMin[0])*(OxPlus[0]-OxMin[0]) + (OyPlus[0]-OyMin[0])*(OyPlus[0]-OyMin[0]));
 
-    border GammaArchMin0(t=0,1){x=OxMin[0]+Rarc*cos(AxisCut[0]-t1*(1-t)); y=OyMin[0]+Rarc*sin(AxisCut[0]-t1*(1-t)); label=1;}
-   	border GammaCut0(t=0,1){x=((OxMin[0]+Rarc*cos(AxisCut[0]))+(OxPlus[0]-OxMin[0])*t);
-   													y=((OyMin[0]+Rarc*sin(AxisCut[0]))+(OyPlus[0]-OyMin[0])*t);label=1;}
-   	border GammaArchPlus0(t=0,1){x=OxPlus[0]+Rarc*cos(AxisCut[0]+t1*t); y=OyPlus[0]+Rarc*sin(AxisCut[0]+t1*t); label=1;}
-   	border GammaArch0(t=0,1){x=cos(AxisCut[0]+t1+2*(pi-t1)*t);
-   													 y=sin(AxisCut[0]+t1+2*(pi-t1)*t);label=1;}
+		border GammaArchMin0(t=0,1){x=OxMin[0]+Rarc*cos(AxisCut[0]-t1*(1-t)); y=OyMin[0]+Rarc*sin(AxisCut[0]-t1*(1-t)); label=1;}
+		border GammaCut0(t=0,1){x=((OxMin[0]+Rarc*cos(AxisCut[0]))+(OxPlus[0]-OxMin[0])*t); y=((OyMin[0]+Rarc*sin(AxisCut[0]))+(OyPlus[0]-OyMin[0])*t);label=1;}
+		border GammaArchPlus0(t=0,1){x=OxPlus[0]+Rarc*cos(AxisCut[0]+t1*t); y=OyPlus[0]+Rarc*sin(AxisCut[0]+t1*t); label=1;}
+		border GammaArch0(t=0,1){x=cos(AxisCut[0]+t1+2*(pi-t1)*t); y=sin(AxisCut[0]+t1+2*(pi-t1)*t);label=1;}
 
 
-   	Th=buildmesh(GammaArchMin0(obd*Rarc*t1)
-   							+GammaCut0(obd*LenCut)
-   							+GammaArchPlus0(obd*Rarc*t1)
-   							+GammaArch0(obd*2*(pi-t1))
-   							);
+		Th=buildmesh(GammaArchMin0(obd*Rarc*t1)
+								+GammaCut0(obd*LenCut)
+								+GammaArchPlus0(obd*Rarc*t1)
+								+GammaArch0(obd*2*(pi-t1))
+								);
 
-    // Smooth the outer boundary pieces
-    real[int,int] b1(3,1); real l1=extractborder(Th,1,b1); // l1 is the permiter of b1
-    gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
-    gslspline splineY(gslinterpakima, b1(2, :), b1(1, :)); 	// y(s) akima spline
-    border Outer(t=0,l1){x=splineX(t);y=splineY(t);label=1;}
-    int nO = round(obd*l1);
-    // Transform the dense mesh & into an adaptive one
-    fespace Dini(Th, P1);	// Distance function to define the contour region of the mesh
+		// Smooth the outer boundary pieces
+		real[int,int] b1(3,1); real l1=extractborder(Th,1,b1); // l1 is the permiter of b1
+		gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
+		gslspline splineY(gslinterpakima, b1(2, :), b1(1, :)); 	// y(s) akima spline
+		border Outer(t=0,l1){x=splineX(t);y=splineY(t);label=1;}
+		int nO = round(obd*l1);
+		// Transform the dense mesh & into an adaptive one
+		fespace Dini(Th, P1);	// Distance function to define the contour region of the mesh
 
-    varf vong(B, d)= on(1,B=1);
-    real[int] ong=vong(0,Dini);
-    Dini B =1, d;
-    B[] = ong ? 0 : B[];
-    distance(Th,B,d[]);
+		varf vong(B, d)= on(1,B=1);
+		real[int] ong=vong(0,Dini);
+		Dini B =1, d;
+		B[] = ong ? 0 : B[];
+		distance(Th,B,d[]);
 
-    // Get the new inner boundary vertices (ISO is the contour d==nu)
-    real[int,int] ISO(3,1); int nc=isoline(Th,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
-    real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
-    border Inner(t=0,1){ P=Curve(ISO,t);label=0;}
-    int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
+		// Get the new inner boundary vertices (ISO is the contour d==nu)
+		real[int,int] ISO(3,1); int nc=isoline(Th,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
+		real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
+		border Inner(t=0,1){ P=Curve(ISO,t);label=0;}
+		int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
 
-    // C. BUILD NEW MESH
-    Th=buildmesh(Outer(nO)+Inner(nI),fixedborder=1);
-    Th=change(Th,rmInternalEdges=1);
-    Thb=emptymesh(Th);
+		// C. BUILD NEW MESH
+		Th=buildmesh(Outer(nO)+Inner(nI),fixedborder=1);
+		Th=change(Th,rmInternalEdges=1);
+		Thb=emptymesh(Th);
 
 	real Area0=Th.measure; // Inital Area of the Fluid Domain
   real Areai=Area0;

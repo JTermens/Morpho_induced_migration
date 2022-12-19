@@ -22,7 +22,7 @@ real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
 real zi = 0.01;			// Traction coefficient, [kPa/μm],
 real zeta = -2;		// -Contractility coefficient, [kPa], low estimation
 real tscale = eta/(zi*Lc);   // Timescale corresponding to the advance of a flat front, [s]
-real Rc = 89.5017; //(3*Lc+abs(zeta)/zi)/2;    // Critical radius of a circular monolayer, [μm] ** Computed with Mathematica
+real Rc = 156.031; //(3*Lc+abs(zeta)/zi)/2;    // Critical radius of a circular monolayer, [μm] ** Computed with Mathematica
 // If surface tension
 real gamma = -5.;    // Surface tension, [mN/m]=[kPa·μm]
 

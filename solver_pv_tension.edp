@@ -7,7 +7,6 @@ load "gsl"
 //include <iostream>;
 include "/home/joan/Documents/Repositoris/Spontaneous_tissue_motility/parameters_sets/parameters_MDCK_MCF10a_Blanch.edp";
 
-verbosity=0;
 
 string SimulName;
 string pathDir;
@@ -477,13 +476,13 @@ for (int i=0; i<nSimul; i++){
   	real DivTermsY = (int2d(Th)(y*DivV)-int2d(Th)(DivV)*Ycm)/Areai;	// Current value of the Div terms of V_y cm
 
 		// Plot V
-  	//if (verbosity) { // Show it always, regardless of the verbosity
+  	if (verbosity) { // Show it always, regardless of the verbosity
   	Pola vABS = sqrt(V1(x,y)^2 + V2(x,y)^2);
   		plot(/*Th,[NDerP1,NDerP2],/*CurlV*/vABS, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
   				cmm = "t="+(dt*iterTime)+";  A/A0="+(Areai/Area0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
   											+"), (vx,vy)=("+Vxcm+","+Vycm+")"
   											+"), A^-1(c/b)int p=("+(c/b)*Pxcm+","+(c/b)*Pycm+")");
-  	//}
+  	}
 
 		// Export data
   	if(iterTime % dsave == 0 && bsave==1){

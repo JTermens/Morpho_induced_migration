@@ -4,14 +4,12 @@
 verbosity=0;
 
 string rootDir =
-"/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/parameter_testing/MDCK_MCF10a_Blanch";
+"/home/joan/Documents/Simul_runs";
 
 string[int] SimulNames = [
-  "MDCK_MCF10a_1pi2_Rc", "MDCK_MCF10a_1pi2_halfRc","MDCK_MCF10a_1pi2_doubleRc",
-  "MDCK_MCF10a_1pi4_Rc", "MDCK_MCF10a_1pi4_halfRc","MDCK_MCF10a_1pi4_doubleRc",
-  "MDCK_MCF10a_1pi1_Rc", "MDCK_MCF10a_1pi1_halfRc","MDCK_MCF10a_1pi1_doubleRc"
+  "MDCK_MCF10a_1pi2_zeta-2"
   ];
-string[int] pathDirs(6);
+string[int] pathDirs(1);
 
 
 // Physiscal Parameters
@@ -20,46 +18,40 @@ real Lc = 50;			// Nematic length, sqrt(K/a), [μm]
 real eta = 6.25e3;		// Monolayer viscosity, [kPa·s], fitted so that lambda = 250 μm
 real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
 real zi = 0.01;			// Traction coefficient, [kPa/μm],
-real zeta = -2;		// -Contractility coefficient, [kPa], low estimation
+real zeta = /*-1*/-2;		// -Contractility coefficient, [kPa], low estimation
 real tscale = eta/(zi*Lc);   // Timescale corresponding to the advance of a flat front, [s]
-real Rc = 89.5017; //(3*Lc+abs(zeta)/zi)/2;    // Critical radius of a circular monolayer, [μm] ** Computed with Mathematica
+real Rc = /*89.5017*/156.031; //(3*Lc+abs(zeta)/zi)/2;    // Critical radius of a circular monolayer, [μm] ** Computed with Mathematica
 // If surface tension
-real gamma = -5.;    // Surface tension, [mN/m]=[kPa·μm]
+real gamma = 5.;    // Surface tension, [mN/m]=[kPa·μm]
 
 // Numerical Parameters
 real obd = 60.;		// Outer boundary mesh density
 real ibd = 15.;		// Inner boundary mesh density
 real dt = 0.001;			// Adim. time step
 int NiterTime = 5000;		// Number of iterations
-int nSimul = 6;			// Number of simulations
+int nSimul = 1;			// Number of simulations
 real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
 // If surface tension
 real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
 int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
 
 // Save parameters
-bool bsave = 0;			// To save or not
+bool bsave = 1;			// To save or not
 int dsave = 10;			// Save frame gap
 
 // Domain parameters
 real[int] cut = [ // Angular length of the cutted portion of the circle
-  pi/2., pi/2., pi/2.,
-  pi/4., pi/4., pi/4.,
-  pi, pi, pi
+  pi/2.
   ];
 // To start the simulations close to the wetting transition we impose that the domain's area is the
 // same to the one of a circle with critial radius Rc. The shape_factor gives the domain radius so
 // that its area is the same to the one of a unit circle.
 real[int] shapefactor = [ // Shape factor
-  sqrt(2*pi/(2*pi - cut[0] + sin(cut[0]))),
-  sqrt(2*pi/(2*pi - cut[3] + sin(cut[3]))),
-  sqrt(2*pi/(2*pi - cut[6] + sin(cut[6])))
+  sqrt(2*pi/(2*pi - cut[0] + sin(cut[0])))
   ];
 
   real[int] R0 = [  // Initial radius of the monolayer [μm]
-    shapefactor[0]*Rc, .5*shapefactor[0]*Rc, 2*shapefactor[0]*Rc,
-    shapefactor[1]*Rc, .5*shapefactor[1]*Rc, 2*shapefactor[1]*Rc,
-    shapefactor[2]*Rc, .5*shapefactor[2]*Rc, 2*shapefactor[2]*Rc
+    shapefactor[0]*Rc
     ];
 
 real[int] AxisCut = [3.*pi/2.];	// Angles of the symmetry axis of each cut

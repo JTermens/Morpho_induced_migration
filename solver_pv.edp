@@ -33,7 +33,7 @@ for (int i=0; i<nSimul; i++){
 
     real ThickOutMesh = Lc/R0[i];
    	real Rarc = fracRarc;
-    real t1 = asin((sin(cut[i]/2.)-Rarc)/(1-Rarc));
+    real t1 = acos((cos(cut[i]/2.)-Rarc)/(1-Rarc));
 
    	real[int] OxPlus = [(1-Rarc)*cos(AxisCut[0]+t1)];
    	real[int] OyPlus = [(1-Rarc)*sin(AxisCut[0]+t1)];

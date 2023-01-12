@@ -17,7 +17,7 @@ real ibd = 5.;	 						// Inner boundary mesh density
 mesh Th,Thb;
   real[int] AxisCut = [3.*pi/2.];
   real Rarc = fracRarc;
-  real t1 = asin((sin(cut/2.)-Rarc)/(1-Rarc));
+  real t1 = acos((cos(cut/2.)-Rarc)/(1-Rarc));
 
 	real[int] OxPlus = [(1-Rarc)*cos(AxisCut[0]+t1)];
 	real[int] OyPlus = [(1-Rarc)*sin(AxisCut[0]+t1)];
@@ -302,7 +302,7 @@ mesh Th,Thb;
 mesh Th,Thb;
   real[int] AxisCut = [3*pi/2.];
 	real Rarc = fracRarc;
-  real t1 = asin((sin(cut/2.)-Rarc)/(1-Rarc));
+  real t1 = acos((cos(cut/2.)-Rarc)/(1-Rarc));
 
 	real[int] OxPlus = [(1-Rarc)*cos(AxisCut[0]+t1)];
 	real[int] OyPlus = [(1-Rarc)*sin(AxisCut[0]+t1)];
@@ -355,7 +355,7 @@ mesh Th,Thb;
 /*// Perturbations of the circular domain with 2 cuts, smoth with 1/f = 0
 mesh Th,Thb;
 	real Rarc = fracRarc;
-  real t1 = asin((sin(cut/2.)-Rarc)/(1-Rarc));
+  real t1 = acos((cos(cut/2.)-Rarc)/(1-Rarc));
 
 	real[int] AxisCut = [pi/2.,3.*pi/2.];
 
@@ -423,7 +423,7 @@ mesh Th,Thb;
 /*// Perturbations of the circular domain with 3 cuts, smoth with 1/f = 0
 mesh Th,Thb;
 	real Rarc = fracRarc;
-  real t1 = asin((sin(cut/2.)-Rarc)/(1-Rarc));
+  real t1 = acos((cos(cut/2.)-Rarc)/(1-Rarc));
 
 	real[int] OxPlus = [(1-Rarc)*cos(AxisCut[0]+t1),(1-Rarc)*cos(AxisCut[1]+t1),(1-Rarc)*cos(AxisCut[2]+t1)];
 	real[int] OyPlus = [(1-Rarc)*sin(AxisCut[0]+t1),(1-Rarc)*sin(AxisCut[1]+t1),(1-Rarc)*sin(AxisCut[2]+t1)];

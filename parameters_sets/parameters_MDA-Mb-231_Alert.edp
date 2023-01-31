@@ -42,7 +42,7 @@ bool bsave = 0;			// To save or not
 int dsave = 10;			// Save frame gap
 
 // Domain parameters
-real[int] cut = [ // Angular length of the cutted portion of the circle
+real[int] cuts = [ // Angular length of the cutted portion of the circle
   pi/2., pi/2., pi/2.,
   pi/4., pi/4., pi/4.,
   pi, pi, pi
@@ -50,16 +50,16 @@ real[int] cut = [ // Angular length of the cutted portion of the circle
 // To start the simulations close to the wetting transition we impose that the domain's area is the
 // same to the one of a circle with critial radius Rc. The shape_factor gives the domain radius so
 // that its area is the same to the one of a unit circle.
-real[int] shapefactor = [ // Shape factor
-  sqrt(2*pi/(2*pi - cut[0] + sin(cut[0]))),
-  sqrt(2*pi/(2*pi - cut[2] + sin(cut[2]))),
-  sqrt(2*pi/(2*pi - cut[6] + sin(cut[6])))
+real[int] shapefactors = [ // Shape factor
+  sqrt(2*pi/(2*pi - cuts[0] + sin(cuts[0]))),
+  sqrt(2*pi/(2*pi - cuts[2] + sin(cuts[2]))),
+  sqrt(2*pi/(2*pi - cuts[6] + sin(cuts[6])))
   ];
 
-real[int] R0 = [  // Initial radius of the monolayer [μm]
-  shapefactor[0]*Rc-2., .5*shapefactor[0]*Rc, 2*shapefactor[0]*Rc,
-  shapefactor[1]*Rc-2., .5*shapefactor[1]*Rc, 2*shapefactor[1]*Rc,
-  shapefactor[2]*Rc-2., .5*shapefactor[2]*Rc, 2*shapefactor[2]*Rc
+real[int] R0s = [  // Initial radius of the monolayer [μm]
+  shapefactors[0]*Rc-2., .5*shapefactors[0]*Rc, 2*shapefactors[0]*Rc,
+  shapefactors[1]*Rc-2., .5*shapefactors[1]*Rc, 2*shapefactors[1]*Rc,
+  shapefactors[2]*Rc-2., .5*shapefactors[2]*Rc, 2*shapefactors[2]*Rc
   ];
 
 real[int] AxisCut = [3.*pi/2.];	// Angles of the symmetry axis of each cut
@@ -78,9 +78,9 @@ if(bsave){
       fileParameters << "R0,h,Lc,eta,xi,zi,zeta,tscale,cut,dt,dsave" /*<< ",gamma"*/ <<  endl;
       // μ = \u03BC in unicode
       fileParameters << "\mu m,\mu m,\mu m,kPa*s,kPa*s/\mu m^2,kPa/\mu m,kPa,s,rad,adim,adim" /*<< ",mN/m"*/ << endl;
-      fileParameters << R0[i]  << "," << h  << "," << Lc    << "," << eta << ","
-                     << xi     << "," << zi << "," << zeta  << "," << tscale << ","
-                     << cut[i] << "," << dt << "," << dsave /*<< "," << gamma*/ << endl;//
+      fileParameters << R0s[i]  << "," << h  << "," << Lc    << "," << eta << ","
+                     << xi      << "," << zi << "," << zeta  << "," << tscale << ","
+                     << cuts[i] << "," << dt << "," << dsave /*<< "," << gamma*/ << endl;//
     }
   }
 }

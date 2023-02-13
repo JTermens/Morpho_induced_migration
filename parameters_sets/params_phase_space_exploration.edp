@@ -3,9 +3,22 @@
 verbosity=0;
 
 string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/phase_space_exploration";
-string simulName = "exploration_test";
+string simulName = "exploration_16x30x30";
 
-int nCut = 16;
+string simulName = "exploration_16x30x30";
+
+// Run 0: pi/6,pi/4,pi/3,5pi/12
+// Run 1: pi/2,7pi/12,2pi/3,3pi/4
+// Run 2: 5pi/6,11pi/12,pi,13pi/12
+// Run 3: 7pi/6,5pi/4,4pi/3,17pi/12,9pi/6
+
+int iRun = 0;
+
+int[int] i0Cut = [0,4,8,12];
+int[int] ifCut = [4,8,12,17];
+
+
+int nCut = 17;
 real minCut = pi/6.;
 real maxCut = 9*pi/6;
 

@@ -298,6 +298,7 @@ mesh Th,Thb;
 	Thb=emptymesh(T);
 */
 
+/*
 // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
 mesh Th,Thb;
   real[int] AxisCut = [3*pi/2.];
@@ -350,7 +351,7 @@ mesh Th,Thb;
   Th=buildmesh(Outer(nO)+Inner(nI),fixedborder=1);
   Th=change(Th,rmInternalEdges=1);
   Thb=emptymesh(Th);
-
+*/
 
 /*// Perturbations of the circular domain with 2 cuts, smoth with 1/f = 0
 mesh Th,Thb;
@@ -573,6 +574,76 @@ mesh Th,Thb;
  Th=change(Th,rmInternalEdges=true);
  Thb=emptymesh(Th);*/
 
+func mesh moonShape(int obd, real rUp, real rDown, real d, real symmAxis){
+
+  real thetaDown = 2.*acos((pow(rDown,2)+pow(d,2)-pow(rUp,2))/(2*rDown*d));
+  real thetaUp = 2.*acos((pow(rDown,2)-pow(d,2)-pow(rUp,2))/(2*rUp*d));
+
+  mesh Th; // Final mesh (Th)
+
+  // Define the borders without mesh adaptation
+  border upArch(t=0, 1){
+    x = rUp*cos((symmAxis-thetaUp/2.)+thetaUp*t);
+    y = rUp*sin((symmAxis-thetaUp/2.)+thetaUp*t);
+    label = 1;}
+  border downArch(t=0,1){
+    x = -d*cos(symmAxis)+rDown*cos((symmAxis+thetaDown/2.)-thetaDown*t);
+    y = -d*sin(symmAxis)+rDown*sin((symmAxis+thetaDown/2.)-thetaDown*t);
+    label = 1;}
+
+
+  Th = buildmesh(
+    upArch(obd*rUp*thetaUp)
+    + downArch(obd*rDown*thetaDown)
+    );
+
+  return Th;
+}
+
+func mesh fourCurveShape(int obd, real rUp, real rDown, real rArch, real d, real symmAxis){
+
+  real yRight = (-d*(pow(d,2) - pow(rDown,2) + pow(rUp,2))*sin(symmAxis)+sqrt(-pow(d,2)*(d - rDown - rUp)*(d + rDown - rUp)*(d - rDown + rUp)*(d +
+   rDown + rUp)*pow(sin(symmAxis),2))/tan(symmAxis))/(2.*pow(d,2));
+  real yLeft = (-d*(pow(d,2) - pow(rDown,2) + pow(rUp,2))*sin(symmAxis)+sqrt(-pow(d,2)*(d - rDown - rUp)*(d + rDown - rUp)*(d - rDown + rUp)*(d +
+   rDown + rUp)*pow(sin(symmAxis),2))/tan(symmAxis))/(2.*pow(d,2));
+  real xRight = (d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis)+sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) +
+   pow((rDown + rUp),2))*pow(sin(symmAxis),2)))/(2*pow(d,2));
+  real xLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis)+sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) +
+   pow((rDown + rUp),2))*pow(sin(symmAxis),2)))/(2*pow(d,2));
+
+  real thetaDownRight = acos((pow(rDown,2)+pow(d,2)-pow(rUp,2))/(2*rDown*d));
+  real thetaDownLeft = acos((pow(rDown,2)+pow(d,2)-pow(rUp,2))/(2*rDown*d));
+  real thetaUpRight = acos((pow(rDown,2)-pow(d,2)-pow(rUp,2))/(2*rUp*d));
+  real thetaUpLeft = acos((pow(rDown,2)-pow(d,2)-pow(rUp,2))/(2*rUp*d));
+
+  mesh Th; // Final mesh (Th)
+
+  // Define the borders without mesh adaptation
+  border upArch(t=0, 1){
+    x = rUp*cos((symmAxis-thetaUpLeft)+(thetaUpLeft+thetaUpRight)*t);
+    y = rUp*sin((symmAxis-thetaUpLeft)+(thetaUpLeft+thetaUpRight)*t);
+    label = 1;}
+  border downArch(t=0,1){
+    x = -d*cos(symmAxis)+rDown*cos((symmAxis+thetaDownRight)-(thetaDownLeft+thetaDownRight)*t);
+    y = -d*sin(symmAxis)+rDown*sin((symmAxis+thetaDownRight)-(thetaDownLeft+thetaDownRight)*t);
+    label = 1;}
+
+
+  Th = buildmesh(
+    upArch(obd*rUp*(thetaUpLeft+thetaUpRight))
+    + downArch(obd*rDown*(thetaDownLeft+thetaDownRight))
+    );
+
+  return Th;
+}
+
+real rUp = 6;
+real rDown = 6;
+real rArch = 1.5;
+real d = 7;
+real symmAxis = pi/2.;
+
+mesh Th = moonShape(obd,rUp,rDown,d,symmAxis);
 
 real Area0=int2d(Th)(1.); // Inital Area of the Fluid Domain
 real Xcm0=int2d(Th)(x)/Area0; //Initial x_cm
@@ -582,4 +653,4 @@ real Ycm0=int2d(Th)(y)/Area0; //Initial y_cm
 plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
 
 // Save mesh
-savemesh(Th,"simple_Th.msh");
+// savemesh(Th,"simple_Th.msh");

@@ -10,8 +10,8 @@ load "ffrandom"
 real cut = pi/2.;						// Angular length of the cutted portion of the circle
 real ThickOutMesh =  0.2;		// Thickness of the outer mesh
 real fracRarc = 0.1;				// adimensionalized radius used to smooth the domain vertices
-real obd = 15.;  						// Outer boundary mesh density
-real ibd = 5.;	 						// Inner boundary mesh density
+real obd = 1/*60.*/;  						// Outer boundary mesh density
+real ibd = 0.2/*15.*/;	 						// Inner boundary mesh density
 
 /*// Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
 mesh Th,Thb;
@@ -600,55 +600,170 @@ func mesh moonShape(int obd, real rUp, real rDown, real d, real symmAxis){
   return Th;
 }
 
-func mesh fourCurveShape(int obd, real rUp, real rDown, real rArch, real d, real symmAxis){
+func mesh fourCurveShape(int obd, real rUp, real rDown, real rLeft,real rRight, real d, real symmAxis, bool bsave){
 
-  real yRight = (-d*(pow(d,2) - pow(rDown,2) + pow(rUp,2))*sin(symmAxis)+sqrt(-pow(d,2)*(d - rDown - rUp)*(d + rDown - rUp)*(d - rDown + rUp)*(d +
-   rDown + rUp)*pow(sin(symmAxis),2))/tan(symmAxis))/(2.*pow(d,2));
-  real yLeft = (-d*(pow(d,2) - pow(rDown,2) + pow(rUp,2))*sin(symmAxis)+sqrt(-pow(d,2)*(d - rDown - rUp)*(d + rDown - rUp)*(d - rDown + rUp)*(d +
-   rDown + rUp)*pow(sin(symmAxis),2))/tan(symmAxis))/(2.*pow(d,2));
-  real xRight = (d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis)+sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) +
-   pow((rDown + rUp),2))*pow(sin(symmAxis),2)))/(2*pow(d,2));
-  real xLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis)+sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) +
-   pow((rDown + rUp),2))*pow(sin(symmAxis),2)))/(2*pow(d,2));
+	mesh Th; // Final mesh (Th)
 
-  real thetaDownRight = acos((pow(rDown,2)+pow(d,2)-pow(rUp,2))/(2*rDown*d));
-  real thetaDownLeft = acos((pow(rDown,2)+pow(d,2)-pow(rUp,2))/(2*rDown*d));
-  real thetaUpRight = acos((pow(rDown,2)-pow(d,2)-pow(rUp,2))/(2*rUp*d));
-  real thetaUpLeft = acos((pow(rDown,2)-pow(d,2)-pow(rUp,2))/(2*rUp*d));
+	if (((d+rUp-rDown-2*rRight) <= 0) || ((d+rUp-rDown-2*rLeft) <= 0)) {
+		cout << "ERROR: d + rUp - rDown - 2*(rRight and rLeft) > 0" << endl;
+		return Th;
+	}
 
-  mesh Th; // Final mesh (Th)
+  real thetaDownRight = acos((pow((rDown+rRight),2)+pow(d,2)-pow((rUp-rRight),2))/(2*(rDown+rRight)*d));
+  real thetaDownLeft = acos((pow((rDown+rLeft),2)+pow(d,2)-pow((rUp-rLeft),2))/(2*(rDown+rLeft)*d));
+  real thetaUpRight = acos((pow((rDown+rRight),2)-pow(d,2)-pow((rUp-rRight),2))/(2*(rUp-rRight)*d));
+  real thetaUpLeft = acos((pow((rDown+rLeft),2)-pow(d,2)-pow((rUp-rLeft),2))/(2*(rUp-rLeft)*d));
+	real thetaRight = acos((pow(d,2)-pow((rUp-rRight),2)-pow(rDown+rRight,2))/(2*(rUp-rRight)*(rDown+rRight)));
+	real thetaLeft = acos((pow(d,2)-pow((rUp-rLeft),2)-pow(rDown+rLeft,2))/(2*(rUp-rLeft)*(rDown+rLeft)));
+
+  real xRight = -(d*(pow(d,2) - (rDown + 2*rRight - rUp)*(rDown + rUp))*cos(symmAxis) -
+    sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*sin(symmAxis))/(2*pow(d,2));
+  real yRight = -(d*(pow(d,2) - (rDown + 2*rRight - rUp)*(rDown + rUp))*sin(symmAxis) +
+		sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
+
+	real xLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis) +
+    sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*sin(symmAxis))/(2*pow(d,2));
+  real yLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*sin(symmAxis) -
+		sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
+
+	if(bsave){
+		{ ofstream fileShapeDetails ("/home/joan/Documents/github/Morpho_induced_migration/lib/shape_details"+ceil(rUp)+".csv");
+
+      fileShapeDetails.fixed;
+			fileShapeDetails << "4 curvature shape" << endl;
+      fileShapeDetails << "rUp,rDown,rLeft,rRight,d" <<  endl;
+      fileShapeDetails << rUp <<","<< rDown <<","<< rLeft <<","<< rRight <<","<< d << endl;
+      fileShapeDetails << ",,Center x,Center y, 1extr x, 1extr y, 2extr x, 2extr y" << endl;
+      fileShapeDetails << "Right Arch,"<< xRight <<","<< yRight <<","<< xRight + rRight*cos(symmAxis-thetaUpRight-thetaRight) <<","<< yRight + rRight*sin(symmAxis-thetaUpRight-thetaRight) <<","<< xRight + rRight*cos(symmAxis-thetaUpRight) <<","<< yRight + rRight*sin(symmAxis-thetaUpRight) << endl;//
+			fileShapeDetails << "Upper Arch,"<< 0 <<","<< 0 <<","<< rUp*cos(symmAxis-thetaUpRight) <<","<< rUp*sin(symmAxis-thetaUpRight) <<","<< rUp*cos(symmAxis+thetaUpLeft) <<","<< rUp*sin(symmAxis+thetaUpLeft) << endl;//
+			fileShapeDetails << "Left Arch,"<< xLeft <<","<< yLeft <<","<< xLeft + rLeft*cos(symmAxis+thetaUpLeft) << yLeft + rLeft*sin(symmAxis+thetaUpLeft) <<","<< xLeft + rLeft*cos(symmAxis+thetaUpLeft+thetaLeft) <<","<< yLeft + rLeft*sin(symmAxis+thetaUpLeft+thetaLeft) << endl;//
+			fileShapeDetails << "Lower Arch,"<< -d*cos(symmAxis) <<","<< -d*sin(symmAxis) <<","<< -d*cos(symmAxis)+rDown*cos(symmAxis-thetaDownRight) <<","<< -d*sin(symmAxis)+rDown*sin(symmAxis-thetaDownRight) <<","<< -d*cos(symmAxis)+rDown*cos(symmAxis+thetaDownLeft) <<","<< -d*sin(symmAxis)+rDown*sin(symmAxis+thetaDownLeft) << endl;//
+    }
+	}
 
   // Define the borders without mesh adaptation
-  border upArch(t=0, 1){
-    x = rUp*cos((symmAxis-thetaUpLeft)+(thetaUpLeft+thetaUpRight)*t);
-    y = rUp*sin((symmAxis-thetaUpLeft)+(thetaUpLeft+thetaUpRight)*t);
-    label = 1;}
-  border downArch(t=0,1){
-    x = -d*cos(symmAxis)+rDown*cos((symmAxis+thetaDownRight)-(thetaDownLeft+thetaDownRight)*t);
-    y = -d*sin(symmAxis)+rDown*sin((symmAxis+thetaDownRight)-(thetaDownLeft+thetaDownRight)*t);
+	border rightArch(t=0, 1){
+    x = xRight + rRight*cos((symmAxis-thetaUpRight-thetaRight)+thetaRight*t);
+    y = yRight + rRight*sin((symmAxis-thetaUpRight-thetaRight)+thetaRight*t);
     label = 1;}
 
+  border upArch(t=0, 1){
+    x = rUp*cos((symmAxis-thetaUpRight)+(thetaUpLeft+thetaUpRight)*t);
+    y = rUp*sin((symmAxis-thetaUpRight)+(thetaUpLeft+thetaUpRight)*t);
+    label = 1;}
+
+	border leftArch(t=0, 1){
+    x = xLeft + rLeft*cos((symmAxis+thetaUpLeft)+thetaLeft*t);
+    y = yLeft + rLeft*sin((symmAxis+thetaUpLeft)+thetaLeft*t);
+    label = 1;}
+	
+  border downArch(t=0,1){
+    x = -d*cos(symmAxis)+rDown*cos((symmAxis+thetaDownLeft)-(thetaDownLeft+thetaDownRight)*t);
+    y = -d*sin(symmAxis)+rDown*sin((symmAxis+thetaDownLeft)-(thetaDownLeft+thetaDownRight)*t);
+    label = 1;}
 
   Th = buildmesh(
-    upArch(obd*rUp*(thetaUpLeft+thetaUpRight))
-    + downArch(obd*rDown*(thetaDownLeft+thetaDownRight))
-    );
+		rightArch(obd*rRight*thetaRight)
+    + upArch(obd*rUp*(thetaUpLeft+thetaUpRight))
+    + leftArch(obd*rLeft*thetaLeft)
+		+ downArch(obd*rDown*(thetaDownLeft+thetaDownRight))
+	);
 
   return Th;
 }
 
-real rUp = 6;
-real rDown = 6;
-real rArch = 1.5;
-real d = 7;
+real Reffs = 156.031;
+real Lc = 50.;
+real rDownFrac = 1.25;
+real rRightFrac = 0.25;
+real rLeftFrac = 0.25;
+real dFrac = 1;
 real symmAxis = pi/2.;
+int labelOut = 1;
 
-mesh Th = moonShape(obd,rUp,rDown,d,symmAxis);
+real rUp = 200;
+real rDown = rDownFrac*rUp;
+real rLeft = rLeftFrac*rUp;
+real rRight = rRightFrac*rUp;
+real d = dFrac*rUp;
+
+mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,true);
+real areaCst = Th.measure;
 
 real Area0=int2d(Th)(1.); // Inital Area of the Fluid Domain
 real Xcm0=int2d(Th)(x)/Area0; //Initial x_cm
 real Ycm0=int2d(Th)(y)/Area0; //Initial y_cm
 
+plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "non-adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
+
+real Reff = sqrt(pi/areaCst)*Reffs;
+real c = Reff/Lc;  		 		 		          // R0 and nematic length ratio
+real bLayerThickness = 1/c;
+
+// FEM Spaces
+fespace Dh(Th, P1); // For distance function (remeshing scheme) and data exports
+
+func mesh closedRemesh(mesh Th0,int obd, int ibd, int labelOut, real smoothCoef){
+
+  int[int] be(1); // To save begin and ends of the curve
+  int minPoints = 5;
+
+  // Extract outer boundary
+  real[int,int] bOut(3,1); real lOut = extractborder(Th0, labelOut, bOut);
+
+  // Remesh the outr boundary using an Akima spline
+  gslspline splineX(gslinterpakima, bOut(2,:), bOut(0,:));
+  gslspline splineY(gslinterpakima, bOut(2,:), bOut(1,:));
+
+  border Out(t=0,lOut){x=splineX(t); y=splineY(t); label=labelOut;}
+  int nOut = round(obd*lOut);
+
+  // Distance function (d is the minimal distance to the boundary)
+  varf vong(B, d)= on(labelOut,B=1);
+  real[int] ong=vong(0,Dh);
+  Dh B =1, d;
+  B[] = ong ? 0 : B[];
+  distance(Th0,B,d[]);
+  // plot(d,Th0, wait=1);
+
+  // Get the new inner boundary vertices (ISO is the contour d==bLayerThickness)
+  real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bLayerThickness,close=0,ISO,beginend=be,smoothing=bLayerThickness*smoothCoef,ratio=1.e0);
+  
+  int nInnerLoops = be.n/2;
+  // cout << be << endl;
+
+  int[int] nInner(nInnerLoops); // numer of points per loop
+  int nCorrectLoops = 0; // number of loops with more than minPoints
+  // find number of points and count > minPoints
+  for (int i=0;  i < nInnerLoops; i++){
+    real lInner=ISO(2,be(i*2+1)-1);
+    nInner[i] = round(ibd*lInner);
+    if(nInner[i] > minPoints){nCorrectLoops++;}
+  }
+
+  // if the number of points is less than minPoints, filter the border for safety
+  int[int] nInnerFilter(nCorrectLoops);
+  int[int] beFilter(2*nCorrectLoops);
+
+  for (int i=0;  i < nInnerLoops; i++){
+    if(nInner[i] > minPoints){
+      nInnerFilter[i] = nInner[i];
+      beFilter[2*i] = be[i*2];
+      beFilter[2*i+1] = be[i*2+1];
+    }
+  }
+  
+  border Inner(t=0,1;i) {P=Curve(ISO,beFilter(i*2),beFilter(i*2+1)-1,t);} // Inner boundary multi-border
+  // cout << nInner << endl;
+
+  // plot(Out(nOut),Inner(nInnerFilter)/*, wait=1*/);
+  mesh Th = buildmesh(Out(nOut)+Inner(nInnerFilter));
+  Th = change(Th, rmInternalEdges=1);
+
+  return Th;
+}
+
+Th = closedRemesh(Th,obd,ibd,labelOut,.5);
 
 plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
 

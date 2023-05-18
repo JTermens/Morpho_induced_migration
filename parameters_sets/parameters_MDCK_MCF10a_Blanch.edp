@@ -1,15 +1,15 @@
 // Parameter file for MDCK/MCF10a cells
 // Estimations done by Carles Blanch at Blanch et al, Soft Matter 2017
 
-verbosity=0;
+verbosity=1;
 
 string rootDir =
 "/home/joan/Documents/Simul_runs";
 
-string[int] SimulNames = [
+string[int] simulNames = [
   "MDCK_MCF10a_1pi2_zeta-2"
   ];
-string[int] pathDirs(1);
+string[int] simulHomeDirs(1);
 
 
 // Physiscal Parameters
@@ -27,7 +27,7 @@ real gamma = 5.;    // Surface tension, [mN/m]=[kPa·μm]
 // Numerical Parameters
 real obd = 60.;		// Outer boundary mesh density
 real ibd = 15.;		// Inner boundary mesh density
-real dt = 0.001;			// Adim. time step
+real dt = 0.05;			// Adim. time step
 int NiterTime = 5000;		// Number of iterations
 int nSimul = 1;			// Number of simulations
 real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
@@ -36,35 +36,42 @@ real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
 int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
 
 // Save parameters
-bool bsave = 1;			// To save or not
+bool bsave = 0;			// To save or not
 int dsave = 10;			// Save frame gap
 
 // Domain parameters
-real[int] cut = [ // Angular length of the cutted portion of the circle
-  pi/2.
-  ];
-// To start the simulations close to the wetting transition we impose that the domain's area is the
-// same to the one of a circle with critial radius Rc. The shape_factor gives the domain radius so
-// that its area is the same to the one of a unit circle.
-real[int] shapefactor = [ // Shape factor
-  sqrt(2*pi/(2*pi - cut[0] + sin(cut[0])))
-  ];
+real[int] rDownFracs = [1.25];
+real[int] rLeftFracs = [0.25];
+real[int] rRightFracs = [0.25];
+real[int] dFracs = [1];
+real[int] symmAxes = [pi/2.];
+real[int] Reffs = [100];
+// real[int] cut = [ // Angular length of the cutted portion of the circle
+//   pi/2.
+//   ];
+// // To start the simulations close to the wetting transition we impose that the domain's area is the
+// // same to the one of a circle with critial radius Rc. The shape_factor gives the domain radius so
+// // that its area is the same to the one of a unit circle.
+// real[int] shapefactor = [ // Shape factor
+//   sqrt(2*pi/(2*pi - cut[0] + sin(cut[0])))
+//   ];
 
-  real[int] R0 = [  // Initial radius of the monolayer [μm]
-    shapefactor[0]*Rc
-    ];
+//   real[int] R0 = [  // Initial radius of the monolayer [μm]
+//     shapefactor[0]*Rc
+//     ];
 
-real[int] AxisCut = [3.*pi/2.];	// Angles of the symmetry axis of each cut
-real fracRarc = 0.1;		// Adimensionalized radius used to smooth the domain vertices
+// real[int] AxisCut = [3.*pi/2.];	// Angles of the symmetry axis of each cut
+// real fracRarc = 0.1;		// Adimensionalized radius used to smooth the domain vertices
 
+/*
 if(bsave){
   for (int i=0; i<nSimul; i++){
     // the results folder
-    pathDirs[i] = rootDir+"/"+SimulNames[i];
-    exec("mkdir "+pathDirs[i]);
-    exec("mkdir "+pathDirs[i]+"/solutions");	// Make and save the solutions in a separeted folder
-    exec("mkdir "+pathDirs[i]+"/meshes");	// Make and save the meshes in a separeted folder
-    { ofstream fileParameters (pathDirs[i]+"/parameters.csv");
+    simulHomeDirs[i] = rootDir+"/"+SimulNames[i];
+    exec("mkdir "+simulHomeDirs[i]);
+    exec("mkdir "+simulHomeDirs[i]+"/solutions");	// Make and save the solutions in a separeted folder
+    exec("mkdir "+simulHomeDirs[i]+"/meshes");	// Make and save the meshes in a separeted folder
+    { ofstream fileParameters (simulHomeDirs[i]+"/parameters.csv");
 
       fileParameters.fixed;
       fileParameters << "R0,h,Lc,eta,xi,zi,zeta,tscale,cut,dt,dsave" << ",gamma" <<  endl;
@@ -76,3 +83,4 @@ if(bsave){
     }
   }
 }
+*/

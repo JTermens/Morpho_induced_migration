@@ -636,8 +636,9 @@ func mesh fourCurveShape(int obd, real rUp, real rDown, real rLeft,real rRight, 
       fileShapeDetails << ",,Center x,Center y, 1extr x, 1extr y, 2extr x, 2extr y" << endl;
       fileShapeDetails << "Right Arch,"<< xRight <<","<< yRight <<","<< xRight + rRight*cos(symmAxis-thetaUpRight-thetaRight) <<","<< yRight + rRight*sin(symmAxis-thetaUpRight-thetaRight) <<","<< xRight + rRight*cos(symmAxis-thetaUpRight) <<","<< yRight + rRight*sin(symmAxis-thetaUpRight) << endl;//
 			fileShapeDetails << "Upper Arch,"<< 0 <<","<< 0 <<","<< rUp*cos(symmAxis-thetaUpRight) <<","<< rUp*sin(symmAxis-thetaUpRight) <<","<< rUp*cos(symmAxis+thetaUpLeft) <<","<< rUp*sin(symmAxis+thetaUpLeft) << endl;//
-			fileShapeDetails << "Left Arch,"<< xLeft <<","<< yLeft <<","<< xLeft + rLeft*cos(symmAxis+thetaUpLeft) << yLeft + rLeft*sin(symmAxis+thetaUpLeft) <<","<< xLeft + rLeft*cos(symmAxis+thetaUpLeft+thetaLeft) <<","<< yLeft + rLeft*sin(symmAxis+thetaUpLeft+thetaLeft) << endl;//
+			fileShapeDetails << "Left Arch,"<< xLeft <<","<< yLeft <<","<< xLeft + rLeft*cos(symmAxis+thetaUpLeft) <<","<< yLeft + rLeft*sin(symmAxis+thetaUpLeft) <<","<< xLeft + rLeft*cos(symmAxis+thetaUpLeft+thetaLeft) <<","<< yLeft + rLeft*sin(symmAxis+thetaUpLeft+thetaLeft) << endl;//
 			fileShapeDetails << "Lower Arch,"<< -d*cos(symmAxis) <<","<< -d*sin(symmAxis) <<","<< -d*cos(symmAxis)+rDown*cos(symmAxis-thetaDownRight) <<","<< -d*sin(symmAxis)+rDown*sin(symmAxis-thetaDownRight) <<","<< -d*cos(symmAxis)+rDown*cos(symmAxis+thetaDownLeft) <<","<< -d*sin(symmAxis)+rDown*sin(symmAxis+thetaDownLeft) << endl;//
+			fileShapeDetails << "Lower Upper Arch,"<< -d*cos(symmAxis) <<","<< -d*sin(symmAxis) <<","<< -d*cos(symmAxis)+(rDown+rRight)*cos(symmAxis-thetaDownRight) <<","<< -d*sin(symmAxis)+(rDown+rRight)*sin(symmAxis-thetaDownRight) <<","<< -d*cos(symmAxis)+(rDown+rRight)*cos(symmAxis+thetaDownLeft) <<","<< -d*sin(symmAxis)+(rDown+rRight)*sin(symmAxis+thetaDownLeft) << endl;//
     }
 	}
 
@@ -681,7 +682,7 @@ real dFrac = 1;
 real symmAxis = pi/2.;
 int labelOut = 1;
 
-real rUp = 200;
+real rUp = 50;
 real rDown = rDownFrac*rUp;
 real rLeft = rLeftFrac*rUp;
 real rRight = rRightFrac*rUp;

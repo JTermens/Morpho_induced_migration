@@ -143,7 +143,7 @@ for (int i=0; i<nSimul; i++){
   // Problem Parameters
   real a = La/Reffs[i]; 			// Active length, zeta/zi, and effective radius ratio
   real b = Reffs[i]/lambda;		// Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
-  real c = Reff/Lc[i];  		 			// Effective radius and nematic length ratio
+  real c = Reffs[i]/Lc[i];  		 			// Effective radius and nematic length ratio
 	real bLayerThickness = 1/c;	// Adim. nematic length
 
 	if (bsave){
@@ -385,12 +385,12 @@ for (int i=0; i<nSimul; i++){
 
 	real Xcm = Xcm0; // Current x of the center of mass (x_cm)
 	real Ycm = Ycm0; // Current y of the center of mass (y_cm)
-  real[int] XcmP(2) = [Xcm0,Xcm0]; // Previous x_cms (-dt & -2*dt)
-	real[int] YcmP(2) = [Ycm0,Ycm0]; // Previous y_cms (-dt & -2*dt)
-	real Vxcm = (Xcm-XcmP)/dt; // Center of mass x velocity (backward)
-	real Vycm = (Ycm-YcmP)/dt; // Center of mass y velocity (backward)
-	real Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/power(dt,2); // Center of mass x acceleration (2nd order backward)
-	real Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/power(dt,2); // Center of mass y acceleration (2nd order backward)
+  real[int] XcmP = [Xcm0,Xcm0]; // Previous x_cms (-dt & -2*dt)
+	real[int] YcmP = [Ycm0,Ycm0]; // Previous y_cms (-dt & -2*dt)
+	real Vxcm = (Xcm-XcmP[0])/dt; // Center of mass x velocity (backward)
+	real Vycm = (Ycm-YcmP[0])/dt; // Center of mass y velocity (backward)
+	real Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
+	real Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 
 	real Pxcm = int2d(Th)(px)/Areai; // Current P_x cm
 	real Pycm = int2d(Th)(py)/Areai; // Current P_y cm
@@ -404,7 +404,7 @@ for (int i=0; i<nSimul; i++){
 	real IxP = Ix; // Previous 2n Moment of x
 	real IyP = Iy; // Previous 2n Moment of y
 	real dIxdt = (Ix-IxP)/dt; // time-derivative of Ix (backward)
-	real dIxdt = (Iy-IyP)/dt; // time-derivative of Iy (backward)
+	real dIydt = (Iy-IyP)/dt; // time-derivative of Iy (backward)
 
 	real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai; // Average divergergence of the velocity
 	real divTermsX = int2d(Th)(x*((dvxdx+dvydy)-avgDivV))/Areai;	// Current value of the Div terms of V_x cm
@@ -521,10 +521,10 @@ for (int i=0; i<nSimul; i++){
 
 		Xcm = int2d(Th)(x)/Areai;	// Current Xcm
 		Ycm = int2d(Th)(y)/Areai;	// Current Ycm
-		Vxcm = (Xcm-XcmP)/dt; // Center of mass x velocity (backward)
-		Vycm = (Ycm-YcmP)/dt; // Center of mass y velocity (backward)
-		Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/power(dt,2); // Center of mass x acceleration (2nd order backward)
-		Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/power(dt,2); // Center of mass y acceleration (2nd order backward)
+		Vxcm = (Xcm-XcmP[0])/dt; // Center of mass x velocity (backward)
+		Vycm = (Ycm-YcmP[0])/dt; // Center of mass y velocity (backward)
+		Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
+		Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 
 		Pxcm = int2d(Th)(px)/Areai;	// Current P_x cm
 		Pycm = int2d(Th)(py)/Areai;	// Current P_y cm
@@ -534,7 +534,7 @@ for (int i=0; i<nSimul; i++){
 		Ix = int2d(Th)(pow(y-Ycm,2));	// 2nd Moment of area with respect to x axis at the CM
 		Iy = int2d(Th)(pow(x-Xcm,2));	// 2nd Moment of area with respect to y axis at the CM
 		dIxdt = (Ix-IxP)/dt; // time-derivative of Ix (backward)
-		dIxdt = (Iy-IyP)/dt; // time-derivative of Iy (backward)
+		dIydt = (Iy-IyP)/dt; // time-derivative of Iy (backward)
 
 		avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;								// Average divergergence of the velocity
 		divTermsX = int2d(Th)(x*(dvxdx+dvydy-avgDivV))/Areai;	// Current value of the Div terms of V_x cm
@@ -543,7 +543,7 @@ for (int i=0; i<nSimul; i++){
   	// Plot v
   	// if (verbosity) { // Show it always, regardless of the verbosity
   	Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
-  		plot(/*Th,[NDerP1,NDerP2],/*CurlV*/vABS, value = true, fill = true, nbiso = 64, wait = false, bb=[[Xcm-2,Ycm-2],[Xcm+2,Ycm+2]],
+  		plot(/*Th,[NDerP1,NDerP2],/*CurlV*/vABS, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
   				cmm = "t="+(dt*iterTime)+";  A/A0="+(Areai/Area0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
   											+"), (vx,vy)=("+Vxcm+","+Vycm+")"
   											+"), A^-1(c/b)int p=("+(c/b)*Pxcm+","+(c/b)*Pycm+")");
@@ -552,6 +552,7 @@ for (int i=0; i<nSimul; i++){
   	// Export data
   	if(iterTime % dsave == 0 && bsave==1){
 
+			string fileNameGlobalSol = "/global_sol.csv";
 			string fileNameLocalSol = "/local_sol/sol_0000"+iterTime+".txt";
 			string fileNameMsh = "/msh/mesh_0000"+iterTime+".msh";
 
@@ -580,7 +581,7 @@ for (int i=0; i<nSimul; i++){
 				fileGlobalSol.fixed;
   			fileGlobalSol	<< iterTime*dt << "," << Xcm 		 << "," << Ycm 			<< "," << Pxcm 			<< "," << Pycm 			<< ","
 											<< dPxcmdt 		 << "," << dPycmdt << "," << Vxcm 		<< "," << Vycm 			<< "," << Axcm 			<< ","
-											<< Aycm 			 << "," << Area 	 << "," << dAreadt 	<< "," << Ix 				<< "," << Iy 				<< ","
+											<< Aycm 			 << "," << Areai 	 << "," << dAreadt 	<< "," << Ix 				<< "," << Iy 				<< ","
 											<< dIxdt 			 << "," << dIydt 	 << "," << avgDivV 	<< "," << divTermsX << "," << divTermsY << endl;
   		}
 

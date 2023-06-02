@@ -1,6 +1,6 @@
 // Parameter file for testing optimized sets of parameters
 
-verbosity=0;
+verbosity=1;
 
 string rootDir =
 "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_test";
@@ -10,8 +10,8 @@ string[int] simulNames = ["test_2pi3_Lc4"];
 
 // Physiscal Parameters
 real h = 5;			// Monolayer heigth, [μm]
-real[int] Lc = [40.]; // Nematic length, sqrt(K/a), [μm]
-real eta = 50e3;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
+real[int] Lc = [50.]; // Nematic length, sqrt(K/a), [μm]
+real eta = 25e3;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
 real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
 real zi = 0.1;			// Traction coefficient, [kPa/μm], 0.04-0.16 kPa/μm
 real zeta = -20;		// -Contractility coefficient, [kPa], 5-50 kPa
@@ -47,3 +47,21 @@ real[int] Reffs = [
 
 real symmAxis = pi/2.;	// Angles of the symmetry axis of each cut
 real fracRarc = 0.1;		// Adimensionalized radius used to smooth the domain vertices
+
+if(verbosity){
+  for(int i=0; i<nSimul; i++){
+    cout << "Simulation: " << simulNames[i] << endl;
+    cout << " |_ Problem lengths and timescales:" << endl;
+    cout << "   |_ Reff = " << Reffs[i] << " um" << endl;
+    cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
+    cout << "   |_ Lc = " << Lc[i] << " um" << endl;
+    cout << "   |_ La = " << zeta/zi << " um" << endl;
+    cout << "   |_ tscale = " << eta/(zi*Reffs[i]) << " s" << endl;
+    cout << "   |_ charact vel = " << 3600*zi*pow(Reffs[i],2)/eta << " um/h" << endl;
+    cout << " |_ Adim. parameters:" << endl;
+    cout << "   |_ a = " << zeta/(zi*Reffs[i]) << endl;
+    cout << "   |_ b = " << Reffs[i]/sqrt(eta/xi) << endl;
+    cout << "   |_ c = " << Reffs[i]/Lc[i] << endl;
+  }
+  cout << "\nStarting simulations ..." << endl;
+}

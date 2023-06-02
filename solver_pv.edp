@@ -143,7 +143,7 @@ for (int i=0; i<nSimul; i++){
   // Problem Parameters
   real a = La/Reffs[i]; 			// Active length, zeta/zi, and effective radius ratio
   real b = Reffs[i]/lambda;		// Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
-  real c = Reffs[i]/Lc[i];  		 			// Effective radius and nematic length ratio
+  real c = Reffs[i]/Lc;  		 			// Effective radius and nematic length ratio
 	real bLayerThickness = 1/c;	// Adim. nematic length
 
 	if (bsave){
@@ -161,7 +161,7 @@ for (int i=0; i<nSimul; i++){
 			fileParams << "cut,R0,Reff,fracRarc,areaCst,h,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" /*<< ",gamma"*/ <<  endl;
 			fileParams << "rad,adim,um,adim,adim,um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim" /*<< ",kPa*um"*/ << endl;
 			fileParams << cut 		<< "," << R0 		 << "," << Reffs[i] << "," << fracRarc << ","
-								 << areaCst << "," << h 		 << "," << Lc[i] 		<< "," << lambda 	 << ","
+								 << areaCst << "," << h 		 << "," << Lc 			<< "," << lambda 	 << ","
 								 << La 			<< "," << eta 	 << "," << xi 			<< "," << zi 			 << "," 
 								 << zeta 		<< "," << tscale << "," << dt 			<< "," << dsave /*<< "," << gamma*/ << endl;// 
     }
@@ -252,7 +252,7 @@ for (int i=0; i<nSimul; i++){
 
 
   cout << "Simul: " << simulName << ", saving = " << bsave << "\nReff = " << Reffs[i] /*<< ", Rc = " << Rc*/
-	<< ", lambda = " << lambda << ", Lc = " << Lc[i] << ", La = " << La << ", tscale = " << tscale << endl;
+	<< ", lambda = " << lambda << ", Lc = " << Lc << ", La = " << La << ", tscale = " << tscale << endl;
 
   if (verbosity) {
   	plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");

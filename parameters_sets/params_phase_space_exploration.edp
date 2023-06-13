@@ -2,7 +2,7 @@
 
 verbosity=0;
 
-string rootDir = "/home/joan/Documents/Tesi_doct/Spontaneous_tissue_motility/Simul_runs/phase_space_exploration";
+string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 string simulName = "exploration_30x30x30x30";
 
 string simulName = "exploration_30x30x30x30";

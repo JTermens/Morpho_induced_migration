@@ -44,7 +44,8 @@ load "isoline"
 load "gsl"
 
 //include <iostream>;
-include "/home/joan/Documents/Simul_runs/phase_space_exploration/params_phase_space_exploration.edp";
+// include "/home/joan/Documents/Simul_runs/phase_space_exploration/params_phase_space_exploration.edp";
+include "/home/joan/Documents/github/Morpho_induced_migration/parameters_sets/params_phase_space_exploration.edp";
 
 string simulHomeDir = rootDir+"/"+simulName;
 string fileNameParams = "/params.csv";

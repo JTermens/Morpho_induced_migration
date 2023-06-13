@@ -399,8 +399,8 @@ for (int i=0; i<nSimul; i++){
 	real dPxcmdt = (Pxcm-PxcmP)/dt; // time-derivative of P_x cm (backward)
 	real dPycmdt = (Pycm-PycmP)/dt; // time-derivative of P_y cm (backward)
 
-	real Ix = int2d(Th)(pow(y-Ycm,2));	// Current 2nd Moment of area with respect to x axis at the CM
-	real Iy = int2d(Th)(pow(x-Xcm,2));	// Current 2nd Moment of area with respect to y axis at the CM
+	real Ix = int2d(Th)(pow(y-Ycm,2))/Areai;	// Current 2nd Moment of area with respect to x axis at the CM
+	real Iy = int2d(Th)(pow(x-Xcm,2))/Areai;	// Current 2nd Moment of area with respect to y axis at the CM
 	real IxP = Ix; // Previous 2n Moment of x
 	real IyP = Iy; // Previous 2n Moment of y
 	real dIxdt = (Ix-IxP)/dt; // time-derivative of Ix (backward)
@@ -492,7 +492,7 @@ for (int i=0; i<nSimul; i++){
 		dpxdx[]=solGradP(0:dPol.ndof-1);
 
   	// Assembly V
-  	varf lv(v, u) = int2d(Th)( a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)(                                                           (p'*u) ); //contractility + active traction
+  	varf lv(v, u) = int2d(Th)( a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility + active traction
   	matrix Av = av(Vel, Vel);  			// LHS matrix
   	real[int] bv = lv(0, Vel);			// RHS
 

@@ -2,13 +2,15 @@
 
 verbosity=1;
 
-string rootDir =
-"/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_test";
+// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_test";
+string rootDir = "/home/joan/Documents/Tesi_doct/Simul_runs/optimized_params_time_evol";
 
 string[int] simulNames = [
-  "test_2pi3_Lc50_Rc",
-  "test_1pi6_Lc50_Rc",
-  "test_1pi6_Lc50_08Rc"
+  "time_evol_1pi3_Lc50_Rc",
+  "time_evol_2pi3_Lc50_Rc",
+  "time_evol_3pi3_Lc50_Rc",
+  "time_evol_1pi6_Lc50_Rc",
+  "time_evol_1pi6_Lc50_08Rc"
   ];
 
 
@@ -44,14 +46,18 @@ int dsave = 50;			// Save frame gap
 
 // Domain parameters
 real[int] cuts = [ // Angular length of the cutted portion of the circle
+  1.*pi/3.,
   2.*pi/3.,
+  3.*pi/3.,
   1.*pi/6.,
   1.*pi/6.
-  ];
+];
 
 // Effective initial radius of the monolayer [μm].
 // Reffs is the radius of a circle with the same area as the monolayer.
 real[int] Reffs = [ 
+  Rc,
+  Rc,
   Rc,
   Rc,
   .8*Rc

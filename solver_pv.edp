@@ -99,7 +99,6 @@ func mesh oneCutSmooth(int obd, real cut,real r0, real rArch, real symmAxis, int
 	return Th;
 }
 
-
 //Macros
 macro pD [pDx, pDy]																// P2 extension for Dirichlet data
 macro p [px, py]																	// Polarity vector field
@@ -136,7 +135,7 @@ for (int i=0; i<nSimul; i++){
 	// Problem length & timescales
 	real R0 = sqrt(pi/areaCst); 		 // Adimensionalized radius so that adim Area = pi
 	real lambda = sqrt(eta/xi); 		 // hydrodynamic sceening length
-	real La = zeta/zi; 							 // active length; < 0 (> 0) for contractile (extensile) active stresses
+	real La = abs(zeta)/zi; 				 // active length; < 0 (> 0) for contractile (extensile) active stresses
 	// real Lc 											 // nematic length, defined in the parameters file
 	real tscale = eta/(zi*Reffs[i]); // Problem timescale
 
@@ -353,7 +352,7 @@ for (int i=0; i<nSimul; i++){
 
   // Bilinear and linear variational forms V
   varf av(v, u) = int2d(Th)( ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) )  + int2d(Th)( b*(v'*u) ); // -viscosity -friction
-  varf lv(v, u) = int2d(Th)( a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility +active traction
+  varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility +active traction
 
   // Assembly V
   matrix Av = av(Vel, Vel);
@@ -492,7 +491,7 @@ for (int i=0; i<nSimul; i++){
 		dpxdx[]=solGradP(0:dPol.ndof-1);
 
   	// Assembly V
-  	varf lv(v, u) = int2d(Th)( a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility + active traction
+  	varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility + active traction
   	matrix Av = av(Vel, Vel);  			// LHS matrix
   	real[int] bv = lv(0, Vel);			// RHS
 

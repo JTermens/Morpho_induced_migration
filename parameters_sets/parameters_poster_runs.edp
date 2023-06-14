@@ -1,6 +1,6 @@
 // Parameter file for testing optimized sets of parameters
 
-verbosity=1;
+verbosity=0;
 
 // string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_test";
 string rootDir = "/home/joan/Documents/Simul_runs/optimized_params_time_evol";
@@ -73,11 +73,11 @@ if(verbosity){
     cout << "   |_ Reff = " << Reffs[i] << " um" << endl;
     cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
     cout << "   |_ Lc = " << Lc << " um" << endl;
-    cout << "   |_ La = " << zeta/zi << " um" << endl;
+    cout << "   |_ La = " << abs(zeta/zi) << " um" << endl;
     cout << "   |_ tscale = " << eta/(zi*Reffs[i]) << " s" << endl;
     cout << "   |_ charact vel = " << 3600*zi*pow(Reffs[i],2)/eta << " um/h" << endl;
     cout << " |_ Adim. parameters:" << endl;
-    cout << "   |_ a = " << zeta/(zi*Reffs[i]) << endl;
+    cout << "   |_ a = " << abs(zeta)/(zi*Reffs[i]) << endl;
     cout << "   |_ b = " << Reffs[i]/sqrt(eta/xi) << endl;
     cout << "   |_ c = " << Reffs[i]/Lc << endl;
   }

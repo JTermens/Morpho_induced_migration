@@ -112,6 +112,7 @@ func mesh oneCutSmooth(int obd, real cut,real r0, real rArch, real symmAxis, int
 
 	return Th;
 }
+
 // Remeshing without boundary Layer
 func mesh closedRemeshNoBndLayer(mesh Th0,int obd, int labelOut){
 	// Smooth the outer boundary pieces

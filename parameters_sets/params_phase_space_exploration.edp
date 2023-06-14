@@ -2,8 +2,8 @@
 
 verbosity=0;
 
-string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/prameter_space_exploration";
-// string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
+// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/prameter_space_exploration";
+string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 string simulName = "exploration_30x30x30x30";
 
 // Run 0:   pi/8,    pi/6,   5pi/24,   pi/4,  7pi/24 // i=0,  i<5

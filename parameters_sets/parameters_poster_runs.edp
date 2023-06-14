@@ -3,7 +3,7 @@
 verbosity=1;
 
 // string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_test";
-string rootDir = "/home/joan/Documents/Tesi_doct/Simul_runs/optimized_params_time_evol";
+string rootDir = "/home/joan/Documents/Simul_runs/optimized_params_time_evol";
 
 string[int] simulNames = [
   "time_evol_1pi3_Lc50_Rc",

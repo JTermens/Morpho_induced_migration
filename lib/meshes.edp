@@ -616,7 +616,7 @@ func mesh oneCutSmooth(int obd, real cut,real r0, real rArch, real symmAxis, int
 	// Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
 
 	real cutAxis = symmAxis+pi;
-  real t1 = acos((cos(cut/2.)-rArch)/(1-rArch));
+  real t1 = acos((cos(cut/2.)-rArch/r0)/(1-rArch/r0));
 
 	real OxRight = (r0-rArch)*cos(cutAxis+t1);
 	real OyRight = (r0-rArch)*sin(cutAxis+t1);

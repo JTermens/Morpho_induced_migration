@@ -89,13 +89,18 @@ func mesh oneCutSmooth(int obd, real cut,real r0, real rArch, real symmAxis, int
 	// Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
 
 	real cutAxis = symmAxis+pi;
-  real t1 = acos((cos(cut/2.)-(rArch/r0))/(1-(rArch/r0)));
+  real t1 = asin((sin(cut/2.)-(rArch/r0))/(1-(rArch/r0)));
+
+	// cout << "R0 = " << r0 << ", RArc = " << rArch << ", cut axis = " << cutAxis << endl;
+	// cout << "theta1 = " << t1 << endl;
 
 	real OxRight = (r0-rArch)*cos(cutAxis+t1);
 	real OyRight = (r0-rArch)*sin(cutAxis+t1);
 	real OxLeft = (r0-rArch)*cos(cutAxis-t1);
 	real OyLeft = (r0-rArch)*sin(cutAxis-t1);
 	real lenCut = sqrt((OxRight-OxLeft)*(OxRight-OxLeft) + (OyRight-OyLeft)*(OyRight-OyLeft));
+
+	// cout << "O_right = (" << OxRight <<", "<< OyRight <<"); O_left = (" << OxLeft <<", "<< OyLeft <<"); lenCut = " << lenCut << endl;
 
   border GammaArchLeft(t=0,1){x=OxLeft+rArch*cos(cutAxis-t1*(1-t)); y=OyLeft+rArch*sin(cutAxis-t1*(1-t)); label=labelOut;}
 	border GammaCut(t=0,1){x=((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t);
@@ -202,7 +207,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				real LambdaLc = iLambdaLc*(maxLambdaLc-minLambdaLc)/(nLambdaLc-1) + minLambdaLc; // hydrodynamic screening and nematic length ratio
 
 				// Adim with length = Reff (numerically good)
-				real a = LaLc/RLc;	// La/R
+				real a = LaLc;	// La/R
 				real b = RLc/LambdaLc; // R/lambda
 				real c = RLc; // R/Lc
 				real dt = adimdt;
@@ -277,7 +282,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 
 				// Bilinear and linear variational forms V
 				varf av(v, u) = int2d(Th)( ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) )  + int2d(Th)( b*(v'*u) ); // -viscosity -friction
-				varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility +active traction
+				varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( c*(p'*u) ); //contractility +active traction
 
 				// Assembly V
 				matrix Av = av(Vel, Vel);
@@ -411,7 +416,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 					p = p + pD;
 
 					// Assembly V
-					varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility + active traction
+					varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( c*(p'*u) ); //contractility + active traction
 					matrix Av = av(Vel, Vel);  			// LHS matrix
 					real[int] bv = lv(0, Vel);			// RHS
 

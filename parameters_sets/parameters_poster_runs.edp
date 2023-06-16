@@ -1,43 +1,54 @@
 // Parameter file for testing optimized sets of parameters
 
-verbosity=0;
+verbosity=1;
 
-string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_time_evol";
-// string rootDir = "/home/joan/Documents/Simul_runs/optimized_params_time_evol";
+// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_time_evol";
+ string rootDir = "/home/joan/Documents/Simul_runs/optimized_params_time_evol";
 
 string[int] simulNames = [
+  "time_evol_1pi6_4c_Rc",
+  "time_evol_1pi3_4c_Rc",
   "time_evol_2pi3_4c_Rc",
-  "time_evol_1pi6_4c_08Rc",
-  "time_evol_1pi3_Lc50_Rc",
-  "time_evol_3pi3_Lc50_Rc",
-  "time_evol_1pi6_Lc50_Rc"
+  "time_evol_3pi3_4c_Rc",
+  "time_evol_4pi3_4c_Rc"
   ];
 
+int iSimul=4;
 
 // Physiscal Parameters
+
+// Effective initial radius of the monolayer [μm].
+// Reffs is the radius of a circle with the same area as the monolayer.
+real[int] R0s = [
+  145.007,
+  147.445,
+  166.806,
+  227.601,
+  413.227
+  ];
+// 166.593409,145.00,
+
 real h = 5;			    // Monolayer heigth, [μm]
-real[int] Lc = [ // Nematic length, sqrt(K/a), [μm]
-  41.648352,
-  36.250000
-];
+real[int] Lc = R0s/4; // Nematic length, sqrt(K/a), [μm]
+
       
 real eta = 5e4;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
 real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
 real zi = 0.1;			// Traction coefficient, [kPa/μm], 0.04-0.16 kPa/μm
 real zeta = -20;		// -Contractility coefficient, [kPa], 5-50 kPa
-real Rc = .5*(3.*Lc[0]-zeta/zi);    // Critical radius of a circular monolayer, [μm]
+// real[int] Rc = .5*(3.*Lc-zeta/zi);    // Critical radius of a circular monolayer, [μm]
 // If surface tension
 // real gamma = -5.;    // Surface tension, [mN/m]=[kPa·μm]
 // If different friction
-real xiP = xi;      // Parallel friction coefficient
-real xiA = 2*xi;    // Anti-parallel friction coefficient
+// real xiP = xi;      // Parallel friction coefficient
+// real xiA = 2*xi;    // Anti-parallel friction coefficient
 
 // Numerical Parameters
 real obd = 60.;		// Outer boundary mesh density
 real ibd = 15.;		// Inner boundary mesh density
-real dt = 0.001;			// Adim. time step
-int NiterTime = 20000;		// Number of iterations
-int nSimul = 1;			// Number of simulations
+real dt = 1e-1;			// Adim. time step
+int NiterTime = 300/*20000*/;		// Number of iterations
+int nSimul = 5;			// Number of simulations
 real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
 
 // If surface tension or different friction
@@ -45,45 +56,35 @@ real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
 int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
 
 // Save parameters
-bool bsave = 1;			// To save or not
+bool bsave = 0;			// To save or not
 int dsave = 20;			// Save frame gap
 
 // Domain parameters
 real[int] cuts = [ // Angular length of the cutted portion of the circle
-  2.*pi/3.,
   1.*pi/6.,
   1.*pi/3.,
+  2.*pi/3.,
   3.*pi/3.,
-  1.*pi/6.
+  4.*pi/3.
 ];
-
-// Effective initial radius of the monolayer [μm].
-// Reffs is the radius of a circle with the same area as the monolayer.
-real[int] Reffs = [ 
-  166.593409,
-  145.000000,
-  Rc,
-  Rc,
-  Rc
-  ];
 
 real symmAxis = pi/2.;	// Angles of the symmetry axis of each cut
 real fracRarc = 0.1;		// Adimensionalized radius used to smooth the domain vertices
 
 if(verbosity){
-  for(int i=0; i<nSimul; i++){
+  for (int i=iSimul/*0*/; i<(iSimul+1)/*nSimul*/; i++){
     cout << "Simulation: " << simulNames[i] << endl;
     cout << " |_ Problem lengths and timescales:" << endl;
-    cout << "   |_ Reff = " << Reffs[i] << " um" << endl;
+    cout << "   |_ Reff = " << R0s[i] << " um" << endl;
     cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
-    cout << "   |_ Lc = " << Lc << " um" << endl;
+    cout << "   |_ Lc = " << Lc[i] << " um" << endl;
     cout << "   |_ La = " << abs(zeta/zi) << " um" << endl;
     cout << "   |_ tscale = " << eta/(zi*/*Reffs*/Lc[i]) << " s" << endl;
-    cout << "   |_ charact vel = " << 3600*zi*Reffs[i]*Lc[i]/eta << " um/h" << endl;
+    cout << "   |_ charact vel = " << 3600*zi*R0s[i]*Lc[i]/eta << " um/h" << endl;
     cout << " |_ Adim. parameters:" << endl;
-    cout << "   |_ a = " << abs(zeta)/(zi*Reffs[i]) << endl;
-    cout << "   |_ b = " << Reffs[i]/sqrt(eta/xi) << endl;
-    cout << "   |_ c = " << Reffs[i]/Lc[i] << endl;
+    cout << "   |_ a = " << abs(zeta)/(zi*R0s[i]) << endl;
+    cout << "   |_ b = " << R0s[i]/sqrt(eta/xi) << endl;
+    cout << "   |_ c = " << R0s[i]/Lc[i] << endl;
   }
-  cout << "\nStarting simulations ..." << endl;
+  cout << "\nStarting simulations " << iSimul << " ..." << endl;
 }

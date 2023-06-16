@@ -35,7 +35,7 @@ real xiA = 2*xi;    // Anti-parallel friction coefficient
 // Numerical Parameters
 real obd = 60.;		// Outer boundary mesh density
 real ibd = 15.;		// Inner boundary mesh density
-real dt = 0.001;			// Adim. time step
+real dt = 0.1001;			// Adim. time step
 int NiterTime = 20000;		// Number of iterations
 int nSimul = 1;			// Number of simulations
 real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
@@ -45,7 +45,7 @@ real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
 int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
 
 // Save parameters
-bool bsave = 1;			// To save or not
+bool bsave = 0;			// To save or not
 int dsave = 20;			// Save frame gap
 
 // Domain parameters

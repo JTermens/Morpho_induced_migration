@@ -4,8 +4,9 @@ load "distance"
 load "isoline"
 load "gsl"
 
-//include <iostream>; // If needed
-include "parameters_sets/parameters_poster_runs.edp";
+// include <iostream>; // If needed
+// include "parameters_sets/parameters_poster_runs.edp";
+include "tests/parameters.edp";
 
 string simulName;
 string simulHomeDir;
@@ -145,7 +146,7 @@ for (int i=0; i<nSimul; i++){
 	// real tscale = eta/(zi*Reffs[i]); // Problem timescale
 
   // Problem Parameters
-  real a = La/Reffs[i]; 			// Active length, zeta/zi, and effective radius ratio
+  real a = La/Lc[i]; 			// Active length, zeta/zi, and effective radius ratio
   real b = Reffs[i]/lambda;		// Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
   real c = Reffs[i]/Lc[i];  		 			// Effective radius and nematic length ratio
 	real bLayerThickness = 1/c;	// Adim. nematic length
@@ -181,7 +182,6 @@ for (int i=0; i<nSimul; i++){
 
 		// Get the new inner boundary vertices (ISO is the contour d==bLayerThickness)
 		real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bLayerThickness,close=0,ISO,beginend=be,smoothing=bLayerThickness*smoothCoef,ratio=1.e0);
-		
 		int nInnerLoops = be.n/2;
 		// cout << be << endl;
 
@@ -313,7 +313,7 @@ for (int i=0; i<nSimul; i++){
   }
   // Bilinear and linear variational forms P (Modified Homogeneous Drirchlet problem for p-pD)
   varf ap(p, q) = int2d(Th)(  grad(px)'*grad(qx) + grad(py)'*grad(qy) )  + int2d(Th)(c*c*(p'*q)) + on(labelOut, px = 0.0) + on(labelOut, py = 0.0);
-  varf lp(p, q) = -int2d(Th)( grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy) ) - int2d(Th)(c*c*(pD'*q))  + on(labelOut, py = 0.0) + on(labelOut, py = 0.0);
+  varf lp(p, q) = -int2d(Th)( grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy) ) - int2d(Th)(c*c*(pD'*q))  + on(labelOut, px = 0.0) + on(labelOut, py = 0.0);
 
   // Assembly P
   matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
@@ -351,9 +351,11 @@ for (int i=0; i<nSimul; i++){
     plot(Th,py, value = true, fill = true, nbiso = 64, wait = true, cmm = "py");
   	plot(Th,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)");
 		Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2); // Abs(P)
+		Pola divP = dpxdx(x,y)+dpydy(x,y);
+		Pola rotP = dpydx(x,y)-dpxdy(x,y);
   	plot(Th,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
-		plot(Th,dpxdx/*(x,y)+dpydy(x,y)*/, value = true, fill = true, nbiso = 64, wait = true, cmm = "Div(P)");
-  	plot(Th,dpydx/*(x,y)-dpxdy(x,y)*/, value = true, fill = true, nbiso = 64, wait = true, cmm = "Curl(P)");
+		plot(Th,divP, value = true, fill = true, nbiso = 64, wait = true, cmm = "Div(p)");
+  	plot(Th,rotP, value = true, fill = true, nbiso = 64, wait = true, cmm = "Curl(p)");
   }
 
   // Bilinear and linear variational forms V

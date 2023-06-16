@@ -150,33 +150,6 @@ for (int i=0; i<nSimul; i++){
   real c = Reffs[i]/Lc[i];  		 			// Effective radius and nematic length ratio
 	real bLayerThickness = 1/c;	// Adim. nematic length
 
-	if (bsave){
-		simulHomeDir = rootDir+"/"+simulName;
-		string fileNameParams = "/params.csv";
-		string fileNameGlobalSol = "/global_sol.csv";
-
-		exec("mkdir "+simulHomeDir);							// Make a home directory for the simulation
-		exec("mkdir "+simulHomeDir+"/msh");				// Make and save the meshes in a separeted directory
-		exec("mkdir "+simulHomeDir+"/local_sol");	// Make and save the local solutions in a separeted directory
-
-		{ofstream fileParams (simulHomeDir+fileNameParams); // Save the parameters in separate file
-
-      fileParams.fixed;
-			fileParams << "cut,R0,Reff,fracRarc,areaCst,h,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" /*<< ",gamma"*/ <<  endl;
-			fileParams << "rad,adim,um,adim,adim,um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim" /*<< ",kPa*um"*/ << endl;
-			fileParams << cut 		<< "," << R0 		 << "," << Reffs[i] << "," << fracRarc << ","
-								 << areaCst << "," << h 		 << "," << Lc 			<< "," << lambda 	 << ","
-								 << La 			<< "," << eta 	 << "," << xi 			<< "," << zi 			 << "," 
-								 << zeta 		<< "," << tscale << "," << dt 			<< "," << dsave /*<< "," << gamma*/ << endl;// 
-    }
-
-  	{ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);	// Generate a separate file for the global variables (integrates ones)
-  		//fileGlobalSol.fixed;
-			fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divTermsX,divTermsY" << endl;
-  	}
-
-	}
-
 	Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
 	// Th = oneCutSmooth(obd,cut,R0,R0*fracRarc,symmAxis,labelOut);
 
@@ -254,10 +227,37 @@ for (int i=0; i<nSimul; i++){
 	real Area0 = Th.measure; // Inital Area of the Fluid Domain
   real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
   real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
+	real areaCst = Area0;
+
+	if (bsave){
+		simulHomeDir = rootDir+"/"+simulName;
+		string fileNameParams = "/params.csv";
+		string fileNameGlobalSol = "/global_sol.csv";
+
+		exec("mkdir "+simulHomeDir);							// Make a home directory for the simulation
+		exec("mkdir "+simulHomeDir+"/msh");				// Make and save the meshes in a separeted directory
+		exec("mkdir "+simulHomeDir+"/local_sol");	// Make and save the local solutions in a separeted directory
+
+		{ofstream fileParams (simulHomeDir+fileNameParams); // Save the parameters in separate file
+
+      fileParams.fixed;
+			fileParams << "cut,R0,Reff,fracRarc,areaCst,h,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" /*<< ",gamma"*/ <<  endl;
+			fileParams << "rad,adim,um,adim,adim,um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim,R0Lc_adim" /*<< ",kPa*um"*/ << endl;
+			fileParams << cut 		<< "," << R0 		 << "," << Reffs[i] << "," << fracRarc << ","
+								 << areaCst << "," << h 		 << "," << Lc 			<< "," << lambda 	 << ","
+								 << La 			<< "," << eta 	 << "," << xi 			<< "," << zi 			 << "," 
+								 << zeta 		<< "," << tscale << "," << dt 			<< "," << dsave /*<< "," << gamma*/ << endl;// 
+    }
+
+  	{ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);	// Generate a separate file for the global variables (integrates ones)
+  		//fileGlobalSol.fixed;
+			fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divTermsX,divTermsY" << endl;
+  	}
+	}
 
 
   cout << "Simul: " << simulName << ", saving = " << bsave << "\nReff = " << Reffs[i] /*<< ", Rc = " << Rc*/
-	<< ", lambda = " << lambda << ", Lc = " << Lc << ", La = " << La << ", tscale = " << tscale << endl;
+	<< ", lambda = " << lambda << ", Lc = " << Lc[i] << ", La = " << La << ", tscale = " << tscale << endl;
 
   if (verbosity) {
   	plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
@@ -593,13 +593,19 @@ for (int i=0; i<nSimul; i++){
       // save the last mesh
       savemesh(Th,simulHomeDir+fileNameMsh);
   	}
-
-  	// Move mesh
+		try{
+			// Move mesh
   	// real minT0 = checkmovemesh(Th, [x, y]); // to check for flipped triangles
   	// real minT = checkmovemesh(Th, [x+dt*vx,y+dt*vy]);
   	// cout << "Min triangle area before: "+minT0+" & after: "+minT<<endl;
   	Th = movemesh(Th,[x+dt*vx,y+dt*vy]);
 		Th = closedRemesh(Th,obd,ibd,labelOut,.5);
+		}
+		catch(...) {
+			cout << "ERROR: Simulation "+SimulName+" stopped after "+iterTime+" iterations due to a remeshing error" << endl;
+    //   break;
+		}
+  	
 
 		// Update previous global variables
 		AreaP = Areai;	// Previous area

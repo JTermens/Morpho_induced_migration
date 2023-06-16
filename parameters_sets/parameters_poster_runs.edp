@@ -6,18 +6,19 @@ verbosity=1;
 string rootDir = "/home/joan/Documents/Simul_runs/optimized_params_time_evol";
 
 string[int] simulNames = [
-  "time_evol_1pi3_Lc50_Rc",
   "time_evol_2pi3_Lc50_Rc",
+  "time_evol_1pi6_Lc50_08Rc",
+  "time_evol_1pi3_Lc50_Rc",
   "time_evol_3pi3_Lc50_Rc",
-  "time_evol_1pi6_Lc50_Rc",
-  "time_evol_1pi6_Lc50_08Rc"
+  "time_evol_1pi6_Lc50_Rc"
   ];
 
 
 // Physiscal Parameters
 real h = 5;			    // Monolayer heigth, [μm]
 real[int] Lc = [ // Nematic length, sqrt(K/a), [μm]
-  41.648352
+  41.648352,
+  36.250000
 ];
       
 real eta = 5e4;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
@@ -50,9 +51,9 @@ int dsave = 20;			// Save frame gap
 // Domain parameters
 real[int] cuts = [ // Angular length of the cutted portion of the circle
   2.*pi/3.,
+  1.*pi/6.,
   1.*pi/3.,
   3.*pi/3.,
-  1.*pi/6.,
   1.*pi/6.
 ];
 
@@ -60,10 +61,10 @@ real[int] cuts = [ // Angular length of the cutted portion of the circle
 // Reffs is the radius of a circle with the same area as the monolayer.
 real[int] Reffs = [ 
   166.593409,
+  145.000000,
   Rc,
   Rc,
-  Rc,
-  .8*Rc
+  Rc
   ];
 
 real symmAxis = pi/2.;	// Angles of the symmetry axis of each cut

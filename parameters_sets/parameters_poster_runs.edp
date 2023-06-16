@@ -2,12 +2,12 @@
 
 verbosity=1;
 
-// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_test";
-string rootDir = "/home/joan/Documents/Simul_runs/optimized_params_time_evol";
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_time_evol";
+// string rootDir = "/home/joan/Documents/Simul_runs/optimized_params_time_evol";
 
 string[int] simulNames = [
-  "time_evol_2pi3_Lc50_Rc",
-  "time_evol_1pi6_Lc50_08Rc",
+  "time_evol_2pi3_4c_Rc",
+  "time_evol_1pi6_4c_08Rc",
   "time_evol_1pi3_Lc50_Rc",
   "time_evol_3pi3_Lc50_Rc",
   "time_evol_1pi6_Lc50_Rc"

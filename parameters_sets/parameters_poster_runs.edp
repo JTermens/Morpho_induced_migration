@@ -1,6 +1,6 @@
 // Parameter file for testing optimized sets of parameters
 
-verbosity=0;
+verbosity=1;
 
 // string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_test";
 string rootDir = "/home/joan/Documents/Simul_runs/optimized_params_time_evol";
@@ -16,12 +16,15 @@ string[int] simulNames = [
 
 // Physiscal Parameters
 real h = 5;			    // Monolayer heigth, [μm]
-real Lc = 50.;      // Nematic length, sqrt(K/a), [μm]
-real eta = 25e3;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
+real[int] Lc = [ // Nematic length, sqrt(K/a), [μm]
+  41.648352
+];
+      
+real eta = 5e4;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
 real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
 real zi = 0.1;			// Traction coefficient, [kPa/μm], 0.04-0.16 kPa/μm
 real zeta = -20;		// -Contractility coefficient, [kPa], 5-50 kPa
-real Rc = .5*(3.*Lc-zeta/zi);    // Critical radius of a circular monolayer, [μm]
+real Rc = .5*(3.*Lc[0]-zeta/zi);    // Critical radius of a circular monolayer, [μm]
 // If surface tension
 // real gamma = -5.;    // Surface tension, [mN/m]=[kPa·μm]
 // If different friction
@@ -33,7 +36,7 @@ real obd = 60.;		// Outer boundary mesh density
 real ibd = 15.;		// Inner boundary mesh density
 real dt = 0.001;			// Adim. time step
 int NiterTime = 20000;		// Number of iterations
-int nSimul = 3;			// Number of simulations
+int nSimul = 1;			// Number of simulations
 real rateMaxArea = 4;   // Stop the simulation when Area = rateMaxArea * (Initial Area)
 
 // If surface tension or different friction
@@ -42,12 +45,12 @@ int maxNewtonIter = 10;         // Max num, of iterations for the Newton method
 
 // Save parameters
 bool bsave = 1;			// To save or not
-int dsave = 50;			// Save frame gap
+int dsave = 20;			// Save frame gap
 
 // Domain parameters
 real[int] cuts = [ // Angular length of the cutted portion of the circle
-  1.*pi/3.,
   2.*pi/3.,
+  1.*pi/3.,
   3.*pi/3.,
   1.*pi/6.,
   1.*pi/6.
@@ -56,7 +59,7 @@ real[int] cuts = [ // Angular length of the cutted portion of the circle
 // Effective initial radius of the monolayer [μm].
 // Reffs is the radius of a circle with the same area as the monolayer.
 real[int] Reffs = [ 
-  Rc,
+  166.593409,
   Rc,
   Rc,
   Rc,
@@ -74,12 +77,12 @@ if(verbosity){
     cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
     cout << "   |_ Lc = " << Lc << " um" << endl;
     cout << "   |_ La = " << abs(zeta/zi) << " um" << endl;
-    cout << "   |_ tscale = " << eta/(zi*Reffs[i]) << " s" << endl;
-    cout << "   |_ charact vel = " << 3600*zi*pow(Reffs[i],2)/eta << " um/h" << endl;
+    cout << "   |_ tscale = " << eta/(zi*/*Reffs*/Lc[i]) << " s" << endl;
+    cout << "   |_ charact vel = " << 3600*zi*Reffs[i]*Lc[i]/eta << " um/h" << endl;
     cout << " |_ Adim. parameters:" << endl;
     cout << "   |_ a = " << abs(zeta)/(zi*Reffs[i]) << endl;
     cout << "   |_ b = " << Reffs[i]/sqrt(eta/xi) << endl;
-    cout << "   |_ c = " << Reffs[i]/Lc << endl;
+    cout << "   |_ c = " << Reffs[i]/Lc[i] << endl;
   }
   cout << "\nStarting simulations ..." << endl;
 }

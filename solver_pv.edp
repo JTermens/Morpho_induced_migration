@@ -13,63 +13,63 @@ string simulHomeDir;
 // Mesh identifiers
 int labelOut = 1;
 
-func mesh fourCurveShape(int obd, real rUp, real rDown, real rLeft,real rRight, real d, real symmAxis, int labelOut){
+// func mesh fourCurveShape(int obd, real rUp, real rDown, real rLeft,real rRight, real d, real symmAxis, int labelOut){
 
-	mesh Th; // Final mesh (Th)
+// 	mesh Th; // Final mesh (Th)
 
-	if (((d+rUp-rDown-2*rRight) <= 0) || ((d+rUp-rDown-2*rLeft) <= 0)) {
-		cout << "ERROR: d + rUp - rDown - 2*(rRight and rLeft) > 0" << endl;
-		return Th;
-	}
+// 	if (((d+rUp-rDown-2*rRight) <= 0) || ((d+rUp-rDown-2*rLeft) <= 0)) {
+// 		cout << "ERROR: d + rUp - rDown - 2*(rRight and rLeft) > 0" << endl;
+// 		return Th;
+// 	}
 
-  real thetaDownRight = acos((pow((rDown+rRight),2)+pow(d,2)-pow((rUp-rRight),2))/(2*(rDown+rRight)*d));
-  real thetaDownLeft = acos((pow((rDown+rLeft),2)+pow(d,2)-pow((rUp-rLeft),2))/(2*(rDown+rLeft)*d));
-  real thetaUpRight = acos((pow((rDown+rRight),2)-pow(d,2)-pow((rUp-rRight),2))/(2*(rUp-rRight)*d));
-  real thetaUpLeft = acos((pow((rDown+rLeft),2)-pow(d,2)-pow((rUp-rLeft),2))/(2*(rUp-rLeft)*d));
-	real thetaRight = acos((pow(d,2)-pow((rUp-rRight),2)-pow(rDown+rRight,2))/(2*(rUp-rRight)*(rDown+rRight)));
-	real thetaLeft = acos((pow(d,2)-pow((rUp-rLeft),2)-pow(rDown+rLeft,2))/(2*(rUp-rLeft)*(rDown+rLeft)));
+//   real thetaDownRight = acos((pow((rDown+rRight),2)+pow(d,2)-pow((rUp-rRight),2))/(2*(rDown+rRight)*d));
+//   real thetaDownLeft = acos((pow((rDown+rLeft),2)+pow(d,2)-pow((rUp-rLeft),2))/(2*(rDown+rLeft)*d));
+//   real thetaUpRight = acos((pow((rDown+rRight),2)-pow(d,2)-pow((rUp-rRight),2))/(2*(rUp-rRight)*d));
+//   real thetaUpLeft = acos((pow((rDown+rLeft),2)-pow(d,2)-pow((rUp-rLeft),2))/(2*(rUp-rLeft)*d));
+// 	real thetaRight = acos((pow(d,2)-pow((rUp-rRight),2)-pow(rDown+rRight,2))/(2*(rUp-rRight)*(rDown+rRight)));
+// 	real thetaLeft = acos((pow(d,2)-pow((rUp-rLeft),2)-pow(rDown+rLeft,2))/(2*(rUp-rLeft)*(rDown+rLeft)));
 
-  real xRight = -(d*(pow(d,2) - (rDown + 2*rRight - rUp)*(rDown + rUp))*cos(symmAxis) -
-    sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*sin(symmAxis))/(2*pow(d,2));
-  real yRight = -(d*(pow(d,2) - (rDown + 2*rRight - rUp)*(rDown + rUp))*sin(symmAxis) +
-		sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
+//   real xRight = -(d*(pow(d,2) - (rDown + 2*rRight - rUp)*(rDown + rUp))*cos(symmAxis) -
+//     sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*sin(symmAxis))/(2*pow(d,2));
+//   real yRight = -(d*(pow(d,2) - (rDown + 2*rRight - rUp)*(rDown + rUp))*sin(symmAxis) +
+// 		sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
 
-	real xLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis) +
-    sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*sin(symmAxis))/(2*pow(d,2));
-  real yLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*sin(symmAxis) -
-		sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
+// 	real xLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis) +
+//     sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*sin(symmAxis))/(2*pow(d,2));
+//   real yLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*sin(symmAxis) -
+// 		sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
 
 
-  // Define the borders without mesh adaptation
-	border rightArch(t=0, 1){
-    x = xRight + rRight*cos((symmAxis-thetaUpRight-thetaRight)+thetaRight*t);
-    y = yRight + rRight*sin((symmAxis-thetaUpRight-thetaRight)+thetaRight*t);
-    label = labelOut;}
+//   // Define the borders without mesh adaptation
+// 	border rightArch(t=0, 1){
+//     x = xRight + rRight*cos((symmAxis-thetaUpRight-thetaRight)+thetaRight*t);
+//     y = yRight + rRight*sin((symmAxis-thetaUpRight-thetaRight)+thetaRight*t);
+//     label = labelOut;}
 
-  border upArch(t=0, 1){
-    x = rUp*cos((symmAxis-thetaUpRight)+(thetaUpLeft+thetaUpRight)*t);
-    y = rUp*sin((symmAxis-thetaUpRight)+(thetaUpLeft+thetaUpRight)*t);
-    label = labelOut;}
+//   border upArch(t=0, 1){
+//     x = rUp*cos((symmAxis-thetaUpRight)+(thetaUpLeft+thetaUpRight)*t);
+//     y = rUp*sin((symmAxis-thetaUpRight)+(thetaUpLeft+thetaUpRight)*t);
+//     label = labelOut;}
 
-	border leftArch(t=0, 1){
-    x = xLeft + rLeft*cos((symmAxis+thetaUpLeft)+thetaLeft*t);
-    y = yLeft + rLeft*sin((symmAxis+thetaUpLeft)+thetaLeft*t);
-    label = labelOut;}
+// 	border leftArch(t=0, 1){
+//     x = xLeft + rLeft*cos((symmAxis+thetaUpLeft)+thetaLeft*t);
+//     y = yLeft + rLeft*sin((symmAxis+thetaUpLeft)+thetaLeft*t);
+//     label = labelOut;}
 	
-  border downArch(t=0,1){
-    x = -d*cos(symmAxis)+rDown*cos((symmAxis+thetaDownLeft)-(thetaDownLeft+thetaDownRight)*t);
-    y = -d*sin(symmAxis)+rDown*sin((symmAxis+thetaDownLeft)-(thetaDownLeft+thetaDownRight)*t);
-    label = labelOut;}
+//   border downArch(t=0,1){
+//     x = -d*cos(symmAxis)+rDown*cos((symmAxis+thetaDownLeft)-(thetaDownLeft+thetaDownRight)*t);
+//     y = -d*sin(symmAxis)+rDown*sin((symmAxis+thetaDownLeft)-(thetaDownLeft+thetaDownRight)*t);
+//     label = labelOut;}
 
-  Th = buildmesh(
-		rightArch(obd*rRight*thetaRight)
-    + upArch(obd*rUp*(thetaUpLeft+thetaUpRight))
-    + leftArch(obd*rLeft*thetaLeft)
-		+ downArch(obd*rDown*(thetaDownLeft+thetaDownRight))
-	);
+//   Th = buildmesh(
+// 		rightArch(obd*rRight*thetaRight)
+//     + upArch(obd*rUp*(thetaUpLeft+thetaUpRight))
+//     + leftArch(obd*rLeft*thetaLeft)
+// 		+ downArch(obd*rDown*(thetaDownLeft+thetaDownRight))
+// 	);
 
-  return Th;
-}
+//   return Th;
+// }
 
 func mesh oneCutSmooth(int obd, real cut,real r0, real rArch, real symmAxis, int labelOut){
 	// Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
@@ -129,20 +129,25 @@ for (int i=0; i<nSimul; i++){
 	// real symmAxis = symmAxes[i];
 
 	// mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelOut);
-	mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
-	real areaCst = Th.measure;
+	// mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
+	// real areaCst = Th.measure;
 
 	// Problem length & timescales
-	real R0 = sqrt(pi/areaCst); 		 // Adimensionalized radius so that adim Area = pi
+	real R0 = Reffs[i]; 		 				 // Initial adimensionalized radius
 	real lambda = sqrt(eta/xi); 		 // hydrodynamic sceening length
 	real La = abs(zeta)/zi; 				 // active length; < 0 (> 0) for contractile (extensile) active stresses
 	// real Lc 											 // nematic length, defined in the parameters file
-	real tscale = eta/(zi*Reffs[i]); // Problem timescale
+	real tscale = eta/(zi*Lc[i]); 	 // Problem timescale
+	// real R0 = sqrt(pi/areaCst); 		 // Adimensionalized radius so that adim Area = pi
+	// real lambda = sqrt(eta/xi); 		 // hydrodynamic sceening length
+	// real La = abs(zeta)/zi; 				 // active length; < 0 (> 0) for contractile (extensile) active stresses
+	// // real Lc 											 // nematic length, defined in the parameters file
+	// real tscale = eta/(zi*Reffs[i]); // Problem timescale
 
   // Problem Parameters
   real a = La/Reffs[i]; 			// Active length, zeta/zi, and effective radius ratio
   real b = Reffs[i]/lambda;		// Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
-  real c = Reffs[i]/Lc;  		 			// Effective radius and nematic length ratio
+  real c = Reffs[i]/Lc[i];  		 			// Effective radius and nematic length ratio
 	real bLayerThickness = 1/c;	// Adim. nematic length
 
 	if (bsave){
@@ -172,7 +177,8 @@ for (int i=0; i<nSimul; i++){
 
 	}
 
-	Th = oneCutSmooth(obd,cut,R0,R0*fracRarc,symmAxis,labelOut);
+	Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
+	// Th = oneCutSmooth(obd,cut,R0,R0*fracRarc,symmAxis,labelOut);
 
 	// FEM Spaces
 	fespace Dh(Th, P1); // For distance function (remeshing scheme) and data exports
@@ -352,7 +358,7 @@ for (int i=0; i<nSimul; i++){
 
   // Bilinear and linear variational forms V
   varf av(v, u) = int2d(Th)( ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) )  + int2d(Th)( b*(v'*u) ); // -viscosity -friction
-  varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility +active traction
+  varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( c*(p'*u) ); //contractility +active traction
 
   // Assembly V
   matrix Av = av(Vel, Vel);
@@ -491,7 +497,7 @@ for (int i=0; i<nSimul; i++){
 		dpxdx[]=solGradP(0:dPol.ndof-1);
 
   	// Assembly V
-  	varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( (p'*u) ); //contractility + active traction
+  	varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( c*(p'*u) ); //contractility + active traction
   	matrix Av = av(Vel, Vel);  			// LHS matrix
   	real[int] bv = lv(0, Vel);			// RHS
 
@@ -552,8 +558,8 @@ for (int i=0; i<nSimul; i++){
   	if(iterTime % dsave == 0 && bsave==1){
 
 			string fileNameGlobalSol = "/global_sol.csv";
-			string fileNameLocalSol = "/local_sol/sol_0000"+iterTime+".txt";
-			string fileNameMsh = "/msh/mesh_0000"+iterTime+".msh";
+			string fileNameLocalSol = "/local_sol/sol_"+(1000000+iterTime)+".txt";
+			string fileNameMsh = "/msh/mesh_"+(1000000+iterTime)+".msh";
 
   		// Save {px, py, vx, vy, dpxdx, dpxdy, dpydx, dpydy, dvxdx, dvxdy, dvydx, dvydy} on each vertex:
   		// Memory efficient method, but needs connectivity data to reconstruct the mesh

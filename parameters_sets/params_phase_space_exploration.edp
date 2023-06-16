@@ -14,8 +14,8 @@ string simulName = "exploration_15x15x15x15";
 
 int iRun = 0;
 
-int[int] i0Cut = [0];
-int[int] ifCut = [15];
+int[int] i0Cut = [0,5,10];
+int[int] ifCut = [5,10,15];
 
 int nCut = 15;
 real minCut = pi/6.;

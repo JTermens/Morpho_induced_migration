@@ -237,7 +237,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 	// 				npost = [(yy[k+1]-yy[k]),-(xx[k+1]-xx[k])];
 	// 				lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
 
-	// 				nmean = nprev/(1+lenprev/lenpost) + npost/(1+lenpost/lenprev);
+	// 				nmean = nprev*(lenpost/(lenpost+lenprev)) + npost*(lenprev/(lenprev+lenpost));
 	// 				nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
 
 	// 				nx[](2*bcon(k))= nmean[0]; ny[](2*bcon(k)+1) = nmean[1];
@@ -387,7 +387,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 	// 					npost = [(yy[k+1]-yy[k]),-(xx[k+1]-xx[k])];
 	// 					lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
 
-	// 					nmean = nprev/(1+lenprev/lenpost) + npost/(1+lenpost/lenprev);
+	// 					nmean = nprev*(lenpost/(lenpost+lenprev)) + npost*(lenprev/(lenprev+lenpost));
 	// 					nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
 
 	// 					nx[](2*bcon(k))= nmean[0]; ny[](2*bcon(k)+1) = nmean[1];

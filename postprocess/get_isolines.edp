@@ -269,7 +269,7 @@ for(int iIso=1; iIso <= numIsolines; iIso++){
   if(bsave){
     {ofstream fileIsolines (isolinesDir+fileNameIsolines,append);
   	  //fileIsolines.fixed;
-      for(int i=0; i<nBnd; i++){
+      for(int i=0; i<nIso; i++){
         fileIsolines << iIso << "," << bIso(0,i) << "," << bIso(1,i) << "," << nxIso[i] << "," << nyIso[i] << ","
                    << px(bIso(0,i),bIso(1,i)) << "," << py(bIso(0,i),bIso(1,i)) << "," << dpxdx(bIso(0,i),bIso(1,i)) << "," 
                    << dpxdy(bIso(0,i),bIso(1,i)) << "," << dpydx(bIso(0,i),bIso(1,i)) << "," << dpydy(bIso(0,i),bIso(1,i)) << endl;

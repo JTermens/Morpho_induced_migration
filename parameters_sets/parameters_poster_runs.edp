@@ -13,7 +13,7 @@ string[int] simulNames = [
   "time_evol_4pi3_4c_Rc"
   ];
 
-int iSimul=4;
+int iSimul=2;
 
 // Physiscal Parameters
 
@@ -26,7 +26,6 @@ real[int] R0s = [
   227.601,
   413.227
   ];
-// 166.593409,145.00,
 
 real h = 5;			    // Monolayer heigth, [μm]
 real[int] Lc = R0s/4; // Nematic length, sqrt(K/a), [μm]

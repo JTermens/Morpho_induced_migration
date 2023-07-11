@@ -159,16 +159,19 @@ for (int i=iSimul/*0*/; i<(iSimul+1)/*nSimul*/; i++){
 	mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
 	// Th = oneCutSmooth(obd,cut,R0,R0*fracRarc,symmAxis,labelOut);
 
-	// FEM Spaces
-	fespace Dh(Th, P1); // For distance function (remeshing scheme) and data exports
-
-	func mesh closedRemesh(mesh Th0,int obd, int ibd, int labelOut, real smoothCoef){
+	// Extract outer boundary
+	// extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
+	// for k in (0,Th.nbe-1): 
+	//		bOut(0,k) == x coord kth vertex
+	//		bOut(1,k) == y coord kth vertex
+	//		bOut(2,k) == arch length at the kth vertex
+	//		Th.be(k)[1] == index of the kth vertex
+	real[int,int] bOut(3,1); real lOut = extractborder(Th, labelOut, bOut);
+	
+	func mesh closedRemesh(real[int,int] bOut, int obd, int ibd, int labelOut, real smoothCoef){
 
 		int[int] be(1); // To save begin and ends of the curve
 		int minPoints = 5;
-
-		// Extract outer boundary
-		real[int,int] bOut(3,1); real lOut = extractborder(Th0, labelOut, bOut);
 
 		// Remesh the outr boundary using an Akima spline
 		gslspline splineX(gslinterpakima, bOut(2,:), bOut(0,:));
@@ -176,6 +179,11 @@ for (int i=iSimul/*0*/; i<(iSimul+1)/*nSimul*/; i++){
 
 		border Out(t=0,lOut){x=splineX(t); y=splineY(t); label=labelOut;}
 		int nOut = round(obd*lOut);
+
+		mesh Th0 = buildmesh(Out(nOut));
+
+		// FEM Spaces
+		fespace Dh(Th0, P1); // For distance function (remeshing scheme) and data exports
 
 		// Distance function (d is the minimal distance to the boundary)
 		varf vong(B, d)= on(labelOut,B=1);
@@ -226,7 +234,10 @@ for (int i=iSimul/*0*/; i<(iSimul+1)/*nSimul*/; i++){
     }
 	}
 
-	Th = closedRemesh(Th,obd,ibd,labelOut,.5);
+	Th = closedRemesh(bOut,obd,ibd,labelOut,.5);
+	// Extract the new boundary for future computations
+	int NbBoundaryElements = Th.nbe;
+	lOut = extractborder(Th, labelOut, bOut);
 
 	// // Initial variables for shape characterization
 	real Area0 = Th.measure; // Inital Area of the Fluid Domain
@@ -260,7 +271,6 @@ for (int i=iSimul/*0*/; i<(iSimul+1)/*nSimul*/; i++){
   	}
 	}
 
-
   cout << "Simul: " << simulName << ", saving = " << bsave << "\nR0 = " << R0 /*<< ", Rc = " << Rc*/
 	<< ", lambda = " << lambda << ", Lc = " << Lc[i] << ", La = " << La << ", tscale = " << tscale << endl;
 
@@ -279,31 +289,22 @@ for (int i=iSimul/*0*/; i<(iSimul+1)/*nSimul*/; i++){
   fespace Nh(Th,[P1,P1]);						  // For the corrected normal vector at the boundary
 
   // Correction of the normal vectors at the boundary
-  int NbBoundaryElements = Th.nbe;
-  int[int] bcon(NbBoundaryElements);
-  real[int] xx(NbBoundaryElements+1),yy(NbBoundaryElements+1);
-  for (int k = 0; k < NbBoundaryElements; k++){
-           bcon[k] = Th.be(k)[0];
-  	 xx[k]=Th(Th.be(k)[0]).x; yy[k]=Th(Th.be(k)[0]).y;
-  }
-  xx[NbBoundaryElements]=xx[0]; yy[NbBoundaryElements]=yy[0];
-
-  Nh [nx,ny]; // here the Dof of nx,ny are scramble .
+	Nh [nx,ny]; // here the Dof of nx,ny are scramble .
   nx[]=0;ny[]=0;
 
-  real[int] nprev(2), npost(2), nmean(2);
+	real[int] nprev(2), npost(2), nmean(2);
   real lenprev, lenpost;
-  nprev = [(yy[0]-yy[NbBoundaryElements-1]),-(xx[0]-xx[NbBoundaryElements-1])];
+  nprev = [(bOut(1,0)-bOut(1,NbBoundaryElements-1)),-(bOut(0,0)-bOut(0,NbBoundaryElements-1))];
   lenprev = sqrt(pow(nprev[0],2)+pow(nprev[1],2));
 
   for (int k = 0; k < NbBoundaryElements; k++){
-    npost = [(yy[k+1]-yy[k]),-(xx[k+1]-xx[k])];
+    npost = [(bOut(1,k+1)-bOut(1,k)),-(bOut(0,k+1)-bOut(0,k))];
     lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
 		
 		nmean = nprev*(lenpost/(lenpost+lenprev)) + npost*(lenprev/(lenprev+lenpost));
     nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
 
-  	nx[](2*bcon(k))= nmean[0]; ny[](2*bcon(k)+1) = nmean[1];
+  	nx[](2*Th.be(k)[1])= nmean[0]; ny[](2*Th.be(k)[1]+1) = nmean[1];
   	nprev = npost; lenprev = lenpost;
   }
 
@@ -604,11 +605,11 @@ for (int i=iSimul/*0*/; i<(iSimul+1)/*nSimul*/; i++){
   	}
 		try{
 			// Move mesh
-  	// real minT0 = checkmovemesh(Th, [x, y]); // to check for flipped triangles
-  	// real minT = checkmovemesh(Th, [x+dt*vx,y+dt*vy]);
-  	// cout << "Min triangle area before: "+minT0+" & after: "+minT<<endl;
-  	Th = movemesh(Th,[x+dt*vx,y+dt*vy]);
-		Th = closedRemesh(Th,obd,ibd,labelOut,.5);
+			//real minT0 = checkmovemesh(Th, [x, y]); // to check for flipped triangles
+			// real minT = checkmovemesh(Th, [x+dt*vx,y+dt*vy]);
+			// cout << "Min triangle area before: "+minT0+" & after: "+minT<<endl;
+			Th = movemesh(Th,[x+dt*vx,y+dt*vy]);
+			Th = closedRemesh(Th,obd,ibd,labelOut,.5);
 		}
 		catch(...) {
 			cout << "ERROR: Simulation "+simulName+" stopped after "+iterTime+" iterations due to a remeshing error" << endl;

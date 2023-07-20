@@ -89,7 +89,7 @@ func mesh oneCutSmooth(int obd, real cut,real r0, real rArch, real symmAxis, int
 	return Th;
 }
 
-func mesh closedRemesh(real[int,int] bnd, real lBnd, int nBnd,real bLayerThickness, int obd, int ibd, int labelBnd, real smoothCoef, bool keepPoints){
+func mesh closedRemesh(real[int,int] bnd, real lBnd, int nBnd,real bndLayerLentgh, int obd, int ibd, int labelBnd, real smoothCoef, bool keepPoints, bool bndLayer){
 
 	int[int] be(1); // To save begin and ends of the curve
 	int minPoints = 20;
@@ -114,6 +114,10 @@ func mesh closedRemesh(real[int,int] bnd, real lBnd, int nBnd,real bLayerThickne
 		Th0 = buildmesh(OuterSpline(nOut));
 	}
 
+	if (!bndLayer) {
+		return Th0;
+	}
+
 	// FEM Spaces
 	fespace Dh(Th0, P1); // For distance function (remeshing scheme) and data exports
 
@@ -126,13 +130,13 @@ func mesh closedRemesh(real[int,int] bnd, real lBnd, int nBnd,real bLayerThickne
 	// plot(d,Th0, wait=1);
 
 	// Just one inner loop
-	// real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bLayerThickness,close=1,ISO,smoothing=bLayerThickness*smoothCoef,ratio=1.e-0);
+	// real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bndLayerLentgh,close=1,ISO,smoothing=bndLayerLentgh*smoothCoef,ratio=1.e-0);
   // real lInner=ISO(2,ISO.m-1); // lInner is the perimeter of ISO
   // border Inner(t=0,1){ P=Curve(ISO,t);label=0;} // Linear interpolation of the inner boundary (simple and robust)
   // int nInnerFilter = round(ibd*lInner); // new number of elements (prescribed density ibd)
 
-	// Get the new inner boundary vertices (ISO is the contour d==bLayerThickness) with multiple loops
-	real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bLayerThickness,close=0,ISO,beginend=be,smoothing=bLayerThickness*smoothCoef,ratio=1.e-0);
+	// Get the new inner boundary vertices (ISO is the contour d==bndLayerLentgh) with multiple loops
+	real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bndLayerLentgh,close=0,ISO,beginend=be,smoothing=bndLayerLentgh*smoothCoef,ratio=1.e-0);
 	int nInnerLoops = be.n/2;
 	// cout << be << endl;
 

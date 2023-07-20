@@ -3,8 +3,8 @@
 verbosity=0;
 bool debug=0;
 
-// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/wetting_essay_MDCK";
-string rootDir = "/home/joan/Documents/Simul_runs/wetting_essay_MDCK";
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/wetting_essay_MDCK";
+// string rootDir = "/home/joan/Documents/Simul_runs/wetting_essay_MDCK";
 
 string[int] simulNames = [
   "MDCK_2pi3_R50",
@@ -48,7 +48,7 @@ real maxNewtonResidu = 1.e-6; // Cutoff residue for the Newton method
 int maxNewtonIter = 10;       // Max num, of iterations for the Newton method
 
 // Save parameters
-bool bsave = 0; // To save or not
+bool bsave = 1; // To save or not
 int dsave = 20; // Save frame gap
 
 // Domain parameters

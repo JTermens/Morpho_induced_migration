@@ -44,7 +44,7 @@ mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
 //		bOut(2,k) == arch length at the kth vertex
 real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelOut, bMesh);
 
-Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelOut,.5,0);
+Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelOut,.5,0,1);
 
 // Initial variables for shape characterization
 real Area0 = Th.measure; // Inital Area of the Fluid Domain
@@ -573,7 +573,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       }
     }*/
 
-    Th = closedRemesh(bOut,lOut,bOut.m-1,bLayerThickness,obd,ibd,labelOut,.5, keepPoints);
+    Th = closedRemesh(bOut,lOut,bOut.m-1,bLayerThickness,obd,ibd,labelOut,.5, keepPoints,1);
   
   }
   catch(...) {

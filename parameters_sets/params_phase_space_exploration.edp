@@ -2,8 +2,9 @@
 // 30x30x30x30 is extremely time consuming, a more coarse-grained exploration would be better
 
 verbosity=0;
+bool debug=1; 
 
-string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/prameter_space_exploration";
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/phase_space_exploration";
 // string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 
 string simulName = "exploration_15x15x15x15";
@@ -12,7 +13,7 @@ string simulName = "exploration_15x15x15x15";
 // Run 1: 7pi/12, 2pi/3,  3pi/4, 5pi/6, 11pi/12 // i=5,  i<10
 // Run 2:  pi,   13pi/12, 7pi/6, 5pi/4,  4pi/3  // i=10, i<15
 
-int iRun = 2;
+int labelOut = 1; // Mesh identifiers
 
 int[int] i0Cut = [0,5,10];
 int[int] ifCut = [5,10,15];

@@ -12,29 +12,29 @@ include "getARGV.idp"
 int iSimul = getARGV("-i", 1);
 bool err = 0;
 
-include "parameters_sets/parameters_poster_runs.edp"; // load the parameters
+include "parameters_sets/parameters_wetting_essay.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
 // Problem length & timescales ----------------------------------------------------------------------------------------------------------------------
 real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
-real R0 = R0s[iSimul];              // Initial adimensionalized radius
+real R0 = R0s[iSimul];              // Initial radius
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = abs(zeta)/zi;             // active length; < 0 (> 0) for contractile (extensile) active stresses
-real tscale = eta/(zi*Lc[iSimul]);  // Problem timescale
+real tscale = eta/(zi*Lc);          // Problem timescale
 // real R0 = sqrt(pi/areaCst);         // Adimensionalized radius so that adim Area = pi
 // real tscale = eta/(zi*Reffs[i]);    // Problem timescale
 
 // Problem Parameters
-real a = La/Lc[iSimul];     // Active length, zeta/zi, and effective radius ratio
+real a = La/Lc;     // Active length, zeta/zi, and effective radius ratio
 real b = R0/lambda;         // Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
-real c = R0/Lc[iSimul];     // Effective radius and nematic length ratio
+real c = R0/Lc;     // Effective radius and nematic length ratio
 real bLayerThickness = 1/c; // Adim. nematic length
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 // Construct the mesh -------------------------------------------------------------------------------------------------------------------------------
-// mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
+mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
 
 // Extract outer boundary
 // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
@@ -44,7 +44,7 @@ real bLayerThickness = 1/c; // Adim. nematic length
 //		bOut(2,k) == arch length at the kth vertex
 real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelOut, bMesh);
 
-Th = closedRemesh(bMesh,lMesh,bLayerThickness,obd,ibd,labelOut,.5);
+Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelOut,.5,0);
 
 // Initial variables for shape characterization
 real Area0 = Th.measure; // Inital Area of the Fluid Domain
@@ -95,7 +95,7 @@ if (bsave){
     fileParams << "cut,R0,Reff,fracRarc," << /*areaCst, <<*/ "h,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" /*<< ",gamma"*/ <<  endl;
     fileParams << "rad,adim,um,adim," << /*adim, <<*/ "um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim,R0Lc_adim" /*<< ",kPa*um"*/ << endl;
     fileParams << cut 		<< "," << R0 		 << "," << "-"			<< "," << fracRarc << ","
-                << /*areaCst << "," <<*/ h 		 << "," << Lc[iSimul]	<< "," << lambda 	 << ","
+                << /*areaCst << "," <<*/ h 		 << "," << Lc	<< "," << lambda 	 << ","
                 << La 			<< "," << eta 	 << "," << xi 		<< "," << zi 			 << "," 
                 << zeta 		<< "," << tscale << "," << dt 		<< "," << dsave /*<< "," << gamma*/ << endl;// 
   }
@@ -535,7 +535,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   if (debug) { // Show it always, regardless of the verbosity
   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
-  plot(/*Th,[NDerP1,NDerP2],/*CurlV,vABS*/normal,pABS, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
+  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS*/normal,vABS, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
       cmm = "iTime="+(iterTime)+", t="+(dt*iterTime)+/*"; Orientation=("+orientBConn+", "+orientBorder+")"+*/";  A/A0="+(Areai/Area0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
                     +"), (vx,vy)=("+Vxcm+","+Vycm+")"
                     +"), A^-1(c/b)int p=("+(c/b)*Pxcm+","+(c/b)*Pycm+")");
@@ -573,7 +573,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       }
     }*/
 
-    Th = closedRemesh(bOut,lOut,bLayerThickness,obd,ibd,labelOut,.5);
+    Th = closedRemesh(bOut,lOut,bOut.m-1,bLayerThickness,obd,ibd,labelOut,.5, keepPoints);
   
   }
   catch(...) {

@@ -19,6 +19,7 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 // Problem length & timescales ----------------------------------------------------------------------------------------------------------------------
 real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
 real R0 = R0s[iSimul];              // Initial radius
+real Reff = Reffs[iSimul];          // Effective radius
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = abs(zeta)/zi;             // active length; < 0 (> 0) for contractile (extensile) active stresses
 real tscale = eta/(zi*Lc);          // Problem timescale
@@ -94,7 +95,7 @@ if (bsave){
     fileParams.fixed;
     fileParams << "cut,R0,Reff,fracRarc," << /*areaCst, <<*/ "h,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" /*<< ",gamma"*/ <<  endl;
     fileParams << "rad,adim,um,adim," << /*adim, <<*/ "um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim,R0Lc_adim" /*<< ",kPa*um"*/ << endl;
-    fileParams << cut 		<< "," << R0 		 << "," << "-"			<< "," << fracRarc << ","
+    fileParams << cut 		<< "," << R0 		 << "," << Reff	<< "," << fracRarc << ","
                 << /*areaCst << "," <<*/ h 		 << "," << Lc	<< "," << lambda 	 << ","
                 << La 			<< "," << eta 	 << "," << xi 		<< "," << zi 			 << "," 
                 << zeta 		<< "," << tscale << "," << dt 		<< "," << dsave /*<< "," << gamma*/ << endl;// 

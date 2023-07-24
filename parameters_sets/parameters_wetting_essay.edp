@@ -3,13 +3,16 @@
 verbosity=0;
 bool debug=0;
 
-string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/wetting_essay_MDCK";
-// string rootDir = "/home/joan/Documents/Simul_runs/wetting_essay_MDCK";
+//string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/wetting_essay_MDCK";
+string rootDir = "/home/joan/Documents/Simul_runs/wetting_essay_MDCK";
 
 string[int] simulNames = [
-  "MDCK_2pi3_R50",
+  /*"MDCK_2pi3_R50",
   "MDCK_2pi3_R125",
-  "MDCK_2pi3_R200"
+  "MDCK_2pi3_R200"*/
+  "MDCK_3pi3_R50",
+  "MDCK_3pi3_R125",
+  "MDCK_3pi3_R200"
   ];
 
 int labelOut = 1; // Mesh identifiers
@@ -29,9 +32,18 @@ real zeta = -0.1;           // -Contractility coefficient, [kPa], very low estim
 // Initial radius of the monolayer [μm].
 // Same as in the microfabrication masks
 real[int] R0s = [ 
-  55.7452,
+  /*55.7452,
   139.363,
-  222.981
+  222.981*/
+  70.7107,
+  176.777,
+  282,843
+  ];
+
+real[int] Reffs = [ 
+  50,
+  125,
+  200
   ];
 
 // Numerical Parameters
@@ -65,7 +77,8 @@ if(debug){
   
   cout << "Simulation: " << simulNames[iSimul] << endl;
   cout << " |_ Problem lengths and timescales:" << endl;
-  cout << "   |_ Reff = " << R0s[iSimul] << " um" << endl;
+  cout << "   |_ Reff = " << Reffs[iSimul] << " um" << endl;
+  cout << "   |_ R0 = " << R0s[iSimul] << " um" << endl;
   cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
   cout << "   |_ Lc = " << Lc << " um" << endl;
   cout << "   |_ La = " << abs(zeta/zi) << " um" << endl;

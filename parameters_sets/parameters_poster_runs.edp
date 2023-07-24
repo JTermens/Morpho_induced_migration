@@ -10,7 +10,7 @@ string[int] simulNames = [
   "time_evol_1pi6_4c_Rc",
   "time_evol_1pi3_4c_Rc",
   "time_evol_2pi3_4c_Rc_test_v3",
-  "time_evol_3pi3_4c_Rc",
+  "time_evol_3pi3_4c_Rc_v2",
   "time_evol_4pi3_4c_Rc"
   ];
 
@@ -27,7 +27,15 @@ real[int] R0s = [
   166.806,
   227.601,
   413.227
-  ];
+];
+
+string[int] Reffs = [
+  "-",
+  "-",
+  "-",
+  "-",
+  "-"
+];
 
 real h = 5;			    // Monolayer heigth, [μm]
 real[int] Lc = R0s/4; // Nematic length, sqrt(K/a), [μm]
@@ -78,7 +86,8 @@ if(debug){
   
   cout << "Simulation: " << simulNames[iSimul] << endl;
   cout << " |_ Problem lengths and timescales:" << endl;
-  cout << "   |_ Reff = " << R0s[iSimul] << " um" << endl;
+  cout << "   |_ R0 = " << R0s[iSimul] << " um" << endl;
+  cout << "   |_ Reff = " << Reffs[iSimul] << " um" << endl;
   cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
   cout << "   |_ Lc = " << Lc[iSimul] << " um" << endl;
   cout << "   |_ La = " << abs(zeta/zi) << " um" << endl;

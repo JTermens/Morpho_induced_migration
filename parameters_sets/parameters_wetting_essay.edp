@@ -65,9 +65,9 @@ int dsave = 20; // Save frame gap
 
 // Domain parameters
 real[int] cuts = [ // Angular length of the cutted portion of the circle
-  2.*pi/3.,
-  2.*pi/3.,
-  2.*pi/3.
+  3.*pi/3.,
+  3.*pi/3.,
+  3.*pi/3.
 ];
 
 real symmAxis = pi/2.;	// Angles of the symmetry axis of each cut

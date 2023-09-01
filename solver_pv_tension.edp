@@ -1,578 +1,755 @@
-// PACKAGES FOR ADVANCED REMESHING SCHEME
+// Packages for advanced remeshing scheme
 load "Curvature"
 load "distance"
 load "isoline"
 load "gsl"
 
-//include <iostream>;
-include "/home/joan/Documents/Repositoris/Spontaneous_tissue_motility/parameters_sets/parameters_MDCK_MCF10a_Blanch.edp";
+// Manage command-line arguments
+include "getARGV.idp"
+
+// include <iostream>; // If needed
+
+int iSimul = getARGV("-i", 1);
+bool debug = getARGV("-d", 1);
+bool err = 0;
+
+include "parameters_test_tension.edp";
+// include "parameters_sets/parameters_wetting_essay.edp"; // load the parameters
+include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
-string SimulName;
-string pathDir;
+// Problem length & timescales ----------------------------------------------------------------------------------------
+real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
+real R0 = R0s[iSimul];              // Initial radius
+real Reff = Reffs[iSimul];          // Effective radius
+real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
+real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
+real Lg = gamma/(zi*Lc);            // Capillary length: surface tension/stress
+real tscale = eta/(zi*Lc);          // Problem timescale
 
-for (int i=0; i<nSimul; i++){
-	SimulName = SimulNames[i];
-	pathDir = pathDirs[i];
+// real R0 = sqrt(pi/areaCst);         // Adimensionalized radius so that adim Area = pi
+// real tscale = eta/(zi*Reffs[i]);    // Problem timescale
 
-	// Problem Parameters
-	real a = abs(zeta)/(zi*Lc);			// Active |zeta|/zi and Nematic length ratio
-	real b = R0[i]*R0[i]*xi/eta;		// R0 and hydrodynamic length sqrt(eta/xi) ratio
-	real c = R0[i]/Lc;							// R0 and nematic length ratio
-	real lg = gamma/(zi*Lc*R0[i]);	// Surface tension to traction adimensionalized length
-
-
-  cout << "Simul: " << SimulName << ", saving = " << bsave << "\nR0 = " << R0[i] << ", Rc = " << Rc
-  << ", lambda = " << sqrt(eta/xi) << ", Lc = " << Lc << ", La = " << abs(zeta)/zi << ", tscale = " << tscale << endl;
-
-  // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
-  mesh Th,Thb;
-
-		real ThickOutMesh = Lc/R0[i];
-		real Rarc = fracRarc;
-		real t1 = acos((cos(cut[i]/2.)-Rarc)/(1-Rarc));
-
-		real[int] OxPlus = [(1-Rarc)*cos(AxisCut[0]+t1)];
-		real[int] OyPlus = [(1-Rarc)*sin(AxisCut[0]+t1)];
-		real[int] OxMin = [(1-Rarc)*cos(AxisCut[0]-t1)];
-		real[int] OyMin = [(1-Rarc)*sin(AxisCut[0]-t1)];
-		real LenCut = sqrt((OxPlus[0]-OxMin[0])*(OxPlus[0]-OxMin[0]) + (OyPlus[0]-OyMin[0])*(OyPlus[0]-OyMin[0]));
-
-		border GammaArchMin0(t=0,1){x=OxMin[0]+Rarc*cos(AxisCut[0]-t1*(1-t)); y=OyMin[0]+Rarc*sin(AxisCut[0]-t1*(1-t)); label=1;}
-		border GammaCut0(t=0,1){x=((OxMin[0]+Rarc*cos(AxisCut[0]))+(OxPlus[0]-OxMin[0])*t); y=((OyMin[0]+Rarc*sin(AxisCut[0]))+(OyPlus[0]-OyMin[0])*t);label=1;}
-		border GammaArchPlus0(t=0,1){x=OxPlus[0]+Rarc*cos(AxisCut[0]+t1*t); y=OyPlus[0]+Rarc*sin(AxisCut[0]+t1*t); label=1;}
-		border GammaArch0(t=0,1){x=cos(AxisCut[0]+t1+2*(pi-t1)*t); y=sin(AxisCut[0]+t1+2*(pi-t1)*t);label=1;}
+// Problem Parameters
+real a = La/Lc;             // Active length, zeta/zi, and effective radius ratio
+real b = R0/lambda;         // Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
+real c = R0/Lc;             // Effective radius and nematic length ratio
+real gs = Lg/R0;            // Capillary length and effectrive radius ratio
+real bLayerThickness = 1/c; // Adim. nematic length
+//---------------------------------------------------------------------------------------------------------------------
 
 
-		Th=buildmesh(GammaArchMin0(obd*Rarc*t1)
-								+GammaCut0(obd*LenCut)
-								+GammaArchPlus0(obd*Rarc*t1)
-								+GammaArch0(obd*2*(pi-t1))
-								);
+// Construct the mesh -------------------------------------------------------------------------------------------------
+mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
 
-		// Smooth the outer boundary pieces
-		real[int,int] b1(3,1); real l1=extractborder(Th,1,b1); // l1 is the permiter of b1
-		gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
-		gslspline splineY(gslinterpakima, b1(2, :), b1(1, :)); 	// y(s) akima spline
-		border Outer(t=0,l1){x=splineX(t);y=splineY(t);label=1;}
-		int nO = round(obd*l1);
-		// Transform the dense mesh & into an adaptive one
-		fespace Dini(Th, P1);	// Distance function to define the contour region of the mesh
+// Extract outer boundary
+// extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
+// for k in (0,Th.nbe-1): 
+//		bOut(0,k) == x coord kth vertex
+//		bOut(1,k) == y coord kth vertex
+//		bOut(2,k) == arch length at the kth vertex
+real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelOut, bMesh);
 
-		varf vong(B, d)= on(1,B=1);
-		real[int] ong=vong(0,Dini);
-		Dini B =1, d;
-		B[] = ong ? 0 : B[];
-		distance(Th,B,d[]);
+Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelOut,.5,0,1); // Custom mesh adaptation
+mesh Thb = emptymesh(Th);  // Create empty mesh for the surface terms
 
-		// Get the new inner boundary vertices (ISO is the contour d==nu)
-		real[int,int] ISO(3,1); int nc=isoline(Th,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
-		real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
-		border Inner(t=0,1){ P=Curve(ISO,t);label=0;}
-		int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
+// Initial variables for shape characterization
+real Area0 = Th.measure; // Inital Area of the Fluid Domain
+real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
+real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
 
-		// C. BUILD NEW MESH
-		Th=buildmesh(Outer(nO)+Inner(nI),fixedborder=1);
-		Th=change(Th,rmInternalEdges=1);
-		Thb=emptymesh(Th);
+if (debug) {
+  plot(
+    Th,value = true, fill = false, nbiso=64, wait=true, 
+    cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
+  );
+}
+//---------------------------------------------------------------------------------------------------------------------
 
-	real Area0=Th.measure; // Inital Area of the Fluid Domain
-  real Areai=Area0;
-  real Xcm0=int2d(Th)(x)/Areai; //Initial x_cm
-  real Ycm0=int2d(Th)(y)/Areai; //Initial y_cm
-  real XcmP=Xcm0;
-  real YcmP=Ycm0;
-  real Xcm=Xcm0;
-  real Ycm=Ycm0;
 
-  if (verbosity) {
-  	plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
+// Import a mesh ------------------------------------------------------------------------------------------------------
+// mesh Th = readmesh(rootDir+"/time_evol_2pi3_4c_Rc_test/msh/mesh_1000190"+".msh"); // begin from an imported mesh
+// // Th = change(Th, rmInternalEdges=1);
+
+// real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelOut, bMesh);
+
+// // if (debug) { // Plot the boundary, usefull to detect mesh problems
+// //   border Outer(t=0,1){ P=Curve(bMesh,bMesh(2,round(t*(bMesh.m-1)))/lMesh);label=labelOut;}
+// //   int nMesh = bMesh.m-1; 								// keep number of elements
+// //   plot(Outer(nMesh),value = true, fill = false, nbiso=64, wait=true, cmm = "imported boundary;");
+// // }
+
+// // Initial variables for shape characterization
+// real Area0 = Th.measure; // Inital Area of the Fluid Domain
+// real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
+// real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
+
+// if (debug) {
+//   plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "imported mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
+// }
+//---------------------------------------------------------------------------------------------------------------------
+
+// Create folder structure, parameters' file & header of the global solutions' file -----------------------------------
+if (bsave){
+  string simulHomeDir = rootDir+"/"+simulNames[iSimul];
+  string fileNameParams = "/params.csv";
+  string fileNameGlobalSol = "/global_sol.csv";
+
+  exec("mkdir "+simulHomeDir);							// Make a home directory for the simulation
+  exec("mkdir "+simulHomeDir+"/msh");				// Make and save the meshes in a separeted directory
+  exec("mkdir "+simulHomeDir+"/local_sol");	// Make and save the local solutions in a separeted directory
+
+  {ofstream fileParams (simulHomeDir+fileNameParams); // Save the parameters in separate file
+
+    fileParams.fixed;
+    fileParams << "cut,R0,Reff,fracRarc," << /*areaCst, <<*/ "h,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" 
+               << ",gamma" <<  endl;
+    fileParams << "rad,adim,um,adim," << /*adim, <<*/ "um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim,R0Lc_adim" 
+               << ",kPa*um" << endl;
+    fileParams << cut 		<< "," << R0 		 << "," << Reff	<< "," << fracRarc << ","
+              /*<< areaCst  << ","*/ << h 		 << "," << Lc	  << "," << lambda 	 << ","
+              << La 			<< "," << eta 	 << "," << xi 	<< "," << zi 			 << "," 
+              << zeta 		<< "," << tscale << "," << dt 	<< "," << dsave << "," << gamma << endl;// 
+  }
+  // Generate a separate file for the global variables (integrates ones)
+  {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);	
+    //fileGlobalSol.fixed;
+    fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divTermsX,divTermsY" << endl;
+  }
+} 
+//---------------------------------------------------------------------------------------------------------------------
+
+// Console Log
+cout << "Simul: " << simulNames[iSimul] << ", saving = " << bsave << endl;
+cout << "a (La/Lc) = " << a << ", b (R0/lambda) = " << b << ", c (R0/Lc) = " << c 
+     << ", gs (Lg/R0) = " << gs << ", tscale = " << tscale << endl;  
+
+
+// Define the macros --------------------------------------------------------------------------------------------------
+macro pD [pDx, pDy] //                                 // P2 extension for Dirichlet data
+macro p [px, py] //                                    // Polarity vector field
+macro q [qx, qy] //                                    // Polarity test functions
+macro v [vx, vy] //                                    // Velocity vector field
+macro u [ux, uy] //                                    // Velocity test functions
+macro nc [nx, ny] //                                   // Nc vectors at the boundary (null outside of it)
+
+macro dp [dpxdx, dpxdy, dpydx, dpydy] //               // Gradient of the polarity field
+macro dq [dqxdx, dqxdy, dqydx, dqydy] //               // Gradient of the polarity test functions
+macro dv [dvxdx, dvxdy, dvydx, dvydy] //               // Gradient of the velocity field
+macro du [duxdx, duxdy, duydx, duydy] //               // Gradient of the velocity test functions
+			
+macro grad(u) [dx(u), dy(u)] //                        // Gradient of a sclar
+macro Grad(ux,uy) [dx(ux), dy(ux), dx(uy), dy(uy)] //  // Gradient of a vector
+macro GradT(ux,uy) [dx(ux), dx(uy), dy(ux), dy(uy)] // // Grad vector transpose
+macro pp(px,py) [px*px, px*py, py*px, py*py] //        // Active stress tensor
+
+macro vc [vcx, vcy] //                                 // Explicit velocity in the iterative Newton method
+macro tau [tx, ty] //                                  // Tau vectors at the boundary in current configuration, [-ncy, ncx]
+macro dtau(v) [grad(v#x)'*tau, grad(v#y)'*tau] //      // Difference between taus
+macro Tau [Taux, Tauy] //                              // Tau vectors in the deformed configuration
+macro Nc [Tauy, -Taux] //                              // Nc vectors in the deformed configuration
+macro dTau [dTaux, dTauy] //                           // Vector test function on boundary elements (to compute Tau)
+//---------------------------------------------------------------------------------------------------------------------
+
+
+//FEM spaces ----------------------------------------------------------------------------------------------------------
+fespace Pol(Th, [P2, P2]);          // For polarity vector
+fespace Pola(Th, P2 );              // For |p| (not essential, just visualization)
+fespace dPol(Th,[P2,P2,P2,P2]);     // For the gradient of the polarity vector
+
+fespace Vel(Th, [P1b, P1b]);        // For velocity vector
+fespace dVel(Th,[P1b,P1b,P1b,P1b]); // For the gradient of the velocity vector
+
+// fespace Vor(Th,P1b);							  // To compute the vorticity & divergence
+fespace Nh(Th,[P1,P1]);						  // For the corrected nc & tau vector at the boundary
+fespace Tauh(Thb, [P0edge, P0edge]);  // For taus defined in the current configuration
+fespace dSh(Thb, P0edge);             // FOr the surface element in the current configuration
+//---------------------------------------------------------------------------------------------------------------------
+
+// Extract the new boundary for future computations and compute its orientation
+real[int,int] bOut(3,1); real lOut = extractborder(Th, labelOut, bOut);
+int nBnd = bOut.m-1; // instead of Th.nbe to avoid problems with mesh labels
+
+// // Compute the orientation of the boundary
+// // if r0 1st boundary point & r1 is the second one, orient = 1 if (r0-rCM) x (r1-r0) > 0 & -1 otherwise
+// int orientBConn = ((Th.be(0)[1].x-Xcm0)*(Th.be(1)[1].y-Th.be(0)[1].y)-(Th.be(0)[1].y-Ycm0)*(Th.be(1)[1].x-Th.be(0)[1].x)) > 0 ? 1:-1;
+// int orientBorder = ((bOut(0,0)-Xcm0)*(bOut(1,1)-bOut(1,0))-(bOut(1,0)-Ycm0)*(bOut(0,1)-bOut(0,0))) > 0 ? 1:-1;
+
+
+// if (debug) {
+//   cout << "Orientation = (" << orientBConn << ", " << orientBorder << ");" << endl;
+// }
+
+// Retrieve the indices of the verices of bOut with the same ordering -------------------------------------------------
+int[int] bndIndices(nBnd+1);
+
+int iTri;
+for (int k=0; k<nBnd; k++){
+  // Find the trinagle index of the kth bnd point
+  iTri = Th(bOut(0,k),bOut(1,k)).nuTriangle;
+
+  // Find index of the kth bnd point from its triangle index
+  for (int jTri=0; jTri<3; jTri++) {
+    if( abs(Th[iTri][jTri].x-bOut(0,k))<1e-12 && abs(Th[iTri][jTri].y-bOut(1,k))<1e-12){
+      bndIndices(k) = Th[iTri][jTri];
+    }
+  }
+}
+
+bndIndices(nBnd) = bndIndices(0);
+//---------------------------------------------------------------------------------------------------------------------
+
+
+// Correction of the nc vectors at the boundary -------------------------------------------------------------------
+
+Nh nc = [0,0]; // here the Dof of nx,ny are scramble.
+Nh tau = [0,0];
+
+real[int] nprev(2), npost(2), nmean(2);
+int iBndElem; // index of the boundary element
+real lenprev, lenpost;
+nprev = [(bOut(1,0)-bOut(1,nBnd-1)),-(bOut(0,0)-bOut(0,nBnd-1))];
+lenprev = sqrt(pow(nprev[0],2)+pow(nprev[1],2));
+
+for (int k = 0; k < nBnd; k++){
+  npost = [(bOut(1,k+1)-bOut(1,k)),-(bOut(0,k+1)-bOut(0,k))];
+  lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
+  
+  nmean = nprev*(lenpost/(lenpost+lenprev)) + npost*(lenprev/(lenprev+lenpost));
+  nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
+
+  // nmean[0]:= nx & nmean[1]:= ny
+  nx[](2*bndIndices(k)) = nmean[0]; ny[](2*bndIndices(k)+1) = nmean[1];
+  tx[](2*bndIndices(k)) = -nmean[1]; ty[](2*bndIndices(k)+1) = nmean[0];
+  nprev = npost; lenprev = lenpost;
+
+  // if (debug) {
+  //   plot(Th,nc, value = true, fill = true, nbiso = 64, wait = true, cmm = "(nx,ny)");
+  // }
+}
+
+if (debug) {
+  plot(/*Th,*/nc, value = true, fill = true, nbiso = 64, wait = true, cmm = "(nx,ny);"/*+" orientation = ("+orientBConn+", "+orientBorder+");"*/);
+  plot(/*Th,*/tau, value = true, fill = true, nbiso = 64, wait = true, cmm = "(tx,ty);"/*+" orientation = ("+orientBConn+", "+orientBorder+");"*/);
+}
+//---------------------------------------------------------------------------------------------------------------------
+
+
+// Define & solve the polarity equations ------------------------------------------------------------------------------
+// P2 extension of polarity Dirichlet data
+varf bndDirichlet(pD, q) = on(labelOut, pDx = nx) + on(labelOut, pDy = ny);
+Pol pD=[0,0];
+pDx[] = bndDirichlet(0, Pol, tgv = 1.0);
+
+// Bilinear and linear variational forms P (Modified Homogeneous Drirchlet problem for p-pD)
+varf ap(p, q) = int2d(Th)(
+  (grad(px)'*grad(qx) + grad(py)'*grad(qy))
+  + c*c*(p'*q)
+) + on(labelOut, px = 0.0) + on(labelOut, py = 0.0);
+
+varf lp(p, q) = int2d(Th)(
+  - (grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy))
+  - c*c*(pD'*q)
+) + on(labelOut, px = 0.0) + on(labelOut, py = 0.0);
+
+// Assembly P
+matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
+real[int] bp = lp(0, Pol); // RHS
+
+// P solution with vanishing Dirichlet data
+real[int] solP(Pol.ndof);
+//set(Ap,solver=sparsesolver);
+solP=Ap^-1*bp;
+Pol p=[0,0];
+px[]=solP(0:Pol.ndof-1);
+
+// P solution
+p = p + pD;
+
+if (debug) {
+  // plot(Th,px, value = true, fill = true, nbiso = 64, wait = true, cmm = "px");
+  // plot(Th,py, value = true, fill = true, nbiso = 64, wait = true, cmm = "py");
+  plot(Th,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)");
+	Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2); // Abs(P)
+  plot(Th,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
+}
+//---------------------------------------------------------------------------------------------------------------------
+
+
+// Define & solve the velocity equation -------------------------------------------------------------------------------
+// Bilinear and linear variational forms V
+varf av(v, u) = int2d(Th)(
+  ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) 
+  + b*(v'*u)
+); // -viscosity -friction
+
+varf lv(v, u) = int2d(Th)(
+  + a*(pp(px,py)'*Grad(ux,uy)) 
+  + c*(p'*u)
+); //contractility +active traction
+
+// Surface tension (implicit curvature scheme)
+Vel vc;
+Tauh Tau, dTau;
+dSh ds;
+
+varf aSurface(v,u) = int1d(Th,labelOut,qforder=2)(
+  gs*dt*(
+    (dtau(v)'*Nc)*(dtau(u)'*Nc) 
+    + 1.*(dtau(v)'*Tau)*(dtau(u)'*Tau)
+  )/ds
+);
+
+varf lSurface(v,u) = 
+  - int1d(Th,labelOut,qforder=2)(gs*Tau'*dtau(u))
+  + int1d(Th,labelOut,qforder=2)(
+    gs*dt*(
+      (dtau(vc)'*Nc)*(dtau(u)'*Nc) 
+      + 1.*(dtau(vc)'*Tau)*(dtau(u)'*Tau)
+    )/ds
+  );
+
+// Assembly V
+matrix Av = av(Vel, Vel);
+real[int] bv = lv(0, Vel);
+real[int] solV(Vel.ndof);
+
+real vsquare;
+real newtonResidu = 2;
+int newtonIter = 0;
+Vel v=[0,0];
+
+// Newton loop
+while(newtonResidu > maxNewtonResidu && newtonIter < maxNewtonIter){
+  vc = v; // set the explicit velocity
+
+  // compute the tau in the deformed configuration
+  solve computeTau(Tau,dTau) = intalledges(Thb)(Tau'*dTau) 
+  - intalledges(Thb)((tau+dt*[grad(vcx),grad(vcy)]*tau)'*dTau);
+
+  ds = sqrt(Tau'*Tau)+1.e-12;
+
+  Tau = (1./ds)*Tau;
+
+  // Add surface tension to the problem
+  matrix ASurface = aSurface(Vel,Vel); // Stabilitzation for the surface tension
+  real [int] bSurface = lSurface(0, Vel); // Surface tension + stabilitzation residual term
+
+  Av += ASurface;
+  bv += bSurface;
+
+  // V solution
+  set(Av,solver=sparsesolver);
+  solV=Av^-1*bv;
+  v=[0,0];
+  vx[]=solV(0:Vel.ndof-1);
+
+  // Compute residu (v - vc)^2 for the convergence test
+  {
+    newtonResidu = int2d(Th)(v'*v - 2.*v'*vc + vc'*vc);
+    cout <<"iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
   }
 
-	//FEM spaces
-  fespace Pol(Th, [P2, P2]);					// For polarity vector
-  fespace Pola(Th, P2 );							// For |p| (not essential, just visualization)
-  fespace Vel(Th, [P1b, P1b]);				// For velocity vector
-  fespace Dh(Th, P1);								  // For distance function (remeshing scheme) and data exports
-  fespace Vor(Th,P1b);								// To compute the vorticity & divergence
-  fespace Nh(Th,[P1,P1]);							// For the corrected normal vector at the boundary
-	fespace Tauh(Thb,[P0edge,P0edge]);		// For tangents defined in current configuration
-	fespace dSh(Thb,P0edge);							// For surface element in current configuration
+  newtonIter++;
+}
 
-	//Macros
-	macro pD [pD1, pD2]																// P2 extension for Dirichlet data
-	macro p [p1, p2] 																	// Polarity vector field
-	macro q [q1, q2] 																	// Polarity test functions
-	macro V [V1, V2] 																	// Velocity field
-	macro U [U1, U2] 																	// Velocity test functions
-	macro Vc [Vc1, Vc2]																// Explicit velocity in iterative Newton method
-	macro grad(u) [dx(u),dy(u)]												// Gradient of a sclar
-  macro Grad(u1,u2) [dx(u1),dy(u1),dx(u2),dy(u2)] 	// Gradient of a vector
-  macro GradT(u1,u2) [dx(u1),dx(u2),dy(u1),dy(u2)] 	// Grad vector transpose
-  macro pp(p1,p2) [p1*p1,p1*p2,p2*p1,p2*p2] 				// Active stress tensor
-	macro tau(nx,ny) [-ny,nx]													// Corrected tangent in current configuration
-	macro dtau(V)	[grad(V#1)'*tau(nx,ny),grad(V#2)'*tau(nx,ny)]			// Difference in tangent
-	macro Tau [Tau1,Tau2]															// Tangent in deformed configuration
-	macro Nc [Tau2,-Tau1]															// Normal in deformed configuration
-	macro dTau [dTau1,dTau2]													// Vector test function on boundary elements (to compute Tau)
+if (debug) {
+  // plot(Th,vx, value = true, fill = true, nbiso = 64, wait = true, cmm = "vx");
+  // plot(Th,vy, value = true, fill = true, nbiso = 64, wait = true, cmm = "vy");
+  plot(Th,v, value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)");
+  Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2); // Abs(P)
+  plot(Th,vABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|v|");
+}
+//---------------------------------------------------------------------------------------------------------------------
 
-	// Correction of the normal vectors at the boundary
-  int NbBoundaryElements = Th.nbe;
-  int[int] bcon(NbBoundaryElements);
-  real[int] xx(NbBoundaryElements+1),yy(NbBoundaryElements+1);
-  for (int k = 0; k < NbBoundaryElements; k++){
-           bcon[k] = Th.be(k)[0];
-  	 xx[k]=Th(Th.be(k)[0]).x; yy[k]=Th(Th.be(k)[0]).y;
+
+// Compute the gradient of p for the posterior analysis ---------------------------------------------------------------
+varf aGradP(dp, dq) = int2d(Th)(dp'*dq);
+varf lGradP(dp, dq) = int2d(Th)(Grad(px,py)'*dq);
+
+matrix AGradP = aGradP(dPol, dPol); // LHS matrix
+real[int] bGradP = lGradP(0, dPol); // RHS vector
+
+real[int] solGradP(dPol.ndof);
+solGradP=AGradP^-1*bGradP;
+dPol dp=[0,0,0,0];
+dpxdx[]=solGradP(0:dPol.ndof-1);
+//---------------------------------------------------------------------------------------------------------------------
+
+// Compute the gradient of v for the posterior analysis ---------------------------------------------------------------
+varf aGradV(dv, du) = int2d(Th)(dv'*du);
+varf lGradV(dv, du) = int2d(Th)(Grad(vx,vy)'*du);
+
+matrix AGradV = aGradV(dVel, dVel);	// LHS matrix
+real[int] bGradV = lGradV(0, dVel); // RHS vector
+
+real[int] solGradV(dVel.ndof);
+solGradV=AGradV^-1*bGradV;
+dVel dv=[0,0,0,0];
+dvxdx[]=solGradV(0:dVel.ndof-1);
+//---------------------------------------------------------------------------------------------------------------------
+
+
+// Compute the intial values of the global variables ------------------------------------------------------------------
+real Areai = Area0;	                            // Current area
+real AreaP = Areai;	                            // Previous area
+real dAreadt = (Areai-AreaP)/dt;                // time-derivative of the area (backward)
+
+real Xcm = Xcm0;                                // Current x of the center of mass (x_cm)
+real Ycm = Ycm0;                                // Current y of the center of mass (y_cm)
+real[int] XcmP = [Xcm0,Xcm0];                   // Previous x_cms (-dt & -2*dt)
+real[int] YcmP = [Ycm0,Ycm0];                   // Previous y_cms (-dt & -2*dt)
+real Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
+real Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
+real Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
+real Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
+
+real Pxcm = int2d(Th)(px)/Areai;                // Current P_x cm
+real Pycm = int2d(Th)(py)/Areai;                // Current P_y cm
+real PxcmP = Pxcm;                              // Previous P_x cm
+real PycmP = Pycm;                              // Previous P_y cm
+real dPxcmdt = (Pxcm-PxcmP)/dt;                 // time-derivative of P_x cm (backward)
+real dPycmdt = (Pycm-PycmP)/dt;                 // time-derivative of P_y cm (backward)
+
+real Ix = int2d(Th)(pow(y-Ycm,2))/Areai;	      // Current 2nd Moment of area with respect to x axis at the CM
+real Iy = int2d(Th)(pow(x-Xcm,2))/Areai;	      // Current 2nd Moment of area with respect to y axis at the CM
+real IxP = Ix;                                  // Previous 2n Moment of x
+real IyP = Iy;                                  // Previous 2n Moment of y
+real dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
+real dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
+
+real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;                  // Average divergergence of the velocity
+real divTermsX = int2d(Th)(x*((dvxdx+dvydy)-avgDivV))/Areai;	// Current value of the Div terms of V_x cm
+real divTermsY = int2d(Th)(y*((dvxdx+dvydy)-avgDivV))/Areai;	// Current value of the Div terms of V_y cm
+//---------------------------------------------------------------------------------------------------------------------
+
+
+// Time iteration -----------------------------------------------------------------------------------------------------
+for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
+
+  if (iterTime % 100 == 0 && iterTime > 0) {
+    // Console log every 100 iterations
+    cout << iterTime << " out of " << NiterTime << " iterations completed" << endl;
   }
-  xx[NbBoundaryElements]=xx[0]; yy[NbBoundaryElements]=yy[0];
 
-  Nh [nx,ny]; // here the Dof of nx,ny are scramble .
-  nx[]=0;ny[]=0;
+  // Extract the new boundary for future computations and compute its orientation
+  lOut = extractborder(Th, labelOut, bOut);
+  nBnd = bOut.m-1; // instead of Th.nbe to avoid problems with mesh labels
+
+  // Compute the orientation of the boundary
+  // if r0 1st boundary point & r1 is the second one, orient = 1 if (r0-rCM) x (r1-r0) > 0 & -1 otherwise
+  // orientBConn = ((Th.be(0)[1].x-Xcm0)*(Th.be(1)[1].y-Th.be(0)[1].y)-(Th.be(0)[1].y-Ycm0)*(Th.be(1)[1].x-Th.be(0)[1].x)) > 0 ? 1:-1;
+  // orientBorder = ((bOut(0,0)-Xcm0)*(bOut(1,1)-bOut(1,0))-(bOut(1,0)-Ycm0)*(bOut(0,1)-bOut(0,0))) > 0 ? 1:-1;
+  // if (debug) {
+  //   cout << "Orientation = (" << orientBConn << ", " << orientBorder << ");" << endl;
+  // }
+
+  // Retrieve the indices of the verices of bOut with the same ordering -----------------------------------------------
+  int[int] bndIndices(nBnd+1);
+
+  int iTri;
+  for (int k=0; k<nBnd; k++){
+    // Find the trinagle index of the kth bnd point
+    iTri = Th(bOut(0,k),bOut(1,k)).nuTriangle;
+
+    // Find index of the kth bnd point from its triangle index
+    for (int jTri=0; jTri<3; jTri++) {
+      if( abs(Th[iTri][jTri].x-bOut(0,k))<1e-12 && abs(Th[iTri][jTri].y-bOut(1,k))<1e-12){
+        bndIndices(k) = Th[iTri][jTri];
+      }
+    }
+  }
+
+  bndIndices(nBnd) = bndIndices(0);
+  //-------------------------------------------------------------------------------------------------------------------
+
+
+  // Correction of the nc vectors at the boundary -----------------------------------------------------------------
+  Nh nc = [0,0]; // here the Dof of nx,ny are scramble.
+  Nh tau = [0,0];
 
   real[int] nprev(2), npost(2), nmean(2);
+  int iBndElem; // index of the boundary element
   real lenprev, lenpost;
-  nprev = [(yy[0]-yy[NbBoundaryElements-1]),-(xx[0]-xx[NbBoundaryElements-1])];
+  nprev = [(bOut(1,0)-bOut(1,nBnd-1)),-(bOut(0,0)-bOut(0,nBnd-1))];
   lenprev = sqrt(pow(nprev[0],2)+pow(nprev[1],2));
 
-  for (int k = 0; k < NbBoundaryElements; k++){
-    npost = [(yy[k+1]-yy[k]),-(xx[k+1]-xx[k])];
+  for (int k = 0; k < nBnd; k++){
+    npost = [(bOut(1,k+1)-bOut(1,k)),-(bOut(0,k+1)-bOut(0,k))];
     lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
-
+    
     nmean = nprev*(lenpost/(lenpost+lenprev)) + npost*(lenprev/(lenprev+lenpost));
     nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
 
-  	nx[](2*bcon(k))= nmean[0]; ny[](2*bcon(k)+1) = nmean[1];
-  	nprev = npost; lenprev = lenpost;
-  }
+    nx[](2*bndIndices(k))= nmean[0]; ny[](2*bndIndices(k)+1) = nmean[1];
+    tx[](2*bndIndices(k)) = -nmean[1]; ty[](2*bndIndices(k)+1) = nmean[0];
+    nprev = npost; lenprev = lenpost;
 
-	// P2 extension of polarity Dirichlet data
-  varf bndDirichlet(pD, q) = on(1, pD1 = nx) + on(1, pD2 = ny);// + on(2, p1 = N.x) + on(2, p2 = N.y);
+    // if (debug) {
+    //   plot(Th,nc, value = true, fill = true, nbiso = 64, wait = true, cmm = "(nx,ny)");
+    // }
+  }
+  //-------------------------------------------------------------------------------------------------------------------
+
+  // Solve the polarity equation --------------------------------------------------------------------------------------
+  // P2 extension of polarity Dirichlet data
+  varf bndDirichlet(pD, q) = on(labelOut, pDx = nx) + on(labelOut, pDy = ny);
   Pol pD=[0,0];
-  pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
+  pDx[] = bndDirichlet(0, Pol, tgv = 1.0);
 
-  if (verbosity) {
-  	plot(pD1, value = true, fill = true, nbiso=64, wait=true, cmm = "pDx");
-  	plot(pD2, value = true, fill = true, nbiso=64, wait=true, cmm = "pDy");
-  }
+  // Assembly P
+  varf lp(p, q) = int2d(Th)(
+      - (grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy)) 
+      - c*c*(pD'*q)
+    ) + on(labelOut, px = 0.0) + on(labelOut, py=0.0);
 
-	// Bilinear and linear variational forms P (Modified Homogeneous Drirchlet problem for p-pD)
-	varf ap(p, q) = int2d(Th)(  grad(p1)'*grad(q1) + grad(p2)'*grad(q2) )  + int2d(Th)(c*c*(p'*q)) + on(1, p1 = 0.0) + on(1, p2=0.0);
-	varf lp(p, q) = -int2d(Th)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(Th)(c*c*(pD'*q))  + on(1, p1 = 0.0) + on(1, p2=0.0);
+  matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS matrix
+  real[int] bp = lp(0, Pol); 			// RHS
 
-	// Assembly P
-	matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
-	real[int] bp = lp(0, Pol); // RHS
-
-	// P solution with vanishing Dirichlet data
-  real[int] solP(Pol.ndof);
-  //set(Ap,solver=sparsesolver);
-  solP=Ap^-1*bp;
+  // P solution with vanishing Dirichlet data
+  real[int] sol(Pol.ndof);
+  //set(Ap,solver=sparsesolvenetr);
+  sol=Ap^-1*bp;
   Pol p=[0,0];
-  p1[]=solP(0:Pol.ndof-1);
-
-  if (verbosity) {
-  	plot(Th,p1, value = true, fill = true, nbiso=64, wait=true, cmm = "dpx = px-pDx");
-  	plot(Th,p2, value = true, fill = true, nbiso=64, wait=true, cmm = "dpy = py-pDy");
-  }
+  px[]=sol(0:Pol.ndof-1);
 
   // P solution
   p = p + pD;
+  //-------------------------------------------------------------------------------------------------------------------
 
-  // Compute the divergence, curl and normal derivative of the polarity for the posterior analysis
-  // Divergence
-  varf aDivP(DivP, g) = int2d(Th)(DivP*g);
-  varf lDivP(DivP, g) = int2d(Th)((dx(p1)+dy(p2))*g);
 
-  matrix ADivP = aDivP(Vor, Vor);		// LHS matrix
-  real[int] bDivP = lDivP(0, Vor);	// RHS vector
+  // Solve the velocity equation --------------------------------------------------------------------------------------
+  // Assembly V
+  varf lv(v, u) = int2d(Th)(
+      + a*(pp(px,py)'*Grad(ux,uy))
+      + c*(p'*u)
+    ); //contractility + active traction
 
-  real[int] solDivP(Vor.ndof);
-  solDivP=ADivP^-1*bDivP;
-  Vor DivP=solDivP(0:Vor.ndof-1);
+  // matrix Av = av(Vel, Vel);  			// LHS matrix
+  // real[int] bv = lv(0, Vel);			// RHS
 
-  // Curl (Vorticity)
-  varf aCurlP(CurlP, g) = int2d(Th)(CurlP*g);
-  varf lCurlP(CurlP, g) = int2d(Th)((dx(p2)-dy(p1))*g);
+  // // V solution
+  // real[int] solV(Vel.ndof);
+  // //set(Av,solver=sparsesolver);
+  // solV=Av^-1*bv;
+  // Vel v=[0,0];
+  // vx[]=solV(0:Vel.ndof-1);
 
-  matrix ACurlP = aCurlP(Vor, Vor);		// LHS matrix
-  real[int] bCurlP = lCurlP(0, Vor);	// RHS vector
+  // Assembly V
+  matrix Av = av(Vel, Vel);
+  real[int] bv = lv(0, Vel);
+  real[int] solV(Vel.ndof);
 
-  real[int] solCurlP(Vor.ndof);
-  solCurlP=ACurlP^-1*bCurlP;
-  Vor CurlP=solCurlP(0:Vor.ndof-1);
+  real vsquare;
+  real newtonResidu = 2;
+  int newtonIter = 0;
+  Vel v=[0,0];
 
-  if (verbosity) {
-  	plot(Th,p1, value = true, fill = true, nbiso = 64, wait = true, cmm = "px");
-  	plot(Th,p2, value = true, fill = true, nbiso = 64, wait = true, cmm = "py");
-  	plot(Th,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)");
-  	// Abs(P)
-  	Pola pABS = sqrt(p1(x,y)^2 + p2(x,y)^2);
-  	plot(Th,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
-  	plot(Th,DivP, value = true, fill = true, nbiso = 64, wait = true, cmm = "Div(P)");
-  	plot(Th,CurlP, value = true, fill = true, nbiso = 64, wait = true, cmm = "Curl(P)");
-  }
+  // Newton loop
+  while(newtonResidu > maxNewtonResidu && newtonIter < maxNewtonIter){
+    vc = v; // set the explicit velocity
 
-	// Bilinear and linear variational forms V
-	varf av(V, U) = int2d(Th)( ((Grad(V1,V2)+GradT(V1,V2))'*Grad(U1,U2)) )  + int2d(Th)( b*(V'*U) ); // -viscosity -friction
-  varf lv(V, U) = int2d(Th)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(Th)( c*(p'*U) ); //contractility +active traction
+    // compute the tau in the deformed configuration
+    solve computeTau(Tau,dTau) = intalledges(Thb)(Tau'*dTau) 
+    - intalledges(Thb)((tau+dt*[grad(vcx),grad(vcy)]*tau)'*dTau);
 
-	// Surface tension (implicit curvature scheme)
-	Vel Vc;
-	Tauh Tau,dTau;
-	dSh	ds;
-	varf asurface(V,U)=int1d(Th,1,qforder=2)(lg*dt*
-						((dtau(V)'*Nc)*(dtau(U)'*Nc)
-						+1.*(dtau(V)'*Tau)*(dtau(U)'*Tau))/ds);
-	varf lsurface(V,U)=
-					-int1d(Th,1,qforder=2)(lg*Tau'*dtau(U))
-					+int1d(Th,1,qforder=2)(lg*dt*
-	                    ((dtau(Vc)'*Nc)*(dtau(U)'*Nc)
-	                    +1*(dtau(Vc)'*Tau)*(dtau(U)'*Tau))/ds)
-					//+int2d(ThFluid)([g,0]'*[U1,U2]) // Gravity
-						;
+    ds = sqrt(Tau'*Tau)+1.e-12;
 
-	// Assembly V
-	matrix Av = av(Vel, Vel);
-	real[int] bv = lv(0, Vel);
+    Tau = (1./ds)*Tau;
 
-	// V solution
-	real[int] solV(Vel.ndof);
-	//set(Av,solver=sparsesolver);
-	real vsquare;
-	real residu=2;
-	int iterNewton=0;
-	Vel V=[0,0];
+    // Add surface tension to the problem
+    matrix ASurface = aSurface(Vel,Vel); // Stabilitzation for the surface tension
+    real [int] bSurface = lSurface(0, Vel); // Surface tension + stabilitzation residual term
 
-	// Newton loop
-	while(residu>maxNewtonResidu && iterNewton<maxNewtonIter)
-	{
-		Vc=V; // Set the explicit velocity
-		// Compute tangent in deformed configuration
-		solve compute(Tau,dTau)=
-			intalledges(Thb)(Tau'*dTau)-intalledges(Thb)((tau(nx,ny)+dt*[grad(Vc1),grad(Vc2)]*tau(nx,ny))'*dTau);
+    Av += ASurface;
+    bv += bSurface;
 
-		ds=sqrt(Tau'*Tau)+1.e-12;
-		Tau=(1./ds)*Tau;
+    // V solution
+    set(Av,solver=sparsesolver);
+    solV=Av^-1*bv;
+    v=[0,0];
+    vx[]=solV(0:Vel.ndof-1);
 
-		// Add surface tension to the problem
-		matrix Asurface=asurface(Vel,Vel);	// Stabilziation for the surface tension
-		real[int] Lsurface=lsurface(0,Vel) ;	// Surface tension + stabilization residual term
-		Av=Av+Asurface;
-		bv=bv+Lsurface;
-
-		// V solution
-		set(Av,solver=sparsesolver);
-		solV=Av^-1*bv;
-		// V=[0,0];
-		V1[]=solV(0:Vel.ndof-1);
-		// Compute Residu (V-Vc)^2 for convergence test
-		residu=int2d(Th)(V'*V+ Vc'*Vc-2.* V'*Vc);
-		if (verbosity) {
-			cout << "residu=" << residu << endl;
-		}
-		iterNewton++;
-	}
-
-	if (residu>maxNewtonResidu) {
-		cout << "WARNING: max Newton iter reached with resid > max residu, " << residu << " > " << maxNewtonResidu << endl;
-	}
-
-	// Compute divergence and curl of the velocity for the posterior analysis
-  // Divergence
-  varf aDivV(DivV, g) = int2d(Th)(DivV*g);
-  varf lDivV(DivV, g) = int2d(Th)((dx(V1)+dy(V2))*g);
-
-  matrix ADivV = aDivV(Vor, Vor);		// LHS matrix
-  real[int] bDivV = lDivV(0, Vor);	// RHS vector
-
-  real[int] solDivV(Vor.ndof);
-  solDivV=ADivV^-1*bDivV;
-  Vor DivV=solDivV(0:Vor.ndof-1);
-
-  // Curl (Vorticity)
-  varf aCurlV(CurlV, g) = int2d(Th)(CurlV*g);
-  varf lCurlV(CurlV, g) = int2d(Th)((dx(V2)-dy(V1))*g);
-
-  matrix ACurlV = aCurlV(Vor, Vor);		// LHS matrix
-  real[int] bCurlV = lCurlV(0, Vor);	// RHS vector
-
-  real[int] solCurlV(Vor.ndof);
-  solCurlV=ACurlV^-1*bCurlV;
-  Vor CurlV=solCurlV(0:Vor.ndof-1);
-
-  if (verbosity) {
-  	plot(Th,V1, value = true, fill = true, nbiso = 64, wait = true, cmm = "vx");
-  	plot(Th,V2, value = true, fill = true, nbiso = 64, wait = true, cmm = "vy");
-  	plot(Th,V, value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)");
-  	// Abs(P)
-  	Pola vABS = sqrt(V1(x,y)^2 + V2(x,y)^2);
-  	plot(Th,vABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|V|");
-  	plot(Th,DivV, value = true, fill = true, nbiso = 64, wait = true, cmm = "Div(V)");
-  	plot(Th,CurlV, value = true, fill = true, nbiso = 64, wait = true, cmm = "Curl(V)");
-  }
-
-	if(bsave){
-  	{ ofstream fileTimeSeries (pathDir+"/timeSeries.csv");
-  			fileTimeSeries	<< "Time,Area,Xcm,Ycm,Vxcm,Vycm,Pxcm,Pycm,DivTermsX,DivTermsY"<<endl;
-  	}
-  }
-
-	// Iterate time
-	for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
-
-		if (iterTime % 100 == 0 && iterTime > 0) {
-			cout << iterTime << " out of " << NiterTime << " iterations completed" << endl;
-		}
-
-		// Correction of the normal vectors at the boundary
-		int NbBoundaryElements = Th.nbe;
-		int[int] bcon(NbBoundaryElements);
-		real[int] xx(NbBoundaryElements+1),yy(NbBoundaryElements+1);
-		for (int k = 0; k < NbBoundaryElements; k++){
-						 bcon[k] = Th.be(k)[0];
-			 xx[k]=Th(Th.be(k)[0]).x; yy[k]=Th(Th.be(k)[0]).y;
-		}
-		xx[NbBoundaryElements]=xx[0]; yy[NbBoundaryElements]=yy[0];
-
-		Nh [nx,ny]; // here the Dof of nx,ny are scramble .
-		nx[]=0;ny[]=0;
-
-    real[int] nprev(2), npost(2), nmean(2);
-	  real lenprev, lenpost;
-	  nprev = [(yy[0]-yy[NbBoundaryElements-1]),-(xx[0]-xx[NbBoundaryElements-1])];
-	  lenprev = sqrt(pow(nprev[0],2)+pow(nprev[1],2));
-
-	  for (int k = 0; k < NbBoundaryElements; k++){
-	    npost = [(yy[k+1]-yy[k]),-(xx[k+1]-xx[k])];
-	    lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
-
-	    nmean = nprev*(lenpost/(lenpost+lenprev)) + npost*(lenprev/(lenprev+lenpost));
-	    nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
-
-	  	nx[](2*bcon(k))= nmean[0]; ny[](2*bcon(k)+1) = nmean[1];
-	  	nprev = npost; lenprev = lenpost;
-	  }
-
-		// P2 extension of the polarity Dirichlet data
-		varf bndDirichlet(pD, q) = on(1, pD1 = nx) + on(1, pD2 = ny);// + on(2, p1 = N.x) + on(2, p2 = N.y);
-		Pol pD=[0,0];
-		pD1[] = bndDirichlet(0, Pol, tgv = 1.0);
-
-		// Assembly P
-		varf lp(p, q) = -int2d(Th)( grad(pD1)'*grad(q1) + grad(pD2)'*grad(q2) ) - int2d(Th)(c*c*(pD'*q))  + on(1, p1 = 0.0) + on(1, p2=0.0);
-		matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS matrix
-		real[int] bp = lp(0, Pol); 			// RHS
-
-		// P solution with vanishing Dirichlet data
-		real[int] sol(Pol.ndof);
-		//set(Ap,solver=sparsesolvenetr);
-		sol=Ap^-1*bp;
-		Pol p=[0,0];
-		p1[]=sol(0:Pol.ndof-1);
-
-		// P solution
-		p = p + pD;
-
-		// Compute the divergence and curl of the velocity for the posterior analysis
-		// Divergence
-		varf aDivP(DivP, g) = int2d(Th)(DivP*g);
-		varf lDivP(DivP, g) = int2d(Th)((dx(p1)+dy(p2))*g);
-
-		matrix ADivP = aDivP(Vor, Vor);		// LHS matrix
-		real[int] bDivP = lDivP(0, Vor);	// RHS vector
-
-		real[int] solDivP(Vor.ndof);
-		solDivP=ADivP^-1*bDivP;
-		Vor DivP=solDivP(0:Vor.ndof-1);
-
-		// Curl (Vorticity)
-		varf aCurlP(CurlP, g) = int2d(Th)(CurlP*g);
-		varf lCurlP(CurlP, g) = int2d(Th)((dx(p2)-dy(p1))*g);
-
-		matrix ACurlP = aCurlP(Vor, Vor);		// LHS matrix
-		real[int] bCurlP = lCurlP(0, Vor);	// RHS vector
-
-		real[int] solCurlP(Vor.ndof);
-		solCurlP=ACurlP^-1*bCurlP;
-		Vor CurlVP=solCurlP(0:Vor.ndof-1);
-
-		// Assembly V
-		varf lv(V, U) = int2d(Th)( -a*(pp(p1,p2)'*Grad(U1,U2)) ) + int2d(Th)( c*(p'*U) ); //contractility + active traction
-		matrix Av = av(Vel, Vel);  			// LHS matrix
-		real[int] bv = lv(0, Vel);			// RHS
-
-		// V solution
-		real[int] solV(Vel.ndof);
-		//set(Av,solver=sparsesolver);
-		real vsquare;
-		real residu=2;
-		int iterNewton=0;
-		Vel V=[0,0];
-
-		// Newton loop
-		while(residu>maxNewtonResidu && iterNewton<maxNewtonIter)
-		{
-			Vc=V; // Set the explicit velocity
-			// Compute tangent in deformed config
-			solve compute(Tau,dTau)=
-				intalledges(Thb)(Tau'*dTau)-intalledges(Thb)((tau(nx,ny)+dt*[grad(Vc1),grad(Vc2)]*tau(nx,ny))'*dTau);
-			ds=sqrt(Tau'*Tau)+1.e-12;
-			Tau=(1./ds)*Tau;
-
-			// Add surface tension to the problem
-			matrix Asurface=asurface(Vel,Vel);	// Stabilziation for the surface tension
-			real[int] Lsurface=lsurface(0,Vel) ;	// Surface tension + stabilization residual term
-			Av=Av+Asurface;
-			bv=bv+Lsurface;
-
-			// V solution
-			set(Av,solver=sparsesolver);
-			solV=Av^-1*bv;
-			V=[0,0];
-			V1[]=solV(0:Vel.ndof-1);
-			// COMPUTE RESIDU (V-Vc)^2 FOR CONVERGENCE TEST
-			residu=int2d(Th)(V'*V+ Vc'*Vc-2.* V'*Vc);
-			if (verbosity){
-				cout<<"residu="<<residu<<endl;
-			}
-			iterNewton++;
-		}
-
-		if (residu>maxNewtonResidu) {
-			cout << "WARNING: max Newton iter reached with residu > max residu, " << residu << " > " << maxNewtonResidu << endl;
-		}
-
-		// Compute the divergence and curl of the velocity for the posterior analysis
-  	// Divergence
-  	varf aDivV(DivV, g) = int2d(Th)(DivV*g);
-  	varf lDivV(DivV, g) = int2d(Th)((dx(V1)+dy(V2))*g);
-
-  	matrix ADivV = aDivV(Vor, Vor);		// LHS matrix
-  	real[int] bDivV = lDivV(0, Vor);	// RHS vector
-
-  	real[int] solDivV(Vor.ndof);
-  	solDivV=ADivV^-1*bDivV;
-  	Vor DivVV=solDivV(0:Vor.ndof-1);
-
-  	// Curl (Vorticity)
-  	varf aCurlV(CurlV, g) = int2d(Th)(CurlV*g);
-  	varf lCurlV(CurlV, g) = int2d(Th)((dx(V2)-dy(V1))*g);
-
-  	matrix ACurlV = aCurlV(Vor, Vor);		// LHS matrix
-  	real[int] bCurlV = lCurlV(0, Vor);	// RHS vector
-
-  	real[int] solCurlV(Vor.ndof);
-  	solCurlV=ACurlV^-1*bCurlV;
-  	Vor CurlV=solCurlV(0:Vor.ndof-1);
-
-  	real Areai = Th.measure;					// Current Area
-  	real Xcm = int2d(Th)(x)/Areai;		// Current Xcm
-  	real Ycm = int2d(Th)(y)/Areai;		// Current Ycm
-  	real Pxcm = int2d(Th)(p1)/Areai;	// Current P_x cm
-  	real Pycm = int2d(Th)(p2)/Areai;	// Current P_y cm
-  	real Vxcm = (Xcm-XcmP)/dt;			// Current V_x cm
-  	real Vycm = (Ycm-YcmP)/dt;			// Current V_y cm
-  	real DivTermsX = (int2d(Th)(x*DivV)-int2d(Th)(DivV)*Xcm)/Areai;	// Current value of the Div terms of V_x cm
-  	real DivTermsY = (int2d(Th)(y*DivV)-int2d(Th)(DivV)*Ycm)/Areai;	// Current value of the Div terms of V_y cm
-
-		// Plot V
-  	if (verbosity) { // Show it always, regardless of the verbosity
-  	Pola vABS = sqrt(V1(x,y)^2 + V2(x,y)^2);
-  		plot(/*Th,[NDerP1,NDerP2],/*CurlV*/vABS, value = true, fill = true, nbiso = 64, wait = false, bb=[[-2,-2],[2,2]],
-  				cmm = "t="+(dt*iterTime)+";  A/A0="+(Areai/Area0)+", (xcm,yxm)-(xcm0,yxm0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)
-  											+"), (vx,vy)=("+Vxcm+","+Vycm+")"
-  											+"), A^-1(c/b)int p=("+(c/b)*Pxcm+","+(c/b)*Pycm+")");
-  	}
-
-		// Export data
-  	if(iterTime % dsave == 0 && bsave==1){
-  		//savemesh(Th,pathDir+"/LastMesh.msh"); 					// To load and restart the simualtion from the last configuration
-
-  		// Save {x, y, p1, p2, V1, V2, DivV, CurlV, DivP, CurlP} on each vertex:
-  		// Memory efficient method, but needs connectivity data to reconstruct the mesh
-  		{	ofstream fileSolutions (pathDir+"/solutions/solRend"+(1000000+iterTime)+".txt");
-  			fileSolutions.fixed;
-  			int NbVertices = Th.nv;
-  			fileSolutions << "# Positional Data" << endl
-  										<< "# NumFields: " << 10 << "\tNumberVertices: " << NbVertices
-  										<< "\titer: " << iterTime << "\ttime: " << dt*iterTime << endl
-  										<< "# x\ty\tpx\tpy\tvx\tvy\tdiv(v)\tcurl(v)\tdiv(p)\tcurl(p)" << endl;
-  			for (int i = 0; i < NbVertices; i++){
-  				fileSolutions << Th(i).x                 <<" "<< Th(i).y                 <<" "
-  											<< p1(Th(i).x,Th(i).y)     <<" "<< p2(Th(i).x,Th(i).y)     <<" "
-  											<< V1(Th(i).x,Th(i).y)     <<" "<< V2(Th(i).x,Th(i).y)     <<" "
-  											<< DivV(Th(i).x,Th(i).y)   <<" "<< CurlV(Th(i).x,Th(i).y)  <<" "
-  											<< DivP(Th(i).x,Th(i).y)   <<" "<< CurlP(Th(i).x,Th(i).y)  <<endl ;//
-  			}
-  		}
-
-  		{ ofstream fileTimeSeries (pathDir+"/timeSeries.csv", append);
-  				fileTimeSeries	<< dt*iterTime   <<","<< Areai     <<","<< Xcm  <<","<< Ycm  <<","
-  											 	<< Vxcm      <<","<< Vycm      <<","<< Pxcm <<","<< Pycm <<","
-  												<< DivTermsX <<","<< DivTermsY <<"\n";
-  		}
-
-      // New save
-      savemesh(Th,pathDir+"/meshes/meshRend"+(1000000+iterTime)+".msh");
-  	}
-
-		// Move mesh
-  	// real minT0 = checkmovemesh(Th, [x, y]); // to check for flipped triangles
-  	// real minT = checkmovemesh(Th, [x+dt*V1,y+dt*V2]);
-  	// cout << "Min triangle area before: "+minT0+" & after: "+minT<<endl;
-  	Th = movemesh(Th,[x+dt*V1,y+dt*V2]);
-
-  	// REMESHING - OPTIONAL (choose between A.1(a)-(c) for outer and between B.3(a)-(c) for inner)
-  	// A.1. GET OUTER BOUNDARY VERTICES (b1)
-  	real[int,int] b1(3,1); real l1=extractborder(Th,1,b1); // l1 is the permiter of b1
-  	// A.2(a). LINEAR INTERPOLATION OF b1 (simple and robust, but bad for preserving shape integrity)
-  	/* border Outer(t=0,1){ P=Curve(b1,t);label=1;}
-  	int nO = round(obd*l1);  */						// new number of elements (prescribed density obd)
-  	// A.2(b). VERTEX PRESERVING INTERPOLATION OF b1 (no remesh of outer boundary, probably best)
-  	/*border Outer(t=0,1){ P=Curve(b1,b1(2,round(t*(b1.m-1)))/l1);label=1;}
-  	int nO = b1.m-1; 				*/				// keep number of elements
-  	// A.2(c). SPLINE INTERPOLATION OF b1 (for remeshing outer boundary smoothly)
-  	gslspline splineX(gslinterpakima, b1(2, :), b1(0, :)); 	// x(s) akima spline
-  	gslspline splineY(gslinterpakima, b1(2, :), b1(1, :)); 	// y(s) akima spline
-  	border Outer(t=0,l1){x=splineX(t);y=splineY(t);label=1;}
-  	int nO = round(obd*l1);  						// new number of elements (prescribed density obd)
-  	// B.1. DISTANCE FUNCTION (d is the minimal distance to the boundary)
-  	varf vong(B, d)= on(1,B=1);
-  	real[int] ong=vong(0,Dh);
-  	Dh B =1, d;
-  	B[] = ong ? 0 : B[];
-  	distance(Th,B,d[]);
-  	// B.2. GET NEW INNER BOUNDARY VERTICES (ISO is the contour d==Lc)
-  	real[int,int] ISO(3,1); int nc=isoline(Th,d,iso=ThickOutMesh,close=1,ISO,smoothing=ThickOutMesh/2.,ratio=1.e-0);
-  	real l2=ISO(2,ISO.m-1); // l2 is the perimeter of ISO
-  	// B.3(a). LINEAR INTERPOLATION OF ISO (simple and robust)
-  	border Inner(t=0,1){ P=Curve(ISO,t);label=0;}
-  	int nI = round(ibd*l2); 						// new number of elements (prescribed density ibd)
-  	// B.3(b). VERTEX PRESERVING INTERPOLATION OF ISO (not ideal for this purpose, as we wish to impose uniform internal density)
-  	/* border Inner(t=0,1){ P=Curve(ISO,ISO(2,round(t*(ISO.m-1)))/l2);label=2;}
-  	int nI = ISO.m-1;  */ 							// keep number of elements
-  	// B.3(c). SPLINE INTERPOLATION OF ISO (for remeshing inner boundary smoothly, probably overkill for this purpose)
-  	/* gslspline splineXISO(gslinterpakima, ISO(2, :), ISO(0, :)); 	// x(s) akima spline
-  	gslspline splineYISO(gslinterpakima, ISO(2, :), ISO(1, :)); 	// y(s) akima spline
-  	border Inner(t=0,l2){x=splineXISO(t);y=splineYISO(t);label=2;}
-  	int nI = round(ibd*l2);  */						// new number of elements (prescribed density ibd)
-  	// C. BUILD NEW MESH
-    try {
-      Th=buildmesh(Outer(nO)+Inner(nI),fixedborder=1);
-    	Th=change(Th,rmInternalEdges=1);
-      Thb=emptymesh(Th);
-    }
-    catch(...){
-      cout << "MESH ERROR: Simulation "+SimulName+" ended after "+iterTime+" iterations" << endl;
-      break;
+    // Compute residu (v - vc)^2 for the convergence test
+    {
+      newtonResidu = int2d(Th)(v'*v - 2.*v'*vc + vc'*vc);
+      cout <<"iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
     }
 
-  	XcmP=Xcm; // Previous Xcm
-  	YcmP=Ycm; // Previous Ycm
-
-    if(Areai > rateMaxArea*Area0){
-      cout << "WARNING: Simulation "+SimulName+" stopped after "+iterTime+" iterations due to large area" << endl;
-      break;
-    }
+    newtonIter++;
   }
+  //-------------------------------------------------------------------------------------------------------------------
+
+
+  // Compute the gradient of p for the posterior analysis -------------------------------------------------------------
+  varf aGradP(dp, dq) = int2d(Th)(dp'*dq);
+  varf lGradP(dp, dq) = int2d(Th)(Grad(px,py)'*dq);
+
+  matrix AGradP = aGradP(dPol, dPol);		// LHS matrix
+  real[int] bGradP = lGradP(0, dPol);	// RHS vector
+
+  real[int] solGradP(dPol.ndof);
+  solGradP=AGradP^-1*bGradP;
+  dPol dp=[0,0,0,0];
+  dpxdx[]=solGradP(0:dPol.ndof-1);
+  //-------------------------------------------------------------------------------------------------------------------
+
+  
+  // Compute the gradient of v for the posterior analysis -------------------------------------------------------------
+  varf aGradV(dv, du) = int2d(Th)(dv'*du);
+  varf lGradV(dv, du) = int2d(Th)(Grad(vx,vy)'*du);
+
+  matrix AGradV = aGradV(dVel, dVel);	// LHS matrix
+  real[int] bGradV = lGradV(0, dVel);	// RHS vector
+
+  real[int] solGradV(dVel.ndof);
+  solGradV=AGradV^-1*bGradV;
+  dVel dv=[0,0,0,0];
+  dvxdx[]=solGradV(0:dVel.ndof-1);
+  //-------------------------------------------------------------------------------------------------------------------
+
+
+  // Compute the global variables -------------------------------------------------------------------------------------
+  Areai = Th.measure;	// Current area
+  dAreadt = (Areai-AreaP)/dt; // time-derivative of the area (backward)
+
+  Xcm = int2d(Th)(x)/Areai;	                 // Current Xcm
+  Ycm = int2d(Th)(y)/Areai;	                 // Current Ycm
+  Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
+  Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
+  Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
+  Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
+
+  Pxcm = int2d(Th)(px)/Areai;	               // Current P_x cm
+  Pycm = int2d(Th)(py)/Areai;	               // Current P_y cm
+  dPxcmdt = (Pxcm-PxcmP)/dt;                 // time-derivative of P_x cm (backward)
+  dPycmdt = (Pycm-PycmP)/dt;                 // time-derivative of P_y cm (backward)
+  
+  Ix = int2d(Th)(pow(y-Ycm,2));	             // 2nd Moment of area with respect to x axis at the CM
+  Iy = int2d(Th)(pow(x-Xcm,2));	             // 2nd Moment of area with respect to y axis at the CM
+  dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
+  dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
+
+  avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;								// Average divergergence of the velocity
+  divTermsX = int2d(Th)(x*(dvxdx+dvydy-avgDivV))/Areai;	// Current value of the Div terms of V_x cm
+  divTermsY = int2d(Th)(y*(dvxdx+dvydy-avgDivV))/Areai;	// Current value of the Div terms of V_y cm
+  //-------------------------------------------------------------------------------------------------------------------
+
+  // Export data ------------------------------------------------------------------------------------------------------
+  if(iterTime % dsave == 0 && bsave==1){
+
+    string simulHomeDir = rootDir+"/"+simulNames[iSimul];
+    string fileNameGlobalSol = "/global_sol.csv";
+    string fileNameLocalSol = "/local_sol/sol_"+(1000000+iterTime)+".txt";
+    string fileNameMsh = "/msh/mesh_"+(1000000+iterTime)+".msh";
+
+    // Save {px, py, vx, vy, dpxdx, dpxdy, dpydx, dpydy, dvxdx, dvxdy, dvydx, dvydy} on each vertex:
+    // Memory efficient method, but needs connectivity data to reconstruct the mesh
+    {ofstream fileLocalSols (simulHomeDir+fileNameLocalSol);
+      
+      fileLocalSols.fixed;
+      int NbVertices = Th.nv;
+      fileLocalSols << "# LocalSolutions" << endl
+                    << "# NumFields: " << 12 << "	NumberVertices: " << NbVertices /*<< " cut: " << cut*/ << " a: " << a << " b: " << b << " c: " << c << endl
+                    << "# px	py	vx	vy	dpxdx	dpxdy	dpydx	dpydy	dvxdx	dvxdy	dvydx	dvydy" << endl;
+      for (int i = 0; i < NbVertices; i++){
+        fileLocalSols << px(Th(i).x,Th(i).y) 		<< "	" << py(Th(i).x,Th(i).y) 		<< "	"  // {px,py}
+                      << vx(Th(i).x,Th(i).y) 		<< "	" << vy(Th(i).x,Th(i).y) 		<< "	"	 // {vx,vy}
+                      << dpxdx(Th(i).x,Th(i).y) << "	" << dpxdy(Th(i).x,Th(i).y) << "	"	 //	{dpxdx,dpxdy}
+                      << dpydx(Th(i).x,Th(i).y) << "	" << dpydy(Th(i).x,Th(i).y) << "	"	 // {dpydx,dpydy}
+                      << dvxdx(Th(i).x,Th(i).y) << "	" << dvxdy(Th(i).x,Th(i).y) << "	"	 // {dvxdx,dvxdy}
+                      << dvydx(Th(i).x,Th(i).y) << "	" << dvydy(Th(i).x,Th(i).y) << endl; // {dvydx,dvydy}
+      }
+    }
+
+    // Save Global Data (variables integratet over the domain)
+    {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol, append);
+      
+      fileGlobalSol.fixed;
+      fileGlobalSol	<< iterTime*dt << "," << Xcm 		 << "," << Ycm 			<< "," << Pxcm 			<< "," << Pycm 			<< ","
+                    << dPxcmdt 		 << "," << dPycmdt << "," << Vxcm 		<< "," << Vycm 			<< "," << Axcm 			<< ","
+                    << Aycm 			 << "," << Areai 	 << "," << dAreadt 	<< "," << Ix 				<< "," << Iy 				<< ","
+                    << dIxdt 			 << "," << dIydt 	 << "," << avgDivV 	<< "," << divTermsX << "," << divTermsY << endl;
+    }
+
+    // save the last mesh
+    savemesh(Th,simulHomeDir+fileNameMsh);
+  }
+  //-------------------------------------------------------------------------------------------------------------------
+
+
+  // Plot v -----------------------------------------------------------------------------------------------------------
+  if (debug) { // Show it always, regardless of the verbosity
+  Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
+  Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
+  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS*/nc,vABS, 
+    value = true, 
+    fill = true, 
+    nbiso = 64, 
+    wait = false, 
+    bb=[[-2,-2],[2,2]],
+    cmm = "iTime="+(iterTime)+"; "
+      +"t="+(dt*iterTime)+"; "
+      /*+"Orientation=("+orientBConn+", "+orientBorder+"); "*/
+      +"A/A0="+(Areai/Area0)+"; "
+      +"Rcm(t)-Rcm(0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)+"); "
+      +"Vcm(t)=("+Vxcm+","+Vycm+"); "
+      +"(c/b)Pcm(t)=("+(c/b)*Pxcm+","+(c/b)*Pycm+");"
+  );
+  }
+  //-------------------------------------------------------------------------------------------------------------------
+
+
+  // Update previous global variables ---------------------------------------------------------------------------------
+  AreaP = Areai;	                  // Previous area
+  XcmP[1] = XcmP[0]; XcmP[0] = Xcm;	// Previous x_cms (-dt & -2*dt)
+  YcmP[1] = YcmP[0]; YcmP[0] = Ycm;	// Previous y_cms (-dt & -2*dt)
+  PxcmP = Pxcm;                     // Previous P_x cm
+  PycmP = Pycm;                     // Previous P_y cm
+  IxP = Ix;                         // Previous 2n Moment of x
+  IyP = Iy;                         // Previous 2n Moment of y
+  //-------------------------------------------------------------------------------------------------------------------
+
+
+  // Remeshing --------------------------------------------------------------------------------------------------------
+  try{
+    // Move mesh
+    //real minT0 = checkmovemesh(Th, [x, y]); // to check for flipped triangles
+    // real minT = checkmovemesh(Th, [x+dt*vx,y+dt*vy]);
+    // cout << "Min triangle area before: "+minT0+" & after: "+minT<<endl;
+    Th = movemesh(Th,[x+dt*vx,y+dt*vy]);
+    lOut = extractborder(Th, labelOut, bOut); // Extract border
+
+    // Move boundary test, problems with varying boundary arch length
+    /*{
+      cout << bOut.m << endl;
+      Move the boundary
+      for(int i=0; i<nBnd; i++){
+        bOut(0,i) += dt*vx(bOut(0,i));
+        bOut(1,i) += dt*vy(bOut(1,i)); 
+      }
+    }*/
+
+    Th = closedRemesh(bOut,lOut,bOut.m-1,bLayerThickness,obd,ibd,labelOut,.5, keepPoints,1);
+    Thb = emptymesh(Th);  // Create empty mesh for the surface terms
+  }
+  catch(...) {
+    cout << "ERROR: Simulation "+simulNames[iSimul]+" stopped after "+iterTime+" iterations due to a remeshing error" << endl;
+    err = 1;
+    break;
+  }
+  //-------------------------------------------------------------------------------------------------------------------
+
+
+  // Stop simulations for big or small enough areas -------------------------------------------------------------------
+  if((Areai > rateMaxArea*Area0) || (Areai < rateMinArea*Area0)){
+    cout << "WARNING: Simulation "+simulNames[iSimul]+" stopped after "+iterTime+" iterations due to too big/small area" << endl;
+    err = 1;
+    break;
+  }
+  //-------------------------------------------------------------------------------------------------------------------
+}
+
+if (!err){
+  cout << "Simulation"+simulNames[iSimul]+" finished without errors" << endl;
 }

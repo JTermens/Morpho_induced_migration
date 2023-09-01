@@ -13,7 +13,7 @@ int iSimul = getARGV("-i", 1);
 bool debug = getARGV("-d", 1);
 bool err = 0;
 
-include "parameters_test_tension.edp";
+include "tests/parameters_test.edp";
 // include "parameters_sets/parameters_wetting_essay.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
@@ -104,7 +104,7 @@ if (bsave){
     fileParams.fixed;
     fileParams << "cut,R0,Reff,fracRarc," << /*areaCst, <<*/ "h,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" 
                << ",gamma" <<  endl;
-    fileParams << "rad,adim,um,adim," << /*adim, <<*/ "um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim,R0Lc_adim" 
+    fileParams << "rad,adim,um,adim," << /*adim, <<*/ "um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim" 
                << ",kPa*um" << endl;
     fileParams << cut 		<< "," << R0 		 << "," << Reff	<< "," << fracRarc << ","
               /*<< areaCst  << ","*/ << h 		 << "," << Lc	  << "," << lambda 	 << ","
@@ -120,7 +120,7 @@ if (bsave){
 //---------------------------------------------------------------------------------------------------------------------
 
 // Console Log
-cout << "Simul: " << simulNames[iSimul] << ", saving = " << bsave << endl;
+cout << "Simul: " << simulNames[iSimul] << " with surface tension, saving = " << bsave << endl;
 cout << "a (La/Lc) = " << a << ", b (R0/lambda) = " << b << ", c (R0/Lc) = " << c 
      << ", gs (Lg/R0) = " << gs << ", tscale = " << tscale << endl;  
 
@@ -525,17 +525,6 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       + c*(p'*u)
     ); //contractility + active traction
 
-  // matrix Av = av(Vel, Vel);  			// LHS matrix
-  // real[int] bv = lv(0, Vel);			// RHS
-
-  // // V solution
-  // real[int] solV(Vel.ndof);
-  // //set(Av,solver=sparsesolver);
-  // solV=Av^-1*bv;
-  // Vel v=[0,0];
-  // vx[]=solV(0:Vel.ndof-1);
-
-  // Assembly V
   matrix Av = av(Vel, Vel);
   real[int] bv = lv(0, Vel);
   real[int] solV(Vel.ndof);

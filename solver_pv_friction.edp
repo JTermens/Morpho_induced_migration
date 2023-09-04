@@ -13,7 +13,7 @@ int iSimul = getARGV("-i", 1);
 bool debug = getARGV("-d", 1);
 bool err = 0;
 
-include "tests/parameters_test.edp";
+include "parameters_sets/parameters_test.edp"; // load the parameters
 // include "parameters_sets/parameters_wetting_essay.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
@@ -121,6 +121,13 @@ if (bsave){
     //fileGlobalSol.fixed;
     fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divTermsX,divTermsY" << endl;
   }
+
+  if (debug) {
+    {ofstream fileConvergence (simulHomeDir+fileNameConvergence);
+      //fileConvergence.fixed;
+      fileConvergence << "iteration, newtonResidu, newtonIter" << endl;
+    }
+  }
 } 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -163,6 +170,7 @@ fespace dPol(Th,[P2,P2,P2,P2]);     // For the gradient of the polarity vector
 
 fespace Vel(Th, [P1b, P1b]);        // For velocity vector
 fespace dVel(Th,[P1b,P1b,P1b,P1b]); // For the gradient of the velocity vector
+fespace prodVel(Th, P1b);
 
 // fespace Vor(Th,P1b);							  // To compute the vorticity & divergence
 fespace Nh(Th,[P1,P1]);						  // For the corrected nc vector at the boundary
@@ -278,7 +286,8 @@ if (debug) {
 // Define & solve the velocity equation -------------------------------------------------------------------------------
 // Bilinear and linear variational forms V
 varf av(v, u) = int2d(Th)(
-  ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) 
+  ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy))
+  + pow(bPerp,2)*(v'*u) 
 ); // -viscosity
 
 varf lv(v, u) = int2d(Th)(
@@ -290,14 +299,11 @@ Vel vc; // Explicit velocity for the NR method
 
 // Non-constant friction (NR scheme)
 varf aFriction(v,u) = int2d(Th)( 
-  + bPerp*(v'*u)
-  - db*(p'*vc)/(Norm(p)*Norm(vc))*2*(v'*u)
-  + db*(p'*vc)/(Norm(p)*Norm(vc))*(vc'*vc)/(Norm(vc)*Norm(vc))*(v'*u)
+  (pow(bPerp,2)-pow(db,2)*(p'*vc)/(Norm(p)*Norm(vc))*(2-(vc'*vc)/(Norm(vc)*Norm(vc))))*(v'*u)
   );
 
 varf lFriction(v,u) = int2d(Th)(
-  + db*(p'*vc)/(Norm(p)*Norm(vc))*(vc'*vc)/(Norm(vc)*Norm(vc))*(vc'*u)
-  - db*(p'*vc)/(Norm(p)*Norm(vc))*(vc'*u)
+  - pow(db,2)*(p'*vc)/(Norm(p)*Norm(vc))*(1-(vc'*vc)/(Norm(vc)*Norm(vc)))*(vc'*u)
 );
 
 // Assembly V
@@ -330,10 +336,18 @@ while(newtonResidu > maxNewtonResidu && newtonIter < maxNewtonIter){
   // Compute residu (v - vc)^2 for the convergence test
   {
     newtonResidu = int2d(Th)(v'*v - 2.*v'*vc + vc'*vc);
-    cout <<"iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+    // cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
   }
 
   newtonIter++;
+}
+
+if (debug) {
+  cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+  {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+    fileConvergence.fixed;
+    fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+  }
 }
 
 if (debug) {
@@ -372,6 +386,22 @@ dVel dv=[0,0,0,0];
 dvxdx[]=solGradV(0:dVel.ndof-1);
 //---------------------------------------------------------------------------------------------------------------------
 
+// Compute and plot friction -----------------------------------------------------------------------------------------------
+varf aFrict(frict, testFrict) = int2d(Th)(frict*testFrict);
+varf lFrict(frict, testFrict) = int2d(Th)((xiParallel+dxi*(1-(vx*px + vy*py)/(Norm(v)*Norm(p))))*testFrict);
+
+matrix AFrict = aFrict(prodVel, prodVel);
+real[int] bFrict = lFrict(0, prodVel);
+
+real[int] solFrict(prodVel.ndof);
+solFrict = AFrict^-1*bFrict;
+prodVel frict = 0;
+frict[] = solFrict(0:prodVel.ndof-1);
+
+if (debug) {
+  plot(Th,frict, value = true, fill = true, nbiso = 64, wait = true, cmm = "xi(v,p)");
+}
+//---------------------------------------------------------------------------------------------------------------------
 
 // Compute the intial values of the global variables ------------------------------------------------------------------
 real Areai = Area0;	                            // Current area
@@ -507,8 +537,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   ); //contractility + active traction
 
   varf lFriction(v,u) = int2d(Th)(
-    + db*(p'*vc)/(Norm(p)*Norm(vc))*(vc'*vc)/(Norm(vc)*Norm(vc))*(vc'*u)
-    - db*(p'*vc)/(Norm(p)*Norm(vc))*(vc'*u)
+    - pow(db,2)*(p'*vc)/(Norm(p)*Norm(vc))*(1-(vc'*vc)/(Norm(vc)*Norm(vc)))*(vc'*u)
   );
 
   // Assembly V
@@ -541,10 +570,18 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     // Compute residu (v - vc)^2 for the convergence test
     {
       newtonResidu = int2d(Th)(v'*v - 2.*v'*vc + vc'*vc);
-      cout <<"iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+      //cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
     }
 
     newtonIter++;
+  }
+
+  if (debug) {
+    cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+    {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+      fileConvergence.fixed;
+      fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+    }
   }
   //-------------------------------------------------------------------------------------------------------------------
 

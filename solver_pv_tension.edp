@@ -13,7 +13,7 @@ int iSimul = getARGV("-i", 1);
 bool debug = getARGV("-d", 1);
 bool err = 0;
 
-include "tests/parameters_test.edp";
+include "parameters_sets/parameters_test.edp"; // load the parameters
 // include "parameters_sets/parameters_wetting_essay.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
@@ -22,6 +22,8 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
 real R0 = R0s[iSimul];              // Initial radius
 real Reff = Reffs[iSimul];          // Effective radius
+real Lc = Lcs[iSimul];
+
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
 real Lg = gamma/(zi*Lc);            // Capillary length: surface tension/stress
@@ -95,6 +97,10 @@ if (bsave){
   string fileNameParams = "/params.csv";
   string fileNameGlobalSol = "/global_sol.csv";
 
+  if (debug){
+    string fileNameConvergence = "/NR_convergence.csv"
+  }
+
   exec("mkdir "+simulHomeDir);							// Make a home directory for the simulation
   exec("mkdir "+simulHomeDir+"/msh");				// Make and save the meshes in a separeted directory
   exec("mkdir "+simulHomeDir+"/local_sol");	// Make and save the local solutions in a separeted directory
@@ -115,6 +121,13 @@ if (bsave){
   {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);	
     //fileGlobalSol.fixed;
     fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divTermsX,divTermsY" << endl;
+  }
+
+  if (debug) {
+    {ofstream fileConvergence (simulHomeDir+fileNameConvergence);
+      //fileConvergence.fixed;
+      fileConvergence << "iteration, newtonResidu, newtonIter" << endl;
+    }
   }
 } 
 //---------------------------------------------------------------------------------------------------------------------
@@ -280,7 +293,7 @@ if (debug) {
 // Bilinear and linear variational forms V
 varf av(v, u) = int2d(Th)(
   ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) 
-  + b*(v'*u)
+  + pow(b,2)*(v'*u)
 ); // -viscosity -friction
 
 varf lv(v, u) = int2d(Th)(
@@ -347,11 +360,20 @@ while(newtonResidu > maxNewtonResidu && newtonIter < maxNewtonIter){
   // Compute residu (v - vc)^2 for the convergence test
   {
     newtonResidu = int2d(Th)(v'*v - 2.*v'*vc + vc'*vc);
-    cout <<"iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+    // cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
   }
 
   newtonIter++;
 }
+
+if (debug) {
+  cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+  {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+    fileConvergence.fixed;
+    fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+  }
+}
+
 
 if (debug) {
   // plot(Th,vx, value = true, fill = true, nbiso = 64, wait = true, cmm = "vx");
@@ -562,10 +584,18 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     // Compute residu (v - vc)^2 for the convergence test
     {
       newtonResidu = int2d(Th)(v'*v - 2.*v'*vc + vc'*vc);
-      cout <<"iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+      //cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
     }
 
     newtonIter++;
+  }
+
+  if (debug) {
+    cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+    {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+      fileConvergence.fixed;
+      fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+    }
   }
   //-------------------------------------------------------------------------------------------------------------------
 

@@ -96,10 +96,8 @@ if (bsave){
   string simulHomeDir = rootDir+"/"+simulNames[iSimul];
   string fileNameParams = "/params.csv";
   string fileNameGlobalSol = "/global_sol.csv";
+  string fileNameConvergence = "/NR_convergence.csv";
 
-  if (debug){
-    string fileNameConvergence = "/NR_convergence.csv"
-  }
 
   exec("mkdir "+simulHomeDir);							// Make a home directory for the simulation
   exec("mkdir "+simulHomeDir+"/msh");				// Make and save the meshes in a separeted directory
@@ -368,9 +366,14 @@ while(newtonResidu > maxNewtonResidu && newtonIter < maxNewtonIter){
 
 if (debug) {
   cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
-  {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
-    fileConvergence.fixed;
-    fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+  if (bsave) {
+    string simulHomeDir = rootDir+"/"+simulNames[iSimul];
+    string fileNameConvergence = "/NR_convergence.csv";
+
+    {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+      fileConvergence.fixed;
+      fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+    }
   }
 }
 
@@ -592,9 +595,14 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
 
   if (debug) {
     cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
-    {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
-      fileConvergence.fixed;
-      fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+    if (bsave) {
+      string simulHomeDir = rootDir+"/"+simulNames[iSimul];
+      string fileNameConvergence = "/NR_convergence.csv";
+
+      {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+        fileConvergence.fixed;
+        fileConvergence << iterTime <<","<< newtonResidu << "," << newtonIter << endl;
+      }
     }
   }
   //-------------------------------------------------------------------------------------------------------------------

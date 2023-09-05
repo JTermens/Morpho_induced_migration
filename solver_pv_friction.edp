@@ -578,9 +578,14 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
 
   if (debug) {
     cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
-    {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
-      fileConvergence.fixed;
-      fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+    if (bsave) {
+      string simulHomeDir = rootDir+"/"+simulNames[iSimul];
+      string fileNameConvergence = "/NR_convergence.csv";
+
+      {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+        fileConvergence.fixed;
+        fileConvergence << iterTime <<","<< newtonResidu << "," << newtonIter << endl;
+      }
     }
   }
   //-------------------------------------------------------------------------------------------------------------------
@@ -612,6 +617,19 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dVel dv=[0,0,0,0];
   dvxdx[]=solGradV(0:dVel.ndof-1);
   //-------------------------------------------------------------------------------------------------------------------
+
+  // Compute normalized(p·v) for posterior analysis -----------------------------------------------------------------------------------------------
+  varf aPVprod(pvProd, testPVprod) = int2d(Th)(pvProd*testPVprod);
+  varf lPVprod(pvProd, testPVprod) = int2d(Th)((vx*px + vy*py)/(Norm(v)*Norm(p))*testPVprod);
+
+  matrix APVprod = aPVprod(prodVel, prodVel);
+  real[int] bPVprod = lPVprod(0, prodVel);
+
+  real[int] solPVprod(prodVel.ndof);
+  solFrict = APVprod^-1*bPVprod;
+  prodVel pvProd = 0;
+  pvProd[] = solPVprod(0:prodVel.ndof-1);
+  //---------------------------------------------------------------------------------------------------------------------
 
 
   // Compute the global variables -------------------------------------------------------------------------------------
@@ -655,7 +673,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       fileLocalSols.fixed;
       int NbVertices = Th.nv;
       fileLocalSols << "# LocalSolutions" << endl
-                    << "# NumFields: " << 12 << "	NumberVertices: " << NbVertices /*<< " cut: " << cut*/ << " a: " << a << " bPerp: " << bPerp << " db: " << db << " c: " << c << endl
+                    << "# NumFields: " << 13 << "	NumberVertices: " << NbVertices /*<< " cut: " << cut*/ << " a: " << a << " bPerp: " << bPerp << " db: " << db << " c: " << c << endl
                     << "# px	py	vx	vy	dpxdx	dpxdy	dpydx	dpydy	dvxdx	dvxdy	dvydx	dvydy" << endl;
       for (int i = 0; i < NbVertices; i++){
         fileLocalSols << px(Th(i).x,Th(i).y) 		<< "	" << py(Th(i).x,Th(i).y) 		<< "	"  // {px,py}
@@ -663,7 +681,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
                       << dpxdx(Th(i).x,Th(i).y) << "	" << dpxdy(Th(i).x,Th(i).y) << "	"	 //	{dpxdx,dpxdy}
                       << dpydx(Th(i).x,Th(i).y) << "	" << dpydy(Th(i).x,Th(i).y) << "	"	 // {dpydx,dpydy}
                       << dvxdx(Th(i).x,Th(i).y) << "	" << dvxdy(Th(i).x,Th(i).y) << "	"	 // {dvxdx,dvxdy}
-                      << dvydx(Th(i).x,Th(i).y) << "	" << dvydy(Th(i).x,Th(i).y) << endl; // {dvydx,dvydy}
+                      << dvydx(Th(i).x,Th(i).y) << "	" << dvydy(Th(i).x,Th(i).y) << "  "  // {dvydx,dvydy}
+                      << pvProd                 << endl; // (p·v)/(|p||v|)
       }
     }
 

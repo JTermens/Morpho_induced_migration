@@ -582,7 +582,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       fileLocalSols.fixed;
       int NbVertices = Th.nv;
       fileLocalSols << "# LocalSolutions" << endl
-                    << "# NumFields: " << 12 << "	NumberVertices: " << NbVertices /*<< " cut: " << cut*/ << " a: " << a << " b: " << bFront << " c: " << c << endl
+                    << "# NumFields: " << 13 << "	NumberVertices: " << NbVertices /*<< " cut: " << cut*/ << " a: " << a << " b: " << bFront << " c: " << c << endl
                     << "# px	py	vx	vy	dpxdx	dpxdy	dpydx	dpydy	dvxdx	dvxdy	dvydx	dvydy" << endl;
       for (int i = 0; i < NbVertices; i++){
         fileLocalSols << px(Th(i).x,Th(i).y) 		<< "	" << py(Th(i).x,Th(i).y) 		<< "	"  // {px,py}
@@ -590,7 +590,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
                       << dpxdx(Th(i).x,Th(i).y) << "	" << dpxdy(Th(i).x,Th(i).y) << "	"	 //	{dpxdx,dpxdy}
                       << dpydx(Th(i).x,Th(i).y) << "	" << dpydy(Th(i).x,Th(i).y) << "	"	 // {dpydx,dpydy}
                       << dvxdx(Th(i).x,Th(i).y) << "	" << dvxdy(Th(i).x,Th(i).y) << "	"	 // {dvxdx,dvxdy}
-                      << dvydx(Th(i).x,Th(i).y) << "	" << dvydy(Th(i).x,Th(i).y) << endl; // {dvydx,dvydy}
+                      << dvydx(Th(i).x,Th(i).y) << "	" << dvydy(Th(i).x,Th(i).y) << "	"  // {dvydx,dvydy}
+                      << frict                  << endl; // xi(y,Ycm)
       }
     }
 
@@ -614,7 +615,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   if (debug) { // Show it always, regardless of the verbosity
   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
-  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS*/normal,vABS,frict, 
+  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS*/normal,vABS, 
     value = true, 
     fill = true, 
     nbiso = 64, 

@@ -121,11 +121,9 @@ if (bsave){
     fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divTermsX,divTermsY" << endl;
   }
 
-  if (debug) {
-    {ofstream fileConvergence (simulHomeDir+fileNameConvergence);
+  {ofstream fileConvergence (simulHomeDir+fileNameConvergence);
       //fileConvergence.fixed;
       fileConvergence << "iteration, newtonResidu, newtonIter" << endl;
-    }
   }
 } 
 //---------------------------------------------------------------------------------------------------------------------
@@ -365,15 +363,15 @@ while(newtonResidu > maxNewtonResidu && newtonIter < maxNewtonIter){
 }
 
 if (debug) {
-  cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
-  if (bsave) {
-    string simulHomeDir = rootDir+"/"+simulNames[iSimul];
-    string fileNameConvergence = "/NR_convergence.csv";
+    cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
+  }
+if (bsave) {
+  string simulHomeDir = rootDir+"/"+simulNames[iSimul];
+  string fileNameConvergence = "/NR_convergence.csv";
 
-    {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
-      fileConvergence.fixed;
-      fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
-    }
+  {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+    fileConvergence.fixed;
+    fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
   }
 }
 
@@ -595,14 +593,14 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
 
   if (debug) {
     cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
-    if (bsave) {
-      string simulHomeDir = rootDir+"/"+simulNames[iSimul];
-      string fileNameConvergence = "/NR_convergence.csv";
+  }
+  if (bsave) {
+    string simulHomeDir = rootDir+"/"+simulNames[iSimul];
+    string fileNameConvergence = "/NR_convergence.csv";
 
-      {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
-        fileConvergence.fixed;
-        fileConvergence << iterTime <<","<< newtonResidu << "," << newtonIter << endl;
-      }
+    {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+      fileConvergence.fixed;
+      fileConvergence << iterTime <<","<< newtonResidu << "," << newtonIter << endl;
     }
   }
   //-------------------------------------------------------------------------------------------------------------------

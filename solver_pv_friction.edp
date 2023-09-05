@@ -345,9 +345,14 @@ while(newtonResidu > maxNewtonResidu && newtonIter < maxNewtonIter){
 
 if (debug) {
   cout << "iter = "<< newtonIter << "; resid = "<< newtonResidu << endl;
-  {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
-    fileConvergence.fixed;
-    fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+  if (bsave) {
+    string simulHomeDir = rootDir+"/"+simulNames[iSimul];
+    string fileNameConvergence = "/NR_convergence.csv";
+
+    {ofstream fileConvergence (simulHomeDir+fileNameConvergence, append);
+      fileConvergence.fixed;
+      fileConvergence << 0 <<","<< newtonResidu << "," << newtonIter << endl;
+    }
   }
 }
 

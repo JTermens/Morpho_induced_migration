@@ -99,6 +99,7 @@ if (bsave){
   string simulHomeDir = rootDir+"/"+simulNames[iSimul];
   string fileNameParams = "/params.csv";
   string fileNameGlobalSol = "/global_sol.csv";
+  string fileNameConvergence = "/NR_convergence.csv";
 
   exec("mkdir "+simulHomeDir);							// Make a home directory for the simulation
   exec("mkdir "+simulHomeDir+"/msh");				// Make and save the meshes in a separeted directory

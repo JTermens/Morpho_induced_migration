@@ -112,7 +112,7 @@ if (bsave){
   // Generate a separate file for the global variables (integrates ones)
   {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);	
     //fileGlobalSol.fixed;
-    fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divTermsX,divTermsY" << endl;
+    fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divTermsX,divTermsY" << endl;
   }
 } 
 //---------------------------------------------------------------------------------------------------------------------
@@ -351,6 +351,8 @@ real[int] XcmP = [Xcm0,Xcm0];                   // Previous x_cms (-dt & -2*dt)
 real[int] YcmP = [Ycm0,Ycm0];                   // Previous y_cms (-dt & -2*dt)
 real Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
 real Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
+real Vxavg = int2d(Th)(vx)/Areai;                // Current avg(v_x)
+real Vyavg = int2d(Th)(vy)/Areai;                // Current avg(v_y)
 real Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
 real Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 
@@ -522,6 +524,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   Ycm = int2d(Th)(y)/Areai;	                 // Current Ycm
   Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
   Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
+  real Vxavg = int2d(Th)(vx)/Areai;          // Current avg(v_x)
+  real Vyavg = int2d(Th)(vy)/Areai;          // Current avg(v_y)
   Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
   Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 
@@ -571,10 +575,18 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol, append);
       
       fileGlobalSol.fixed;
-      fileGlobalSol	<< iterTime*dt << "," << Xcm 		 << "," << Ycm 			<< "," << Pxcm 			<< "," << Pycm 			<< ","
-                    << dPxcmdt 		 << "," << dPycmdt << "," << Vxcm 		<< "," << Vycm 			<< "," << Axcm 			<< ","
-                    << Aycm 			 << "," << Areai 	 << "," << dAreadt 	<< "," << Ix 				<< "," << Iy 				<< ","
-                    << dIxdt 			 << "," << dIydt 	 << "," << avgDivV 	<< "," << divTermsX << "," << divTermsY << endl;
+      fileGlobalSol	<< iterTime*dt << "," 
+                    << Xcm 		     << "," << Ycm 			 << ","
+                    << Pxcm 			 << "," << Pycm 		 << ","
+                    << dPxcmdt 		 << "," << dPycmdt   << ","
+                    << Vxcm 		   << "," << Vycm 		 << ","
+                    << Vxavg       << "," << Vyavg     << ","
+                    << Axcm 			 << "," << Aycm 		 << ","
+                    << Areai       << "," << dAreadt 	 << ","
+                    << Ix 				 << "," << Iy 			 << ","
+                    << dIxdt 			 << "," << dIydt 	   << ","
+                    << avgDivV 	   << "," 
+                    << divTermsX   << "," << divTermsY << endl;
     }
 
     // save the last mesh

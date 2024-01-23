@@ -7,7 +7,7 @@ string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_mot
 //string rootDir = "/home/joan/Documents/Simul_runs/friction_tension_test";
 
 string[int] simulNames = [
-  "test_friction"
+  "test_Vcm"
   ];
 
 // Initial radius of the monolayer [μm].
@@ -27,7 +27,7 @@ int nSimul = 1;   // Number of simulations
 real h = 5;                 // Monolayer heigth, [μm]
 real[int] Lcs = R0s/4;               // Nematic length, sqrt(K/a), [μm]
 real eta = 5e4;          // Monolayer viscosity, [kPa·s], fitted so that lambda = 250 μm
-real zi = 0.1;             // Traction coefficient, [kPa/μm],
+real zi = 0.23; /*0.1*/      // Traction coefficient, [kPa/μm],
 real zeta = -20;           // -Contractility coefficient, [kPa], very low estimation
 // real tscale = eta/(zi*Lc);  // Timescale corresponding to the advance of a flat front, [s]
 

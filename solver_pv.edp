@@ -18,9 +18,9 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
 // Problem length & timescales ----------------------------------------------------------------------------------------
-real cut = cut/*s[iSimul]*/;            // Initial cut (archlength of the perturbation)
-real R0 = R0/*s[iSimul]*/;              // Initial radius
-real Reff = Reff/*s[iSimul]*/;          // Effective radius
+// real cut = cut/*s[iSimul]*/;            // Initial cut (archlength of the perturbation)
+// real R0 = R0/*s[iSimul]*/;              // Initial radius
+// real Reff = Reff/*s[iSimul]*/;          // Effective radius
 real Lc = Lcs[iSimul];
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
@@ -323,20 +323,20 @@ dvxdx[]=solGradV(0:dVel.ndof-1);
 
 
 // Compute and plot friction -----------------------------------------------------------------------------------------------
-varf aFrict(frict, testFrict) = int2d(Th)(frict*testFrict);
-varf lFrict(frict, testFrict) = int2d(Th)((xiParallel+.5*(xiAntiParallel-xiParallel)*(1-(vx*px + vy*py)/(Norm(v)*Norm(p))))*testFrict);
+// varf aFrict(frict, testFrict) = int2d(Th)(frict*testFrict);
+// varf lFrict(frict, testFrict) = int2d(Th)((xiParallel+.5*(xiAntiParallel-xiParallel)*(1-(vx*px + vy*py)/(Norm(v)*Norm(p))))*testFrict);
 
-matrix AFrict = aFrict(prodVel, prodVel);
-real[int] bFrict = lFrict(0, prodVel);
+// matrix AFrict = aFrict(prodVel, prodVel);
+// real[int] bFrict = lFrict(0, prodVel);
 
-real[int] solFrict(prodVel.ndof);
-solFrict = AFrict^-1*bFrict;
-prodVel frict = 0;
-frict[] = solFrict(0:prodVel.ndof-1);
+// real[int] solFrict(prodVel.ndof);
+// solFrict = AFrict^-1*bFrict;
+// prodVel frict = 0;
+// frict[] = solFrict(0:prodVel.ndof-1);
 
-if (debug) {
-  plot(Th,frict, value = true, fill = true, nbiso = 64, wait = true, cmm = "xi(y,Ycm)");
-}
+// if (debug) {
+//   plot(Th,frict, value = true, fill = true, nbiso = 64, wait = true, cmm = "xi(y,Ycm)");
+// }
 //---------------------------------------------------------------------------------------------------------------------
 
 // Compute the intial values of the global variables ------------------------------------------------------------------

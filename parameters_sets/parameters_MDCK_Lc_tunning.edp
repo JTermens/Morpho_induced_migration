@@ -4,12 +4,12 @@ verbosity=0;
 // bool debug=0;
 
 //string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/wetting_essay_MDCK";
-string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tunning";
+string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tunning_v2";
 
 string[int] simulNames = [
+  "MDCK_3pi3_R200_Lc40",
   "MDCK_3pi3_R200_Lc50",
   "MDCK_3pi3_R200_Lc45",
-  "MDCK_3pi3_R200_Lc40",
   "MDCK_3pi3_R200_Lc35",
   "MDCK_3pi3_R200_Lc30",
   "MDCK_3pi3_R200_Lc25",
@@ -23,20 +23,20 @@ int nSimul = 9;   // Number of simulations
 
 // Physiscal Parameters
 real h = 5;                 // Monolayer heigth, [μm]
-real eta = 6.25e3;          // Monolayer viscosity, [kPa·s], fitted so that lambda = 250 μm
+real eta = 25e3;            // Monolayer viscosity, [kPa·s]
 real xi = 0.1;              // Friction coefficient, [kPa·s/μm²]
 real zi = 0.01;             // Traction coefficient, [kPa/μm],
-real zeta = -0.1;           // -Contractility coefficient, [kPa], very low estimation
+real zeta = -0;             // -Contractility coefficient, [kPa], very low estimation
 // real tscale = eta/(zi*Lc);  // Timescale corresponding to the advance of a flat front, [s]
 // If surface tension
 // real gamma = -5.;           // Surface tension, [mN/m]=[kPa·μm]
 
 // Nematic length, sqrt(K/a), [μm]
-real[int] Lcs = [50, 45, 40, 35, 30, 25, 20, 15, 10];               
+real[int] Lcs = [40, 50, 45, 35, 30, 25, 20, 15, 10];               
 
 // Initial radius of the monolayer [μm].
 // Same as in the bigger microfabrication mask
-real R0 = 282,843;
+real R0 = 282.843;
 
 real Reff = 200;
 
@@ -50,7 +50,7 @@ real rateMinArea = 1/4.;  // Stop the simulation when Area = rateMinArea * (Init
 bool keepPoints = 1;      // Keep the number of boundary points upon remeshing
 
 // If surface tension or different friction
-real maxNewtonResidu = 1.e-6; // Cutoff residue for the Newton method
+real maxNewtonResidu = 1.e-6; // Cutoff residue for the Newtendl;on method
 int maxNewtonIter = 10;       // Max num, of iterations for the Newton method
 
 // Save parameters
@@ -65,19 +65,19 @@ real fracRarc = 0.1;		// Adimensionalized radius used to smooth the domain verti
 
 if(debug){
 
-  cout << "Simulation: " << simulNames[iSimul] << '\n';
-  cout << " |_ Problem lengths and timescales:" << '\n';
-  cout << "   |_ Reff = " << Reff << " um" << '\n';
-  cout << "   |_ R0 = " << R0 << " um" << '\n';
-  cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << '\n';
-  cout << "   |_ Lc = " << Lcs[iSimul] << " um" << '\n';
-  cout << "   |_ La = " << abs(zeta/zi) << " um" << '\n';
-  cout << "   |_ tscale = " << eta/(zi*/*Reffs*/Lcs[iSimul]) << " s" << '\n';
-  cout << "   |_ charact vel = " << 3600*zi*R0*Lcs[iSimul]/eta << " um/h" << '\n';
-  cout << " |_ Adim. parameters:" << '\n';
-  cout << "   |_ a = " << abs(zeta)/(zi*R0) << '\n';
-  cout << "   |_ b = " << R0/sqrt(eta/xi) << '\n';
-  cout << "   |_ c = " << R0/Lcs[iSimul] << '\n';
+  cout << "Simulation: " << simulNames[iSimul] << endl;
+  cout << " |_ Problem lengths and timescales:" << endl;
+  cout << "   |_ Reff = " << Reff << " um" << endl;
+  cout << "   |_ R0 = " << R0 << " um" << endl;
+  cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
+  cout << "   |_ Lc = " << Lcs[iSimul] << " um" << endl;
+  cout << "   |_ La = " << abs(zeta/zi) << " um" << endl;
+  cout << "   |_ tscale = " << eta/(zi*/*Reffs*/Lcs[iSimul]) << " s" << endl;
+  cout << "   |_ charact vel = " << 3600*zi*R0*Lcs[iSimul]/eta << " um/h" << endl;
+  cout << " |_ Adim. parameters:" << endl;
+  cout << "   |_ a = " << abs(zeta)/(zi*R0) << endl;
+  cout << "   |_ b = " << R0/sqrt(eta/xi) << endl;
+  cout << "   |_ c = " << R0/Lcs[iSimul] << endl;
 
-  cout << "\nStarting simulations " << iSimul << "..." << '\n';
+  cout << "\nStarting simulations " << iSimul << "..." << endl;
 }

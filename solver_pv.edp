@@ -350,8 +350,8 @@ real[int] XcmP = [Xcm0,Xcm0];                   // Previous x_cms (-dt & -2*dt)
 real[int] YcmP = [Ycm0,Ycm0];                   // Previous y_cms (-dt & -2*dt)
 real Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
 real Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
-real Vxavg = int2d(Th)(vx)/Areai;                // Current avg(v_x)
-real Vyavg = int2d(Th)(vy)/Areai;                // Current avg(v_y)
+real Vxavg = int2d(Th)(vx)/Areai;               // Current avg(v_x)
+real Vyavg = int2d(Th)(vy)/Areai;               // Current avg(v_y)
 real Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
 real Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 
@@ -369,9 +369,11 @@ real IyP = Iy;                                  // Previous 2n Moment of y
 real dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
 real dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
 
-real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;                  // Average divergergence of the velocity
-real divTermsX = int2d(Th)(x*((dvxdx+dvydy)-avgDivV))/Areai;	// Current value of the Div terms of V_x cm
-real divTermsY = int2d(Th)(y*((dvxdx+dvydy)-avgDivV))/Areai;	// Current value of the Div terms of V_y cm
+real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
+real divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
+real divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
+real divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
+real divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -538,9 +540,11 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
   dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
 
-  avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;								// Average divergergence of the velocity
-  divTermsX = int2d(Th)(x*(dvxdx+dvydy-avgDivV))/Areai;	// Current value of the Div terms of V_x cm
-  divTermsY = int2d(Th)(y*(dvxdx+dvydy-avgDivV))/Areai;	// Current value of the Div terms of V_y cm
+  real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
+  real divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
+  real divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
+  real divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
+  real divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
   //-------------------------------------------------------------------------------------------------------------------
 
   // Export data ------------------------------------------------------------------------------------------------------
@@ -585,7 +589,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
                     << Ix 				 << "," << Iy 			 << ","
                     << dIxdt 			 << "," << dIydt 	   << ","
                     << avgDivV 	   << "," 
-                    << divTermsX   << "," << divTermsY << endl;
+                    << divXcm      << "," << divYcm    << ","
+                    << divXavgcm   << "," << divYavgcm << endl;
     }
 
     // save the last mesh

@@ -4,18 +4,18 @@ verbosity=0;
 // bool debug=0;
 
 //string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/wetting_essay_MDCK";
-string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tunning_v2";
+string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tunning/MDCK_visc10";
 
 string[int] simulNames = [
-  "MDCK_3pi3_R200_Lc40",
-  "MDCK_3pi3_R200_Lc50",
-  "MDCK_3pi3_R200_Lc45",
-  "MDCK_3pi3_R200_Lc35",
-  "MDCK_3pi3_R200_Lc30",
-  "MDCK_3pi3_R200_Lc25",
-  "MDCK_3pi3_R200_Lc20",
-  "MDCK_3pi3_R200_Lc15",
-  "MDCK_3pi3_R200_Lc10"
+  "MDCK_3pi3_R200_Lc40_visc10",
+  "MDCK_3pi3_R200_Lc50_visc10",
+  "MDCK_3pi3_R200_Lc45_visc10",
+  "MDCK_3pi3_R200_Lc35_visc10",
+  "MDCK_3pi3_R200_Lc30_visc10",
+  "MDCK_3pi3_R200_Lc25_visc10",
+  "MDCK_3pi3_R200_Lc20_visc10",
+  "MDCK_3pi3_R200_Lc15_visc10",
+  "MDCK_3pi3_R200_Lc10_visc10"
   ];
 
 int labelOut = 1; // Mesh identifiers
@@ -23,7 +23,7 @@ int nSimul = 9;   // Number of simulations
 
 // Physiscal Parameters
 real h = 5;                 // Monolayer heigth, [μm]
-real eta = 25e3;            // Monolayer viscosity, [kPa·s]
+real eta = 10e3;            // Monolayer viscosity, [kPa·s]
 real xi = 0.1;              // Friction coefficient, [kPa·s/μm²]
 real zi = 0.01;             // Traction coefficient, [kPa/μm],
 real zeta = -0;             // -Contractility coefficient, [kPa], very low estimation

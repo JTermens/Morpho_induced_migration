@@ -15,8 +15,8 @@ string[int] simulNames = [
   "MDCK_3pi3_R200_Lc25_visc10",
   "MDCK_3pi3_R200_Lc20_visc10",
   "MDCK_3pi3_R200_Lc15_visc10",
-  "MDCK_3pi3_R200_Lc10_visc10"
-  "MCF10a_3pi3_R200_Lc40"
+  "MDCK_3pi3_R200_Lc10_visc10",
+  "MCF10a_3pi3_R200_Lc40_gamma5"
   ];
 
 int labelOut = 1; // Mesh identifiers

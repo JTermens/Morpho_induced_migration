@@ -13,21 +13,21 @@ int iSimul = getARGV("-i", 1);
 bool debug = getARGV("-d", 1);
 bool err = 0;
 
-include "parameters_sets/parameters_test.edp"; // load the parameters
+include "parameters_sets/parameters_MDCK_Lc_tunning.edp"; // load the parameters
 // include "parameters_sets/parameters_wetting_essay.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
 // Problem length & timescales ----------------------------------------------------------------------------------------
-real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
-real R0 = R0s[iSimul];              // Initial radius
-real Reff = Reffs[iSimul];          // Effective radius
+// real cut = cut/*s[iSimul]*/;            // Initial cut (archlength of the perturbation)
+// real R0 = R0/*s[iSimul]*/;              // Initial radius
+// real Reff = Reff/*s[iSimul]*/;          // Effective radius
 real Lc = Lcs[iSimul];
-
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
 real Lg = gamma/(zi*Lc);            // Capillary length: surface tension/stress
 real tscale = eta/(zi*Lc);          // Problem timescale
+
 
 // real R0 = sqrt(pi/areaCst);         // Adimensionalized radius so that adim Area = pi
 // real tscale = eta/(zi*Reffs[i]);    // Problem timescale
@@ -424,6 +424,8 @@ real[int] XcmP = [Xcm0,Xcm0];                   // Previous x_cms (-dt & -2*dt)
 real[int] YcmP = [Ycm0,Ycm0];                   // Previous y_cms (-dt & -2*dt)
 real Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
 real Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
+real Vxavg = int2d(Th)(vx)/Areai;               // Current avg(v_x)
+real Vyavg = int2d(Th)(vy)/Areai;               // Current avg(v_y)
 real Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
 real Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 
@@ -644,6 +646,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   Ycm = int2d(Th)(y)/Areai;	                 // Current Ycm
   Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
   Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
+  Vxavg = int2d(Th)(vx)/Areai;               // Current avg(v_x)
+  Vyavg = int2d(Th)(vy)/Areai;               // Current avg(v_y)
   Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
   Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 

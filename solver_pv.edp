@@ -540,11 +540,11 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
   dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
 
-  real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
-  real divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
-  real divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
-  real divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
-  real divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
+  avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
+  divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
+  divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
+  divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
+  divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
   //-------------------------------------------------------------------------------------------------------------------
 
   // Export data ------------------------------------------------------------------------------------------------------

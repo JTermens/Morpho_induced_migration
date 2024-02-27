@@ -22,7 +22,7 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 // real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
 // real R0 = R0s[iSimul];              // Initial radius
 // /*real*/ string Reff = Reffs[iSimul];          // Effective radius
-// real Lc = Lcs[iSimul];
+real Lc = Lcs[iSimul];
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
 real Lg = gamma/(zi*Lc);            // Capillary length: surface tension/stress

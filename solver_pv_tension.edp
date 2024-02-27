@@ -13,16 +13,16 @@ int iSimul = getARGV("-i", 1);
 bool debug = getARGV("-d", 1);
 bool err = 0;
 
+// include "parameters_sets/parameters_poster_runs.edp"; // load the parameters
 include "parameters_sets/parameters_MDCK_Lc_tunning.edp"; // load the parameters
-// include "parameters_sets/parameters_wetting_essay.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
 // Problem length & timescales ----------------------------------------------------------------------------------------
-// real cut = cut/*s[iSimul]*/;            // Initial cut (archlength of the perturbation)
-// real R0 = R0/*s[iSimul]*/;              // Initial radius
-// real Reff = Reff/*s[iSimul]*/;          // Effective radius
-real Lc = Lcs[iSimul];
+// real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
+// real R0 = R0s[iSimul];              // Initial radius
+// /*real*/ string Reff = Reffs[iSimul];          // Effective radius
+// real Lc = Lcs[iSimul];
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
 real Lg = gamma/(zi*Lc);            // Capillary length: surface tension/stress

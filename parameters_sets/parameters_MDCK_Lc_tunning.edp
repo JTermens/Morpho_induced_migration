@@ -30,7 +30,7 @@ real zi = 0.02/*1*/;             // Traction coefficient, [kPa/μm],
 real zeta = -0;             // -Contractility coefficient, [kPa], very low estimation
 // real tscale = eta/(zi*Lc);  // Timescale corresponding to the advance of a flat front, [s]
 // If surface tension
-real gamma = -5.;           // Surface tension, [mN/m]=[kPa·μm]
+real gamma = 5.;           // Surface tension, [mN/m]=[kPa·μm]
 
 // Nematic length, sqrt(K/a), [μm]
 real[int] Lcs = [40, 50, 45, 35, 30, 25, 20, 15, 10, 40];               

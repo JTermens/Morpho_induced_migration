@@ -14,15 +14,15 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 // include "parameters_sets/parameters_poster_runs.edp"; // load the parameters
-include "parameters_sets/parameters_MDCK_Lc_tunning.edp"; // load the parameters
+include "parameters_sets/parameters_optimized_tst.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
 // Problem length & timescales ----------------------------------------------------------------------------------------
-// real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
-// real R0 = R0s[iSimul];              // Initial radius
+real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
+real R0 = R0s[iSimul];              // Initial radius
 // /*real*/string Reff = Reffs[iSimul];          // Effective radius
-real Lc = Lcs[iSimul];
+// real Lc = Lcs[iSimul];
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
 real tscale = eta/(zi*Lc);          // Problem timescale
@@ -603,8 +603,9 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   // Plot v -----------------------------------------------------------------------------------------------------------
   if (debug) { // Show it always, regardless of the verbosity
   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
+  Pola vDiv = dvxdx(x,y) + dvydy(x,y);
   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
-  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS*/normal,vABS, 
+  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS*/normal,vDiv, 
     value = true, 
     fill = true, 
     nbiso = 64, 

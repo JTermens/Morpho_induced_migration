@@ -13,16 +13,15 @@ int iSimul = getARGV("-i", 1);
 bool debug = getARGV("-d", 1);
 bool err = 0;
 
-include "parameters_sets/parameters_poster_runs.edp"; // load the parameters
-// include "parameters_sets/parameters_MDCK_Lc_tunning.edp"; // load the parameters
+include "parameters_sets/parameters_optimized_tst.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
 // Problem length & timescales ----------------------------------------------------------------------------------------
-// real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
-// real R0 = R0s[iSimul];              // Initial radius
+real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
+real R0 = R0s[iSimul];              // Initial radius
 // /*real*/string Reff = Reffs[iSimul];          // Effective radius
-real Lc = Lcs[iSimul];
+// real Lc = Lcs[iSimul];
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
 real tscale = eta/(zi*Lc);          // Problem timescale
@@ -275,7 +274,7 @@ varf av(v, u) = int2d(Th)(
 
 varf lv(v, u) = int2d(Th)(
     + a*(pp(px,py)'*Grad(ux,uy)) 
-    + c*(p'*u)
+    + c*(p'*[ux,uy])
   ); //contractility +active traction
 
 // Assembly V
@@ -292,7 +291,7 @@ vx[]=solV(0:Vel.ndof-1);
 if (debug) {
   // plot(Th,vx, value = true, fill = true, nbiso = 64, wait = true, cmm = "vx");
   // plot(Th,vy, value = true, fill = true, nbiso = 64, wait = true, cmm = "vy");
-  plot(Th,v, value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)");
+  plot(Th,[vx,vy], value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)");
   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2); // Abs(P)
   plot(Th,vABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|v|");
   plot(Th,Pr, value = true, fill = true, nbiso = 64, wait = true, cmm = "Pressure");
@@ -462,7 +461,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   // Assembly V
   varf lv(v, u) = int2d(Th)(
       + a*(pp(px,py)'*Grad(ux,uy))
-      + c*(p'*u)
+      + c*(p'*[ux,uy])
     ); //contractility + active traction
 
   matrix Av = av(Vel, Vel);  			// LHS matrix

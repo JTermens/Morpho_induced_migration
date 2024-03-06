@@ -173,7 +173,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 
 	for (int iLaLc=0; iLaLc<nLaLc; iLaLc++){
 		for (int iRLc=0; iRLc<nRLc; iRLc++){
-			for (int iLambdaLc=0; iLambdaLc<nRLc; iLambdaLc++){
+			for (int iLambdaLc=0; iLambdaLc<nLambdaLc; iLambdaLc++){
 
 				Th = Th0; // Restore the mesh
 

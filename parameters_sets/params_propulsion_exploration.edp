@@ -18,7 +18,7 @@ int nCut = 1;
 real minCut = pi;
 real maxCut = pi;
 
-int nLaLc = 21;
+int nLaLc = 11;
 real minLaLc = 0.;
 real maxLaLc = 10.;
 
@@ -26,7 +26,7 @@ int nRLc = 1;
 real minRLc = 227.601/40.;
 real maxRLc = 227.601/40.;
 
-int nLambdaLc = 41;
+int nLambdaLc = 11;
 real minLambdaLc = 0.5;
 real maxLambdaLc = 20.5;
 

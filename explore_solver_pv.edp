@@ -142,9 +142,6 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 	real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelOut, bMesh);
 
 	Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelOut,.5,0,1); // Custom mesh adaptation
-	
-	// Smooth the outer boundary pieces
-	Th = closedRemesh(bMesh,lMesh,bMesh.m-1,0,obd,0,labelOut,.5,0,0);
 	mesh Th0 = Th; // Save Th0 as Th will be modified
 
 	real Area0 = Th0.measure; // Inital Area

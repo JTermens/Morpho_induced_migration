@@ -68,7 +68,7 @@ if (iRun == 0){
 
 		fileParams.fixed;
 		fileParams << "Parameters" << endl
-				   << "Cut.n,Cut.min,Cut,max,LaLc.n,LaLc.min,LaLc.max,RLc.n,RLc.min,RLc.max,LambdaLc.n,LambdaLc.min,LambdaLc.max,adimdt,pathGlobalSol" << endl
+				   << "Cut.n,Cut.min,Cut.max,LaLc.n,LaLc.min,LaLc.max,RLc.n,RLc.min,RLc.max,LambdaLc.n,LambdaLc.min,LambdaLc.max,adimdt,pathGlobalSol" << endl
 				   << nCut      << "," << minCut      << "," << maxCut      << ","
 				   << nLaLc     << "," << minLaLc     << "," << maxLaLc     << ","
 				   << nRLc      << "," << minRLc      << "," << maxRLc      << ","

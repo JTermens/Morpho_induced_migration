@@ -87,8 +87,8 @@ if (iRun == 0){
 
 		//fileGlobalSol.fixed;
 		fileGlobalSol << "Global_Solutions" << endl
-					  << "Cut.i,LaLc.i,RLc.i,LambdaLc.i,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,pathMsh,pathLocalSol" << endl
-					  << "adim,adim,adim,adim,R,R,adim,adim,1/tscale,1/tscale,R/tscale,R/tscale,R/tscale^2,R/tscale^2,R^2,R^2/tscale,R^2,R^2,R^2/tscale,R^2/tscale,1/tscale,R/tscale,R/tscale,R/tscale,R/tscale,path,path" << endl;
+					  << /*"Cut.i,"<<*/"LaLc.i,"<</*"RLc.i,"<<*/"LambdaLc.i,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,pathMsh,pathLocalSol" << endl
+					  << /*"adim,"<<*/"adim,"<</*"adim,"<<*/"adim,R,R,adim,adim,1/tscale,1/tscale,R/tscale,R/tscale,R/tscale^2,R/tscale^2,R^2,R^2/tscale,R^2,R^2,R^2/tscale,R^2/tscale,1/tscale,R/tscale,R/tscale,R/tscale,R/tscale,path,path" << endl;
 	}
 }
 
@@ -189,7 +189,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				real c = RLc; // R/Lc
 				real dt = adimdt;
 				
-				string fileNameLocalSol = "/local_sol/sol_"+cutName+"_"+(iLaLc+1)+"LaLc_"+(iRLc+1)+"RLc_"+(iLambdaLc+1)+"LambdaLc.txt";
+				string fileNameLocalSol = "/local_sol/sol_"+cutName+"_"+(iLaLc+1)+"LaLc_"/*+(iRLc+1)+"RLc_"*/+(iLambdaLc+1)+"LambdaLc.txt";
 
 				// Simul timestep 0 with mesh Th
 
@@ -487,7 +487,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				{ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol, append);
 					
 					fileGlobalSol.fixed;
-					fileGlobalSol << iCut 	 << "," << iLaLc   << "," << iRLc 	<< "," << iLambdaLc << ","
+					fileGlobalSol /*<< iCut 	 << ","*/ << iLaLc   << "," /*<< iRLc 	<< ","*/ << iLambdaLc << ","
 								  << Xcm 	 << "," << Ycm 	   << "," << Pxcm 	<< "," << Pycm 		<< ","
 								  << dPxcmdt << "," << dPycmdt << "," << Vxcm 	<< "," << Vycm 		<< ","
 								  << Axcm 	 << "," << Aycm    << "," << Area0 	<< "," << dAreadt 	<< ","

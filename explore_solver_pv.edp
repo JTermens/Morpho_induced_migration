@@ -154,7 +154,9 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 	}
 	
 	// Plot the initial mesh
-	// plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "Mesh Th, cut = "+cutName+", itime = 0");
+	if (debug) {
+		plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "adaptive mesh;  A0="+Area0);
+		}
 
 	// Save initial mesh
   	savemesh(Th,simulHomeDir+fileNameMsh);

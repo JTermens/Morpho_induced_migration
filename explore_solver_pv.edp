@@ -57,12 +57,12 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 string simulHomeDir = rootDir+"/"+simulName;
 string fileNameParams = "/params.csv";
 string fileNameParamsMhs = "/params_msh.csv";
-string fileNameGlobalSol = "/global_sol.csv";
+string fileNameGlobalSol = "/global_sols.csv";
 
 if (iRun == 0){
 	exec("mkdir "+simulHomeDir);	// Make a home directory for the simulation
 	exec("mkdir "+simulHomeDir+"/msh");	// Make and save the meshes in a separeted directory
-	exec("mkdir "+simulHomeDir+"/local_sol");	// Make and save the local solutions in a separeted directory
+	exec("mkdir "+simulHomeDir+"/local_sols");	// Make and save the local solutions in a separeted directory
 
 	{ofstream fileParams (simulHomeDir+fileNameParams); // Save the exploration parameters in separate file
 

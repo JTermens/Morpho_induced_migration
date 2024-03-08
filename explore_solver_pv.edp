@@ -57,7 +57,7 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 string simulHomeDir = rootDir+"/"+simulName;
 string fileNameParams = "/params.csv";
 string fileNameParamsMhs = "/params_msh.csv";
-string fileNameGlobalSol = "/global_sols.csv";
+string fileNameGlobalSols = "/global_sols.csv";
 
 if (iRun == 0){
 	exec("mkdir "+simulHomeDir);	// Make a home directory for the simulation
@@ -73,7 +73,7 @@ if (iRun == 0){
 				   << nLaLc     << "," << minLaLc     << "," << maxLaLc     << ","
 				   << nRLc      << "," << minRLc      << "," << maxRLc      << ","
 				   << nLambdaLc << "," << minLambdaLc << "," << maxLambdaLc << "," 
-				   << adimdt    << "," << fileNameGlobalSol << endl;
+				   << adimdt    << "," << fileNameGlobalSols << endl;
 	}
 
 	{ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs); // Generate a separate file for the mesh parameters
@@ -83,10 +83,10 @@ if (iRun == 0){
 					  << "cut,R,fracRarc,obd,ibd,BndLayer,AreaCst,Area,pathMesh" << endl;
 	}
 
-	{ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol); // Generate a separate file for the global variables (integrates ones)
+	{ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols); // Generate a separate file for the global variables (integrates ones)
 
 		//fileGlobalSol.fixed;
-		fileGlobalSol << "Global_Solutions" << endl
+		fileGlobalSols << "Global_Solutions" << endl
 					  << /*"Cut.i,"<<*/"LaLc.i,"<</*"RLc.i,"<<*/"LambdaLc.i,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,pathMsh,pathLocalSol" << endl
 					  << /*"adim,"<<*/"adim,"<</*"adim,"<<*/"adim,R,R,adim,adim,1/tscale,1/tscale,R/tscale,R/tscale,R/tscale^2,R/tscale^2,R^2,R^2/tscale,R^2,R^2,R^2/tscale,R^2/tscale,1/tscale,R/tscale,R/tscale,R/tscale,R/tscale,path,path" << endl;
 	}
@@ -188,7 +188,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				real c = RLc; // R/Lc
 				real dt = adimdt;
 				
-				string fileNameLocalSol = "/local_sol/sol_"+cutName+"_"+(iLaLc+1)+"LaLc_"/*+(iRLc+1)+"RLc_"*/+(iLambdaLc+1)+"LambdaLc.txt";
+				string fileNameLocalSol = "/local_sols/sol_"+cutName+"_"+(iLaLc+1)+"LaLc_"/*+(iRLc+1)+"RLc_"*/+(iLambdaLc+1)+"LambdaLc.txt";
 
 				// Simul timestep 0 with mesh Th
 
@@ -483,10 +483,10 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				real dIydt = (off0Iy[0]-Iy)/dt;
 
 				// Save Global Data (variables integratet over the domain)
-				{ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol, append);
+				{ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols, append);
 					
-					fileGlobalSol.fixed;
-					fileGlobalSol /*<< iCut 	 << ","*/ << iLaLc   << "," /*<< iRLc 	<< ","*/ << iLambdaLc << ","
+					fileGlobalSols.fixed;
+					fileGlobalSols /*<< iCut 	 << ","*/ << iLaLc   << "," /*<< iRLc 	<< ","*/ << iLambdaLc << ","
 								  << Xcm 	 << "," << Ycm 	   << "," << Pxcm 	<< "," << Pycm 		<< ","
 								  << dPxcmdt << "," << dPycmdt << "," << Vxcm 	<< "," << Vycm 		<< ","
 								  << Axcm 	 << "," << Aycm    << "," << Area0 	<< "," << dAreadt 	<< ","

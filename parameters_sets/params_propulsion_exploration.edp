@@ -8,7 +8,7 @@ bool debug=0;
 string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 
 // string simulName = "exploration_propulsion";
-string simulName = "exploration_low_zeta_v2";
+string simulName = "exploration_low_zeta_0-7";
 
 int labelOut = 1; // Mesh identifiers
 
@@ -19,9 +19,9 @@ int nCut = 1;
 real minCut = pi;
 real maxCut = pi;
 
-int nLaLc = 11;
+int nLaLc = 57;
 real minLaLc = 0.;
-real maxLaLc = 0.3/*10.*/;
+real maxLaLc = 7./*10.*/;
 
 int nRLc = 1;
 real minRLc = 227.601/40.;

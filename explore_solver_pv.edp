@@ -258,7 +258,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				p = p + pD;
 
 				// Bilinear and linear variational forms V
-				varf av(v, u) = int2d(Th)( ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) )  + int2d(Th)( b*(v'*u) ); // -viscosity -friction
+				varf av(v, u) = int2d(Th)( ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) )  + int2d(Th)( pow(b,2)*(v'*u) ); // -viscosity -friction
 				varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( c*(p'*u) ); //contractility +active traction
 
 				// Assembly V
@@ -424,7 +424,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 						nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
 
 						nx[](2*bndIndices(k))= nmean[0]; ny[](2*bndIndices(k)+1) = nmean[1];
-						nprev = npost; lenprev = lenpost;
+						nprev = npost; lenprev = lenpost;+ 
 					}
 
 					// P2 extension of polarity Dirichlet data

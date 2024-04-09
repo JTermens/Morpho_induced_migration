@@ -183,7 +183,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				real LambdaLc = iLambdaLc*(maxLambdaLc-minLambdaLc)/(nLambdaLc-1) + minLambdaLc; // hydrodynamic screening and nematic length ratio
 
 				// Adim with length = Lc
-				real a = LaLc;	// La/Lc
+				real a = -LaLc;	// La/Lc Negative sign to compensate La = |zeta|/zi
 				real b = RLc/LambdaLc; // R/lambda
 				real c = RLc; // R/Lc
 				real dt = adimdt;
@@ -240,8 +240,15 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				pDx[] = bndDirichlet(0, Pol, tgv = 1.0);
 
 				// Bilinear and linear variational forms P (Modified Homogeneous Drirchlet problem for p-pD)
-				varf ap(p, q) = int2d(Th)(  grad(px)'*grad(qx) + grad(py)'*grad(qy) )  + int2d(Th)(c*c*(p'*q)) + on(labelOut, px=0.0) + on(labelOut, py=0.0);
-				varf lp(p, q) = -int2d(Th)( grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy) ) - int2d(Th)(c*c*(pD'*q))  + on(labelOut, px=0.0) + on(labelOut, py=0.0);
+				varf ap(p, q) = int2d(Th)(
+    				(grad(px)'*grad(qx) + grad(py)'*grad(qy))
+    				+ c*c*(p'*q)
+  				) + on(labelOut, px = 0.0) + on(labelOut, py = 0.0);
+
+				varf lp(p, q) = int2d(Th)(
+					- (grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy))
+					- c*c*(pD'*q)
+				) + on(labelOut, px = 0.0) + on(labelOut, py = 0.0);
 
 				// Assembly P
 				matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
@@ -258,8 +265,15 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 				p = p + pD;
 
 				// Bilinear and linear variational forms V
-				varf av(v, u) = int2d(Th)( ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) )  + int2d(Th)( pow(b,2)*(v'*u) ); // -viscosity -friction
-				varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( c*(p'*u) ); //contractility +active traction
+				varf av(v, u) = int2d(Th)(
+					((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) 
+					+ pow(b,2)*(v'*u)
+				); // -viscosity -friction
+
+				varf lv(v, u) = int2d(Th)(
+					+ a*(pp(px,py)'*Grad(ux,uy)) 
+					+ c*(p'*u)
+				); //contractility +active traction
 
 				// Assembly V
 				matrix Av = av(Vel, Vel);
@@ -433,7 +447,11 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 					pDx[] = bndDirichlet(0, Pol, tgv = 1.0);
 
 					// Assembly P
-					varf lp(p, q) = -int2d(Th)( grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy) ) - int2d(Th)(c*c*(pD'*q))  + on(labelOut, px = 0.0) + on(labelOut, py=0.0);
+					varf lp(p, q) = int2d(Th)(
+						- (grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy)) 
+						- c*c*(pD'*q)
+					) + on(labelOut, px = 0.0) + on(labelOut, py=0.0);
+					
 					matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS matrix
 					real[int] bp = lp(0, Pol); 			// RHS
 
@@ -448,7 +466,11 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 					p = p + pD;
 
 					// Assembly V
-					varf lv(v, u) = int2d(Th)( -a*(pp(px,py)'*Grad(ux,uy)) ) + int2d(Th)( c*(p'*u) ); //contractility + active traction
+					varf lv(v, u) = int2d(Th)(
+						+ a*(pp(px,py)'*Grad(ux,uy))
+						+ c*(p'*u)
+					); //contractility + active traction
+
 					matrix Av = av(Vel, Vel);  			// LHS matrix
 					real[int] bv = lv(0, Vel);			// RHS
 

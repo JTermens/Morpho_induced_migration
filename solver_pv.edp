@@ -19,15 +19,15 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
 // Problem length & timescales ----------------------------------------------------------------------------------------
-real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
-real R0 = R0s[iSimul];              // Initial radius
-// /*real*/string Reff = Reffs[iSimul];          // Effective radius
+real cut = cuts[iSimul];         // Initial cut (archlength of the perturbation)
+real R0 = R0s[iSimul];           // Initial radius
+// /*real*/string Reff = Reffs[iSimul];     // Effective radius
 // real Lc = Lcs[iSimul];
-real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
-real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
-real tscale = eta/(zi*Lc);          // Problem timescale
-// real R0 = sqrt(pi/areaCst);         // Adimensionalized radius so that adim Area = pi
-// real tscale = eta/(zi*Reffs[i]);    // Problem timescale
+real lambda = sqrt(eta/xi);      // hydrodynamic sceening length
+real La = zeta/zi;               // active length; < 0 (> 0) for contractile (extensile) stress
+real tscale = eta/(zi*Lc);       // Problem timescale
+// real R0 = sqrt(pi/areaCst);      // Adimensionalized radius so that adim Area = pi
+// real tscale = eta/(zi*Reffs[i]); // Problem timescale
 
 
 // Problem Parameters
@@ -134,10 +134,15 @@ macro dp [dpxdx,dpxdy,dpydx,dpydy] //               // Gradient of the polarity 
 macro dq [dqxdx,dqxdy,dqydx,dqydy] //               // Gradient of the polarity test functions
 macro dv [dvxdx,dvxdy,dvydx,dvydy] //               // Gradient of the velocity field
 macro du [duxdx,duxdy,duydx,duydy] //               // Gradient of the velocity test functions
+macro d2px [dpxdxx,dpxdxy,dpxdyx,dpxdyy] //			    // Hessian of the x-polarity
+macro d2py [dpydxx,dpydxy,dpydyx,dpydyy] //			    // Hessian of the y-polarity
+macro d2qx [dqxdxx,dqxdxy,dqxdyx,dqxdyy] //			    // Hessian of the x-polarity test function
+macro d2qy [dqydxx,dqydxy,dqydyx,dqydyy] //			    // Hessian of the y-polarity test 
 			
 macro grad(u) [dx(u),dy(u)] //                      // Gradient of a sclar
 macro Grad(ux,uy) [dx(ux),dy(ux),dx(uy),dy(uy)] //  // Gradient of a vector
 macro GradT(ux,uy) [dx(ux),dx(uy),dy(ux),dy(uy)] // // Grad vector transpose
+macro Hessian(u) [dxx(u),dxy(u),dyx(u),dyy(u)] //	  // Hessian of a scalar
 macro pp(px,py) [px*px,px*py,py*px,py*py] //        // Active stress tensor
 
 macro Norm(u) dist(u#x,u#y) + 1.e-12 //             // Vector norm + offset to avoid 0-length vectors
@@ -322,6 +327,29 @@ dVel dv=[0,0,0,0];
 dvxdx[]=solGradV(0:dVel.ndof-1);
 //---------------------------------------------------------------------------------------------------------------------
 
+// Compute the Hessian of px for posterior analysis
+varf aHessPx(d2px,d2qx) = int2d(Th)(d2px'*d2qx);
+varf lHessPx(d2px,d2qx) = int2d(Th)(Hessian(px)'*d2qx);
+
+matrix AHessPx = aHessPx(dPol, dPol);	// LHS matrix
+real[int] bHessPx = lHessPx(0, dPol);	// RHS vector
+
+real[int] solHessPx(dPol.ndof);
+solHessPx=AHessPx^-1*bHessPx;
+dPol d2px=[0,0,0,0];
+dpxdxx[]=solHessPx(0:dPol.ndof-1);
+
+// Compute the Hessian of py for posterior analysis
+varf aHessPy(d2py,d2qy) = int2d(Th)(d2py'*d2qy);
+varf lHessPy(d2py,d2qy) = int2d(Th)(Hessian(py)'*d2qy);
+
+matrix AHessPy = aHessPy(dPol, dPol);	// LHS matrix
+real[int] bHessPy = lHessPy(0, dPol);	// RHS vector
+
+real[int] solHessPy(dPol.ndof);
+solHessPy=AHessPy^-1*bHessPy;
+dPol d2py=[0,0,0,0];
+dpydxx[]=solHessPy(0:dPol.ndof-1);
 
 // Compute and plot friction -----------------------------------------------------------------------------------------------
 // varf aFrict(frict, testFrict) = int2d(Th)(frict*testFrict);
@@ -517,6 +545,29 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dvxdx[]=solGradV(0:dVel.ndof-1);
   //-------------------------------------------------------------------------------------------------------------------
 
+  // Compute the Hessian of px for posterior analysis
+  varf aHessPx(d2px,d2qx) = int2d(Th)(d2px'*d2qx);
+  varf lHessPx(d2px,d2qx) = int2d(Th)(Hessian(px)'*d2qx);
+
+  matrix AHessPx = aHessPx(dPol, dPol);	// LHS matrix
+  real[int] bHessPx = lHessPx(0, dPol);	// RHS vector
+
+  real[int] solHessPx(dPol.ndof);
+  solHessPx=AHessPx^-1*bHessPx;
+  dPol d2px=[0,0,0,0];
+  dpxdxx[]=solHessPx(0:dPol.ndof-1);
+
+  // Compute the Hessian of py for posterior analysis
+  varf aHessPy(d2py,d2qy) = int2d(Th)(d2py'*d2qy);
+  varf lHessPy(d2py,d2qy) = int2d(Th)(Hessian(py)'*d2qy);
+
+  matrix AHessPy = aHessPy(dPol, dPol);	// LHS matrix
+  real[int] bHessPy = lHessPy(0, dPol);	// RHS vector
+
+  real[int] solHessPy(dPol.ndof);
+  solHessPy=AHessPy^-1*bHessPy;
+  dPol d2py=[0,0,0,0];
+  dpydxx[]=solHessPy(0:dPol.ndof-1);
 
   // Compute the global variables -------------------------------------------------------------------------------------
   Areai = Th.measure;	// Current area
@@ -556,22 +607,27 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     string fileNameLocalSol = "/local_sol/sol_"+(1000000+iterTime)+".txt";
     string fileNameMsh = "/msh/mesh_"+(1000000+iterTime)+".msh";
 
-    // Save {px, py, vx, vy, dpxdx, dpxdy, dpydx, dpydy, dvxdx, dvxdy, dvydx, dvydy} on each vertex:
+    // Save {px, py, vx, vy, dpxdx, dpxdy, dpydx, dpydy, dvxdx, dvxdy, dvydx, dvydy, 
+    // dpxdxx, dpxdxy, dpxdyx, dpxdyy, dpydxx, dpydxy, dpydyx, dpydyy} on each vertex:
     // Memory efficient method, but needs connectivity data to reconstruct the mesh
     {ofstream fileLocalSols (simulHomeDir+fileNameLocalSol);
       
       fileLocalSols.fixed;
       int NbVertices = Th.nv;
       fileLocalSols << "# LocalSolutions" << endl
-                    << "# NumFields: " << 12 << "	NumberVertices: " << NbVertices /*<< " cut: " << cut*/ << " a: " << a << " b: " << b << " c: " << c << endl
-                    << "# px	py	vx	vy	dpxdx	dpxdy	dpydx	dpydy	dvxdx	dvxdy	dvydx	dvydy" << endl;
+                    << "# NumFields: " << 20 << "	NumberVertices: " << NbVertices << " cut: " << cut << " a: " << a << " b: " << b << " c: " << c << endl
+                    << "# px	py	vx	vy	dpxdx	dpxdy	dpydx	dpydy	dvxdx	dvxdy	dvydx	dvydy	" << "dpxdxx	dpxdxy	dpxdyx	dpxdyy	dpydxx	dpydxy	dpydyx	dpydyy" << endl;
       for (int i = 0; i < NbVertices; i++){
-        fileLocalSols << px(Th(i).x,Th(i).y) 		<< "	" << py(Th(i).x,Th(i).y) 		<< "	"  // {px,py}
-                      << vx(Th(i).x,Th(i).y) 		<< "	" << vy(Th(i).x,Th(i).y) 		<< "	"	 // {vx,vy}
-                      << dpxdx(Th(i).x,Th(i).y) << "	" << dpxdy(Th(i).x,Th(i).y) << "	"	 //	{dpxdx,dpxdy}
-                      << dpydx(Th(i).x,Th(i).y) << "	" << dpydy(Th(i).x,Th(i).y) << "	"	 // {dpydx,dpydy}
-                      << dvxdx(Th(i).x,Th(i).y) << "	" << dvxdy(Th(i).x,Th(i).y) << "	"	 // {dvxdx,dvxdy}
-                      << dvydx(Th(i).x,Th(i).y) << "	" << dvydy(Th(i).x,Th(i).y) << endl; // {dvydx,dvydy}
+        fileLocalSols << px(Th(i).x,Th(i).y) 	 << "	" << py(Th(i).x,Th(i).y) 	 << "	"  // {px,py}
+                << vx(Th(i).x,Th(i).y) 	 << "	" << vy(Th(i).x,Th(i).y) 	 << "	"  // {vx,vy}
+                << dpxdx(Th(i).x,Th(i).y)  << "	" << dpxdy(Th(i).x,Th(i).y)  << "	"  // {dpxdx,dpxdy}
+                << dpydx(Th(i).x,Th(i).y)  << "	" << dpydy(Th(i).x,Th(i).y)  << "	"  // {dpydx,dpydy}
+                << dvxdx(Th(i).x,Th(i).y)  << "	" << dvxdy(Th(i).x,Th(i).y)  << "	"  // {dvxdx,dvxdy}
+                << dvydx(Th(i).x,Th(i).y)  << "	" << dvydy(Th(i).x,Th(i).y)  << "	"  // {dvydx,dvydy}
+                << dpxdxx(Th(i).x,Th(i).y) << "	" << dpxdxy(Th(i).x,Th(i).y) << "	"  // {dpxdxx,dpxdxy}
+                << dpxdyx(Th(i).x,Th(i).y) << "	" << dpydyy(Th(i).x,Th(i).y) << "	"  // {dpxdyx,dpxdyy}
+                << dpydxx(Th(i).x,Th(i).y) << "	" << dpydxy(Th(i).x,Th(i).y) << "	"  // {dpydxx,dpydxy}
+                << dpydyx(Th(i).x,Th(i).y) << "	" << dpydyy(Th(i).x,Th(i).y) << endl;  // {dpydyx,dpydyy}
       }
     }
 
@@ -580,18 +636,11 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       
       fileGlobalSol.fixed;
       fileGlobalSol	<< iterTime*dt << "," 
-                    << Xcm 		     << "," << Ycm 			 << ","
-                    << Pxcm 			 << "," << Pycm 		 << ","
-                    << dPxcmdt 		 << "," << dPycmdt   << ","
-                    << Vxcm 		   << "," << Vycm 		 << ","
-                    << Vxavg       << "," << Vyavg     << ","
-                    << Axcm 			 << "," << Aycm 		 << ","
-                    << Areai       << "," << dAreadt 	 << ","
-                    << Ix 				 << "," << Iy 			 << ","
-                    << dIxdt 			 << "," << dIydt 	   << ","
-                    << avgDivV 	   << "," 
-                    << divXcm      << "," << divYcm    << ","
-                    << divXavgcm   << "," << divYavgcm << endl;
+                    << Xcm 		 << "," << Ycm 		 << "," << Pxcm 	 << "," << Pycm 	   << ","
+                    << dPxcmdt << "," << dPycmdt << "," << Vxcm 	 << "," << Vycm 	   << ","
+                    << Axcm 	 << "," << Aycm 	 << "," << Areai   << "," << dAreadt 	 << "," 
+                    << Ix 		 << "," << Iy 		 << "," << dIxdt 	 << "," << dIydt 	   << "," 
+                    << avgDivV << "," << divXcm  << "," << divYcm  << "," << divXavgcm << "," << divYavgcm << endl;
     }
 
     // save the last mesh

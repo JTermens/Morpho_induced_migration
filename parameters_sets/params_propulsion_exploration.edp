@@ -8,7 +8,7 @@ bool debug=0;
 string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 
 // string simulName = "exploration_propulsion";
-string simulName = "exploration_low_zeta_0-7";
+string simulName = "exploration_low_zeta_0-7_v2";
 
 int labelOut = 1; // Mesh identifiers
 

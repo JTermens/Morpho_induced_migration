@@ -438,7 +438,7 @@ for (int iCut=i0Cut[iRun]; iCut<ifCut[iRun]; iCut++){
 						nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
 
 						nx[](2*bndIndices(k))= nmean[0]; ny[](2*bndIndices(k)+1) = nmean[1];
-						nprev = npost; lenprev = lenpost;+ 
+						nprev = npost; lenprev = lenpost; 
 					}
 
 					// P2 extension of polarity Dirichlet data

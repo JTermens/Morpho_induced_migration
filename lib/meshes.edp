@@ -131,9 +131,9 @@ func mesh closedRemesh(real[int,int] bnd, real lBnd, int nBnd,real bndLayerLentg
 
 	// Just one inner loop
 	// real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bndLayerLentgh,close=1,ISO,smoothing=bndLayerLentgh*smoothCoef,ratio=1.e-0);
-  // real lInner=ISO(2,ISO.m-1); // lInner is the perimeter of ISO
-  // border Inner(t=0,1){ P=Curve(ISO,t);label=0;} // Linear interpolation of the inner boundary (simple and robust)
-  // int nInnerFilter = round(ibd*lInner); // new number of elements (prescribed density ibd)
+	// real lInner=ISO(2,ISO.m-1); // lInner is the perimeter of ISO
+	// border Inner(t=0,1){ P=Curve(ISO,t);label=0;} // Linear interpolation of the inner boundary (simple and robust)
+	// int nInnerFilter = round(ibd*lInner); // new number of elements (prescribed density ibd)
 
 	// Get the new inner boundary vertices (ISO is the contour d==bndLayerLentgh) with multiple loops
 	real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bndLayerLentgh,close=0,ISO,beginend=be,smoothing=bndLayerLentgh*smoothCoef,ratio=1.e-0);

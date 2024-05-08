@@ -1,203 +1,359 @@
-func mesh fourCurveShape(int obd, real rUp, real rDown, real rLeft,real rRight, real d, real symmAxis, int labelBnd){
+// Packages for advanced remeshing scheme
+// load "Curvature"
+// load "distance"
+// load "isoline"
+// load "gsl"
 
-	mesh Th; // Final mesh (Th)
+func mesh fourCurveShape(
+  int obd, real rUp, real rDown, real rLeft,
+  real rRight, real d, real symmAxis, int labelBnd
+){
 
-	if (((d+rUp-rDown-2*rRight) <= 0) || ((d+rUp-rDown-2*rLeft) <= 0)) {
-		cout << "ERROR: d + rUp - rDown - 2*(rRight and rLeft) > 0" << endl;
-		return Th;
-	}
+  mesh Th; // Final mesh
 
-  real thetaDownRight = acos((pow((rDown+rRight),2)+pow(d,2)-pow((rUp-rRight),2))/(2*(rDown+rRight)*d));
-  real thetaDownLeft = acos((pow((rDown+rLeft),2)+pow(d,2)-pow((rUp-rLeft),2))/(2*(rDown+rLeft)*d));
-  real thetaUpRight = acos((pow((rDown+rRight),2)-pow(d,2)-pow((rUp-rRight),2))/(2*(rUp-rRight)*d));
-  real thetaUpLeft = acos((pow((rDown+rLeft),2)-pow(d,2)-pow((rUp-rLeft),2))/(2*(rUp-rLeft)*d));
-	real thetaRight = acos((pow(d,2)-pow((rUp-rRight),2)-pow(rDown+rRight,2))/(2*(rUp-rRight)*(rDown+rRight)));
-	real thetaLeft = acos((pow(d,2)-pow((rUp-rLeft),2)-pow(rDown+rLeft,2))/(2*(rUp-rLeft)*(rDown+rLeft)));
+  if (((d+rUp-rDown-2*rRight) <= 0) || ((d+rUp-rDown-2*rLeft) <= 0)) {
+    cout << "ERROR: d + rUp - rDown - 2*(rRight and rLeft) > 0" << endl;
+    return Th;
+  }
+
+  real thetaDownRight = acos(
+    (pow((rDown+rRight),2)+pow(d,2)-pow((rUp-rRight),2))/(2*(rDown+rRight)*d));
+  real thetaDownLeft = acos(
+    (pow((rDown+rLeft),2)+pow(d,2)-pow((rUp-rLeft),2))/(2*(rDown+rLeft)*d));
+  real thetaUpRight = acos(
+    (pow((rDown+rRight),2)-pow(d,2)-pow((rUp-rRight),2))/(2*(rUp-rRight)*d));
+  real thetaUpLeft = acos(
+    (pow((rDown+rLeft),2)-pow(d,2)-pow((rUp-rLeft),2))/(2*(rUp-rLeft)*d));
+  real thetaRight = acos(
+    (pow(d,2)-pow((rUp-rRight),2)-pow(rDown+rRight,2))/(2*(rUp-rRight)*(rDown+rRight)));
+  real thetaLeft = acos(
+    (pow(d,2)-pow((rUp-rLeft),2)-pow(rDown+rLeft,2))/(2*(rUp-rLeft)*(rDown+rLeft)));
 
   real xRight = -(d*(pow(d,2) - (rDown + 2*rRight - rUp)*(rDown + rUp))*cos(symmAxis) -
     sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*sin(symmAxis))/(2*pow(d,2));
   real yRight = -(d*(pow(d,2) - (rDown + 2*rRight - rUp)*(rDown + rUp))*sin(symmAxis) +
-		sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
+    sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rRight - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
 
-	real xLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis) +
+  real xLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*cos(symmAxis) +
     sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*sin(symmAxis))/(2*pow(d,2));
   real yLeft = -(d*(pow(d,2) - (rDown + 2*rLeft - rUp)*(rDown + rUp))*sin(symmAxis) -
-		sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
+    sqrt(-pow(d,2)*(pow(d,2) - pow((rDown + 2*rLeft - rUp),2))*(pow(d,2) - pow((rDown + rUp),2)))*cos(symmAxis))/(2*pow(d,2));
 
 
   // Define the borders without mesh adaptation
-	border rightArch(t=0, 1){
+  border rightArch(t=0, 1){
     x = xRight + rRight*cos((symmAxis-thetaUpRight-thetaRight)+thetaRight*t);
     y = yRight + rRight*sin((symmAxis-thetaUpRight-thetaRight)+thetaRight*t);
-    label = labelBnd;}
-
-  border upArch(t=0, 1){
+    label = labelBnd;
+  };
+ 
+  border upArch(t=0,1){
     x = rUp*cos((symmAxis-thetaUpRight)+(thetaUpLeft+thetaUpRight)*t);
     y = rUp*sin((symmAxis-thetaUpRight)+(thetaUpLeft+thetaUpRight)*t);
-    label = labelBnd;}
+    label = labelBnd;
+  };
 
-	border leftArch(t=0, 1){
+  border leftArch(t=0,1){
     x = xLeft + rLeft*cos((symmAxis+thetaUpLeft)+thetaLeft*t);
     y = yLeft + rLeft*sin((symmAxis+thetaUpLeft)+thetaLeft*t);
-    label = labelBnd;}
-	
+    label = labelBnd;
+  };
+  
   border downArch(t=0,1){
     x = -d*cos(symmAxis)+rDown*cos((symmAxis+thetaDownLeft)-(thetaDownLeft+thetaDownRight)*t);
     y = -d*sin(symmAxis)+rDown*sin((symmAxis+thetaDownLeft)-(thetaDownLeft+thetaDownRight)*t);
-    label = labelBnd;}
+    label = labelBnd;
+  };
 
   Th = buildmesh(
-		rightArch(obd*rRight*thetaRight)
+    rightArch(obd*rRight*thetaRight)
     + upArch(obd*rUp*(thetaUpLeft+thetaUpRight))
     + leftArch(obd*rLeft*thetaLeft)
-		+ downArch(obd*rDown*(thetaDownLeft+thetaDownRight))
-	);
+    + downArch(obd*rDown*(thetaDownLeft+thetaDownRight))
+  );
 
   return Th;
 }
 
-func mesh oneCutSmooth(int obd, real cut,real r0, real rArch, real symmAxis, int labelBnd){
-	// Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
+func mesh oneCutSmooth(
+  int obd, real cut,real r0, real rArch, real symmAxis, int labelBnd
+){
+  // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
 
-	real cutAxis = symmAxis+pi;
+  real cutAxis = symmAxis+pi;
   real t1 = acos((cos(cut/2.)-(rArch/r0))/(1-(rArch/r0)));
 
-	// cout << "R0 = " << r0 << ", RArc = " << rArch << ", cut axis = " << cutAxis << endl;
-	// cout << "theta1 = " << t1 << endl;
+  // cout << "R0 = " << r0 << ", RArc = " << rArch << ", cut axis = " << cutAxis << endl;
+  // cout << "theta1 = " << t1 << endl;
 
-	real OxRight = (r0-rArch)*cos(cutAxis+t1);
-	real OyRight = (r0-rArch)*sin(cutAxis+t1);
-	real OxLeft = (r0-rArch)*cos(cutAxis-t1);
-	real OyLeft = (r0-rArch)*sin(cutAxis-t1);
-	real lenCut = sqrt((OxRight-OxLeft)*(OxRight-OxLeft) + (OyRight-OyLeft)*(OyRight-OyLeft));
+  real OxRight = (r0-rArch)*cos(cutAxis+t1);
+  real OyRight = (r0-rArch)*sin(cutAxis+t1);
+  real OxLeft = (r0-rArch)*cos(cutAxis-t1);
+  real OyLeft = (r0-rArch)*sin(cutAxis-t1);
+  real lenCut = sqrt((OxRight-OxLeft)*(OxRight-OxLeft) + (OyRight-OyLeft)*(OyRight-OyLeft));
 
-	// cout << "O_right = (" << OxRight <<", "<< OyRight <<"); O_left = (" << OxLeft <<", "<< OyLeft <<"); lenCut = " << lenCut << endl;
+  // cout << "O_right = (" << OxRight <<", "<< OyRight <<"); O_left = (" << OxLeft <<", "<< OyLeft <<"); lenCut = " << lenCut << endl;
 
-  border GammaArchLeft(t=0,1){x=OxLeft+rArch*cos(cutAxis-t1*(1-t)); y=OyLeft+rArch*sin(cutAxis-t1*(1-t)); label=labelBnd;}
-	border GammaCut(t=0,1){x=((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t);
-													y=((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t);label=labelBnd;}
-	border GammaArchRight(t=0,1){x=OxRight+rArch*cos(cutAxis+t1*t); y=OyRight+rArch*sin(cutAxis+t1*t); label=labelBnd;}
-	border GammaArchFront(t=0,1){x=r0*cos(cutAxis+t1+2*(pi-t1)*t);
-													 y=r0*sin(cutAxis+t1+2*(pi-t1)*t);label=labelBnd;}
+  border GammaArchLeft(t=0,1){
+    x = OxLeft+rArch*cos(cutAxis-t1*(1-t)); 
+    y = OyLeft+rArch*sin(cutAxis-t1*(1-t)); 
+    label = labelBnd;
+  };
 
-	mesh Th=buildmesh(GammaArchLeft(obd*rArch*t1)
-							+GammaCut(obd*lenCut)
-							+GammaArchRight(obd*rArch*t1)
-							+GammaArchFront(obd*r0*2*(pi-t1))
-							);
+  border GammaCut(t=0,1){
+    x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t);
+    y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t);
+    label = labelBnd;
+  };
 
-	return Th;
+  border GammaArchRight(t=0,1){
+    x = OxRight+rArch*cos(cutAxis+t1*t); 
+    y = OyRight+rArch*sin(cutAxis+t1*t);
+    label = labelBnd;
+  };
+
+  border GammaArchFront(t=0,1){
+    x = r0*cos(cutAxis+t1+2*(pi-t1)*t);
+    y = r0*sin(cutAxis+t1+2*(pi-t1)*t);
+    label = labelBnd;
+  };
+
+  mesh Th=buildmesh(
+    GammaArchLeft(obd*rArch*t1)
+    + GammaCut(obd*lenCut)
+    + GammaArchRight(obd*rArch*t1)
+    + GammaArchFront(obd*r0*2*(pi-t1))
+  );
+
+  return Th;
 }
 
-func mesh closedRemesh(real[int,int] bnd, real lBnd, int nBnd,real bndLayerLentgh, int obd, int ibd, int labelBnd, real smoothCoef, bool keepPoints, bool bndLayer){
+func mesh sinePerturb(
+  int obd, real r0, real ampFrac, int q, real symmAxis, int labelBnd
+){
+  // Sinusoidal perturbations of the circular domain with q lobes and a symmetry axis
 
-	int[int] be(1); // To save begin and ends of the curve
-	int minPoints = 20;
+  border Gamma(t=0,1){
+    x = r0*(1 + ampFrac*cos(2*pi*q*t))*cos(2*pi*t+symmAxis);
+    y = r0*(1 + ampFrac*cos(2*pi*q*t))*sin(2*pi*t+symmAxis);
+    label = labelBnd;
+  }
 
-	// It is not convenient to define a border inside an If
-	// So 1st define all borderd and the apply the If to the mesh generation
+  mesh Th = buildmesh(Gamma(2*pi*obd));
 
-	border OuterKeepPoints(t=0,1){ P=Curve(bnd,bnd(2,round(t*(nBnd)))/lBnd);label=labelBnd;}
-	
-	// Remesh the outr boundary using an Akima spline
-	gslspline splineX(gslinterpakima, bnd(2,:), bnd(0,:));
-	gslspline splineY(gslinterpakima, bnd(2,:), bnd(1,:));
+  return Th;
+}
 
-	border OuterSpline(t=0,1){x=splineX(t*lBnd); y=splineY(t*lBnd); label=labelBnd;}
-	
-	int nOut = keepPoints? nBnd : round(obd*lBnd);
+func mesh twoCurvesTriangle(
+  int obd, real r0, real rIn, real rOut, real symmAxis, int labelBnd
+){
+  real alpha = (2*pi/3)/2; // a 6th of a circle arclegth
+  real rCentIn = r0-rIn;
+  // Compute rCentOut by the cosine law with alpha and solving for it
+  real rCentOut = rCentIn*cos(alpha)+sqrt(pow(rCentIn,2)*(pow(cos(alpha),2)-1)+pow(rOut+rIn,2));
 
-	mesh Th0;
-	if (keepPoints) {
-		Th0 = buildmesh(OuterKeepPoints(nOut));
-	} else {
-		Th0 = buildmesh(OuterSpline(nOut));
-	}
+  // Compute thetaOut by the cosine law with rCentIn, rCentOut & rIn+rOut
+  real thetaOut = acos(
+    (pow(rOut+rIn,2)+pow(rCentOut,2)-pow(rCentIn,2))/(2*(rOut+rIn)*rCentOut)
+  );
+  real thetaIn = alpha + thetaOut;
 
-	if (!bndLayer) {
-		return Th0;
-	}
+  real[int] xCentIn = [rCentIn*cos(symmAxis),rCentIn*cos(symmAxis+2*alpha),rCentIn*cos(symmAxis+4*alpha)];
+  real[int] yCentIn = [rCentIn*sin(symmAxis),rCentIn*sin(symmAxis+2*alpha),rCentIn*sin(symmAxis+4*alpha)];
 
-	// FEM Spaces
-	fespace Dh(Th0, P1); // For distance function (remeshing scheme) and data exports
+  real[int] xCentOut = [rCentOut*cos(symmAxis+alpha),rCentOut*cos(symmAxis+3*alpha),rCentOut*cos(symmAxis+5*alpha)];
+  real[int] yCentOut = [rCentOut*sin(symmAxis+alpha),rCentOut*sin(symmAxis+3*alpha),rCentOut*sin(symmAxis+5*alpha)];
 
-	// Distance function (d is the minimal distance to the boundary)
-	varf vong(B, d)= on(labelBnd,B=1);
-	real[int] ong=vong(0,Dh);
-	Dh B =1, d;
-	B[] = ong ? 0 : B[];
-	distance(Th0,B,d[]);
-	// plot(d,Th0, wait=1);
+  border archIn0(t=0,1){
+    x = xCentIn[0] + rIn*cos((symmAxis-thetaIn)+2*thetaIn*t);
+    y = yCentIn[0] + rIn*sin((symmAxis-thetaIn)+2*thetaIn*t);
+    label = labelBnd;
+  };
+  border archOut0(t=0,1){
+    x = xCentOut[0]+rOut*cos((-symmAxis+alpha+thetaOut)-2*thetaOut*t);
+    y = yCentOut[0]+rOut*sin((-symmAxis+alpha+thetaOut)-2*thetaOut*t);
+    label = labelBnd;
+  };
 
-	// Just one inner loop
-	// real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bndLayerLentgh,close=1,ISO,smoothing=bndLayerLentgh*smoothCoef,ratio=1.e-0);
-	// real lInner=ISO(2,ISO.m-1); // lInner is the perimeter of ISO
-	// border Inner(t=0,1){ P=Curve(ISO,t);label=0;} // Linear interpolation of the inner boundary (simple and robust)
-	// int nInnerFilter = round(ibd*lInner); // new number of elements (prescribed density ibd)
+  border archIn1(t=0,1){
+    x = xCentIn[1] + rIn*cos((symmAxis+2*alpha-thetaIn)+2*thetaIn*t);
+    y = yCentIn[1] + rIn*sin((symmAxis+2*alpha-thetaIn)+2*thetaIn*t);
+    label = labelBnd;
+  };
+  border archOut1(t=0,1){
+    x = xCentOut[1]+rOut*cos((-symmAxis+3*alpha+thetaOut)-2*thetaOut*t);
+    y = yCentOut[1]+rOut*sin((-symmAxis+3*alpha+thetaOut)-2*thetaOut*t);
+    label = labelBnd;
+  };
 
-	// Get the new inner boundary vertices (ISO is the contour d==bndLayerLentgh) with multiple loops
-	real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bndLayerLentgh,close=0,ISO,beginend=be,smoothing=bndLayerLentgh*smoothCoef,ratio=1.e-0);
-	int nInnerLoops = be.n/2;
-	// cout << be << endl;
+  border archIn2(t=0,1){
+    x = xCentIn[2] + rIn*cos((symmAxis+4*alpha-thetaIn)+2*thetaIn*t);
+    y = yCentIn[2] + rIn*sin((symmAxis+4*alpha-thetaIn)+2*thetaIn*t);
+    label = labelBnd;
+  };
+  border archOut2(t=0,1){
+    x = xCentOut[2]+rOut*cos((-symmAxis+5*alpha+thetaOut)-2*thetaOut*t);
+    y = yCentOut[2]+rOut*sin((-symmAxis+5*alpha+thetaOut)-2*thetaOut*t);
+    label = labelBnd;
+  };
 
-	int[int] nInner(nInnerLoops); // numer of points per loop
-	int nCorrectLoops = 0; // number of loops with more than minPoints
-	// find number of points and count > minPoints
-	for (int i=0;  i < nInnerLoops; i++){
-		real lInner=ISO(2,be(i*2+1)-1);
-		nInner[i] = round(ibd*lInner);
-		if(nInner[i] > minPoints){nCorrectLoops++;}
-	}
+  mesh Th = buildmesh(
+    archIn0(2*thetaIn*rIn*obd)
+    + archIn1(2*thetaIn*rIn*obd)
+    + archIn2(2*thetaIn*rIn*obd)
+    + archOut0(2*thetaOut*rOut*obd)
+    + archOut1(2*thetaOut*rOut*obd)
+    + archOut2(2*thetaOut*rOut*obd)
+  );
+  
+  return Th;
+}
 
-	// if the number of points is less than minPoints, filter the border for safety
-	int[int] nInnerFilter(nCorrectLoops);
-	int[int] beFilter(2*nCorrectLoops);
+func mesh closedRemesh(
+  real[int,int] bnd, real lBnd, int nBnd,real bndLayerLentgh, int obd, 
+  int ibd, int labelBnd, real smoothCoef, bool keepPoints, bool bndLayer
+){
 
-	for (int i=0;  i < nInnerLoops; i++){
-		if(nInner[i] > minPoints){
-			nInnerFilter[i] = nInner[i];
-			beFilter[2*i] = be[i*2];
-			beFilter[2*i+1] = be[i*2+1];
-		}
-	}
-	
-	border Inner(t=0,1;i) {P=Curve(ISO,beFilter(i*2),beFilter(i*2+1)-1,t); label=(labelBnd+1);} // Inner boundary multi-border
-	// cout << nInner << endl;
+  int[int] be(1); // To save begin and ends of the curve
+  int minPoints = 20;
 
-	mesh Th;
-	if (keepPoints) {
-		// plot(OuterKeepPoints(nOut),Inner(nInnerFilter)/*, wait=1*/
-		Th = buildmesh(OuterKeepPoints(nOut)+Inner(nInnerFilter));
-	} else {
-		// plot(OuterSpline(nOut),Inner(nInnerFilter)/*, wait=1*/
-		Th = buildmesh(OuterSpline(nOut)+Inner(nInnerFilter));
-	}
-	Th = change(Th, rmInternalEdges=1);
-	return Th;
+  // It is not convenient to define a border inside an If
+  // So 1st define all borderd and the apply the If to the mesh generation
+
+  border OuterKeepPoints(t=0,1){ P=Curve(bnd,bnd(2,round(t*(nBnd)))/lBnd);label=labelBnd;}
+  
+  // Remesh the outr boundary using an Akima spline
+  gslspline splineX(gslinterpakima, bnd(2,:), bnd(0,:));
+  gslspline splineY(gslinterpakima, bnd(2,:), bnd(1,:));
+
+  border OuterSpline(t=0,1){x=splineX(t*lBnd); y=splineY(t*lBnd); label=labelBnd;}
+  
+  int nOut = keepPoints? nBnd : round(obd*lBnd);
+
+  mesh Th0;
+  if (keepPoints) {
+    Th0 = buildmesh(OuterKeepPoints(nOut));
+  } else {
+    Th0 = buildmesh(OuterSpline(nOut));
+  }
+
+  if (!bndLayer) {
+    return Th0;
+  }
+
+  // FEM Spaces
+  fespace Dh(Th0, P1); // For distance function (remeshing scheme) and data exports
+
+  // Distance function (d is the minimal distance to the boundary)
+  varf vong(B, d)= on(labelBnd,B=1);
+  real[int] ong=vong(0,Dh);
+  Dh B =1, d;
+  B[] = ong ? 0 : B[];
+  distance(Th0,B,d[]);
+  // plot(d,Th0, wait=1);
+
+  // Just one inner loop
+  // real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bndLayerLentgh,close=1,ISO,smoothing=bndLayerLentgh*smoothCoef,ratio=1.e-0);
+  // real lInner=ISO(2,ISO.m-1); // lInner is the perimeter of ISO
+  // border Inner(t=0,1){ P=Curve(ISO,t);label=0;} // Linear interpolation of the inner boundary (simple and robust)
+  // int nInnerFilter = round(ibd*lInner); // new number of elements (prescribed density ibd)
+
+  // Get the new inner boundary vertices (ISO is the contour d==bndLayerLentgh) with multiple loops
+  real[int,int] ISO(3,1); int nc=isoline(Th0,d,iso=bndLayerLentgh,close=0,ISO,beginend=be,smoothing=bndLayerLentgh*smoothCoef,ratio=1.e-0);
+  int nInnerLoops = be.n/2;
+  // cout << be << endl;
+
+  int[int] nInner(nInnerLoops); // numer of points per loop
+  int nCorrectLoops = 0; // number of loops with more than minPoints
+  // find number of points and count > minPoints
+  for (int i=0;  i < nInnerLoops; i++){
+    real lInner=ISO(2,be(i*2+1)-1);
+    nInner[i] = round(ibd*lInner);
+    if(nInner[i] > minPoints){nCorrectLoops++;}
+  }
+
+  // if the number of points is less than minPoints, filter the border for safety
+  int[int] nInnerFilter(nCorrectLoops);
+  int[int] beFilter(2*nCorrectLoops);
+
+  for (int i=0;  i < nInnerLoops; i++){
+    if(nInner[i] > minPoints){
+      nInnerFilter[i] = nInner[i];
+      beFilter[2*i] = be[i*2];
+      beFilter[2*i+1] = be[i*2+1];
+    }
+  }
+  
+  border Inner(t=0,1;i) {P=Curve(ISO,beFilter(i*2),beFilter(i*2+1)-1,t); label=(labelBnd+1);} // Inner boundary multi-border
+  // cout << nInner << endl;
+
+  mesh Th;
+  if (keepPoints) {
+    // plot(OuterKeepPoints(nOut),Inner(nInnerFilter)/*, wait=1*/
+    Th = buildmesh(OuterKeepPoints(nOut)+Inner(nInnerFilter));
+  } else {
+    // plot(OuterSpline(nOut),Inner(nInnerFilter)/*, wait=1*/
+    Th = buildmesh(OuterSpline(nOut)+Inner(nInnerFilter));
+  }
+  Th = change(Th, rmInternalEdges=1);
+  return Th;
 }
 
 
-// Manually compute x,y & s for all the boundaries
-// int nBnd = Th.nbe;
+// Construct the mesh -------------------------------------------------------------------------------------------------
+/*
+// Common params
+int obd = 45;
+int ibd = 15;
+real symmAxis = pi/2;
+real r0 = 1;
+int labelBnd = 1;
+real bLayerThickness = 0.35;
 
-// int[int] bConn(nBnd);
-// real[int] xBnd(nBnd+1); real[int] yBnd(nBnd+1); real [int] sBnd(nBnd+1);
+// fourCurveShape params
+real rUp = r0;
+real rDown = 0.5;
+real rLeft = 0.25;
+real rRight = 0.25;
+real d = 0.5;
 
-// // Define the first element
-// bConn[0] = Th.be(0)[0];
-// xBnd[0] = Th(bConn[0]).x; yBnd[0] = Th(bConn[0]).y;
-// real s = 0;
-// sBnd[0] = s;
+// oneCutSmooth params
+real cut = 2*pi/3;
+real fracRarc = 0.1;
 
-// real xprev = xBnd[0]; real yprev = yBnd[0];
+// sinePerturb params
+real ampFrac = 0.5;
+int q = 3;
 
-// for (int k = 1; k < nBnd; k++){
-//   bConn[k] = Th.be(k)[0];
-//   xBnd[k]=Th(bConn[k]).x; yBnd[k]=Th(bConn[k]).y;
-//   s += dist(xBnd[k]-xprev,yBnd[k]-yprev);
-//   sBnd[k] = s;
-//   xprev = xBnd[k]; yprev = yBnd[k];
-// }
-// xBnd[nBnd]=xBnd[0]; yBnd[nBnd]=yBnd[0];
-// s += sqrt(pow(xBnd[nBnd]-xprev,2)+pow(yBnd[nBnd]-yprev,2));
-// sBnd[nBnd] = s;
+// twoCurvesTriangle params
+real rIn = 0.3;
+real rOut = 0.1;
+
+// mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelBnd);
+// mesh Th = oneCutSmooth(obd,cut,r0,fracRarc,symmAxis,labelBnd);
+mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
+// mesh Th = twoCurvesTriangle(obd,r0,rIn,rOut,symmAxis,labelBnd);
+
+
+// Extract outer boundary
+// extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
+// for k in (0,Th.nbe-1): 
+//		bOut(0,k) == x coord kth vertex
+//		bOut(1,k) == y coord kth vertex
+//		bOut(2,k) == arch length at the kth vertex
+real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelBnd, bMesh);
+
+Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelBnd,.5,0,1); // Custom mesh adaptation
+
+// Initial variables for shape characterization
+real Area0 = Th.measure; // Inital Area of the Fluid Domain
+real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
+real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
+
+
+plot(
+  Th,value = true, fill = false, nbiso=64, wait=true, 
+  cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
+);
+*/
+//---------------------------------------------------------------------------------------------------------------------

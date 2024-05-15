@@ -104,10 +104,10 @@ if (bsave){
     fileParams.fixed;
     fileParams << "cut,R0,Reff,fracRarc," << /*areaCst, <<*/ "h,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" 
               /*<< ",gamma"*/ <<  endl;
-    fileParams << "rad,adim,um,adim," << /*adim, <<*/ "um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim,R0Lc_adim" 
+    fileParams << "rad,adim,um,adim," << /*adim, <<*/ "um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim" 
               /*<< ",kPa*um"*/ << endl;
     fileParams << cut 		<< "," << R0 		 << "," << Reff	<< "," << fracRarc << ","
-              /*<< areaCst  << ","*/ << h 		 << "," << Lc	  << "," << lambda 	 << ","
+           /*<< areaCst  << ","*/<< h 		 << "," << Lc	  << "," << lambda 	 << ","
               << La 			<< "," << eta 	 << "," << xi 	<< "," << zi 			 << "," 
               << zeta 		<< "," << tscale << "," << dt 	<< "," << dsave /*<< "," << gamma*/ << endl;// 
   }
@@ -486,8 +486,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       - c*c*(pD'*q)
     ) + on(labelOut, px = 0.0) + on(labelOut, py=0.0);
 
-  matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS matrix
-  real[int] bp = lp(0, Pol); 			// RHS
+  matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
+  real[int] bp = lp(0, Pol);          // RHS
 
   // P solution with vanishing Dirichlet data
   real[int] sol(Pol.ndof);
@@ -508,8 +508,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       + c*(p'*u)
     ); //contractility + active traction
 
-  matrix Av = av(Vel, Vel);  			// LHS matrix
-  real[int] bv = lv(0, Vel);			// RHS
+  matrix Av = av(Vel, Vel);  // LHS matrix
+  real[int] bv = lv(0, Vel); // RHS
 
   // V solution
   real[int] solV(Vel.ndof);
@@ -653,23 +653,23 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
 
   // Plot v -----------------------------------------------------------------------------------------------------------
   if (debug) { // Show it always, regardless of the verbosity
-  Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
-  Pola vDiv = dvxdx(x,y) + dvydy(x,y);
-  Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
-  plot(/*Th,[NDerP1,NDerP2],/*CurlV,*/vABS,/*normal,vDiv,*/ 
-    value = true, 
-    fill = true, 
-    nbiso = 64, 
-    wait = false, 
-    bb=[[-2,-2],[2,2]],
-    cmm = "iTime="+(iterTime)+"; "
-      +"t="+(dt*iterTime)+"; "
-      /*+"Orientation=("+orientBConn+", "+orientBorder+"); "*/
-      +"A/A0="+(Areai/Area0)+"; "
-      +"Rcm(t)-Rcm(0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)+"); "
-      +"Vcm(t)=("+Vxcm+","+Vycm+"); "
-      +"(c/b)Pcm(t)=("+(c/b)*Pxcm+","+(c/b)*Pycm+");"
-  );
+    Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
+    Pola vDiv = dvxdx(x,y) + dvydy(x,y);
+    Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
+    plot(/*Th,[NDerP1,NDerP2],/*CurlV,*/vABS,/*normal,vDiv,*/ 
+      value = true, 
+      fill = true, 
+      nbiso = 64, 
+      wait = false, 
+      bb=[[-2,-2],[2,2]],
+      cmm = "iTime="+(iterTime)+"; "
+        +"t="+(dt*iterTime)+"; "
+        /*+"Orientation=("+orientBConn+", "+orientBorder+"); "*/
+        +"A/A0="+(Areai/Area0)+"; "
+        +"Rcm(t)-Rcm(0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)+"); "
+        +"Vcm(t)=("+Vxcm+","+Vycm+"); "
+        +"(c/b)Pcm(t)=("+(c/b)*Pxcm+","+(c/b)*Pycm+");"
+    );
   }
   //-------------------------------------------------------------------------------------------------------------------
 

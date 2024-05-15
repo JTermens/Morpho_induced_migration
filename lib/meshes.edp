@@ -1,8 +1,8 @@
 // Packages for advanced remeshing scheme
-// load "Curvature"
-// load "distance"
-// load "isoline"
-// load "gsl"
+load "Curvature"
+load "distance"
+load "isoline"
+load "gsl"
 
 func mesh fourCurveShape(
   int obd, real rUp, real rDown, real rLeft,
@@ -276,13 +276,18 @@ func mesh closedRemesh(
   int[int] nInnerFilter(nCorrectLoops);
   int[int] beFilter(2*nCorrectLoops);
 
+  int j = 0;
   for (int i=0;  i < nInnerLoops; i++){
     if(nInner[i] > minPoints){
-      nInnerFilter[i] = nInner[i];
-      beFilter[2*i] = be[i*2];
-      beFilter[2*i+1] = be[i*2+1];
+      nInnerFilter[j] = nInner[i];
+      beFilter[2*j] = be[i*2];
+      beFilter[2*j+1] = be[i*2+1];
+      j++;
     }
   }
+
+  cout << nInner << endl;
+  cout << nInnerFilter << endl;
   
   border Inner(t=0,1;i) {P=Curve(ISO,beFilter(i*2),beFilter(i*2+1)-1,t); label=(labelBnd+1);} // Inner boundary multi-border
   // cout << nInner << endl;
@@ -301,14 +306,15 @@ func mesh closedRemesh(
 
 
 // Construct the mesh -------------------------------------------------------------------------------------------------
-/*
+
 // Common params
 int obd = 45;
 int ibd = 15;
 real symmAxis = pi/2;
+
 real r0 = 1;
 int labelBnd = 1;
-real bLayerThickness = 0.35;
+real bLayerThickness = 0.15;
 
 // fourCurveShape params
 real rUp = r0;
@@ -327,12 +333,12 @@ int q = 3;
 
 // twoCurvesTriangle params
 real rIn = 0.3;
-real rOut = 0.1;
+real rOut = 0.35;
 
 // mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelBnd);
 // mesh Th = oneCutSmooth(obd,cut,r0,fracRarc,symmAxis,labelBnd);
-mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
-// mesh Th = twoCurvesTriangle(obd,r0,rIn,rOut,symmAxis,labelBnd);
+// mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
+mesh Th = twoCurvesTriangle(obd,r0,rIn,rOut,symmAxis,labelBnd);
 
 
 // Extract outer boundary
@@ -355,5 +361,5 @@ plot(
   Th,value = true, fill = false, nbiso=64, wait=true, 
   cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
 );
-*/
+
 //---------------------------------------------------------------------------------------------------------------------

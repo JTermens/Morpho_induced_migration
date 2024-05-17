@@ -1,8 +1,8 @@
 // Packages for advanced remeshing scheme
-load "Curvature"
-load "distance"
-load "isoline"
-load "gsl"
+// load "Curvature"
+// load "distance"
+// load "isoline"
+// load "gsl"
 
 func mesh fourCurveShape(
   int obd, real rUp, real rDown, real rLeft,
@@ -286,8 +286,7 @@ func mesh closedRemesh(
     }
   }
 
-  cout << nInner << endl;
-  cout << nInnerFilter << endl;
+  // cout << nInner << "\n" << nInnerFilter << endl;
   
   border Inner(t=0,1;i) {P=Curve(ISO,beFilter(i*2),beFilter(i*2+1)-1,t); label=(labelBnd+1);} // Inner boundary multi-border
   // cout << nInner << endl;
@@ -308,58 +307,58 @@ func mesh closedRemesh(
 // Construct the mesh -------------------------------------------------------------------------------------------------
 
 // Common params
-int obd = 45;
-int ibd = 15;
-real symmAxis = pi/2;
+// int obd = 45;
+// int ibd = 15;
+// real symmAxis = pi/2;
 
-real r0 = 1;
-int labelBnd = 1;
-real bLayerThickness = 0.15;
+// real r0 = 1;
+// int labelBnd = 1;
+// real bLayerThickness = 0.15;
 
-// fourCurveShape params
-real rUp = r0;
-real rDown = 0.5;
-real rLeft = 0.25;
-real rRight = 0.25;
-real d = 0.5;
+// // fourCurveShape params
+// real rUp = r0;
+// real rDown = 0.5;
+// real rLeft = 0.25;
+// real rRight = 0.25;
+// real d = 0.5;
 
-// oneCutSmooth params
-real cut = 2*pi/3;
-real fracRarc = 0.1;
+// // oneCutSmooth params
+// real cut = 2*pi/3;
+// real fracRarc = 0.1;
 
-// sinePerturb params
-real ampFrac = 0.5;
-int q = 3;
+// // sinePerturb params
+// real ampFrac = 0.5;
+// int q = 3;
 
-// twoCurvesTriangle params
-real rIn = 0.3;
-real rOut = 0.35;
+// // twoCurvesTriangle params
+// real rIn = 0.3;
+// real rOut = 0.35;
 
-// mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelBnd);
-// mesh Th = oneCutSmooth(obd,cut,r0,fracRarc,symmAxis,labelBnd);
-// mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
-mesh Th = twoCurvesTriangle(obd,r0,rIn,rOut,symmAxis,labelBnd);
-
-
-// Extract outer boundary
-// extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
-// for k in (0,Th.nbe-1): 
-//		bOut(0,k) == x coord kth vertex
-//		bOut(1,k) == y coord kth vertex
-//		bOut(2,k) == arch length at the kth vertex
-real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelBnd, bMesh);
-
-Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelBnd,.5,0,1); // Custom mesh adaptation
-
-// Initial variables for shape characterization
-real Area0 = Th.measure; // Inital Area of the Fluid Domain
-real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
-real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
+// // mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelBnd);
+// // mesh Th = oneCutSmooth(obd,cut,r0,fracRarc,symmAxis,labelBnd);
+// // mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
+// mesh Th = twoCurvesTriangle(obd,r0,rIn,rOut,symmAxis,labelBnd);
 
 
-plot(
-  Th,value = true, fill = false, nbiso=64, wait=true, 
-  cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
-);
+// // Extract outer boundary
+// // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
+// // for k in (0,Th.nbe-1): 
+// //		bOut(0,k) == x coord kth vertex
+// //		bOut(1,k) == y coord kth vertex
+// //		bOut(2,k) == arch length at the kth vertex
+// real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelBnd, bMesh);
+
+// Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelBnd,.5,0,1); // Custom mesh adaptation
+
+// // Initial variables for shape characterization
+// real Area0 = Th.measure; // Inital Area of the Fluid Domain
+// real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
+// real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
+
+
+// plot(
+//   Th,value = true, fill = false, nbiso=64, wait=true, 
+//   cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
+// );
 
 //---------------------------------------------------------------------------------------------------------------------

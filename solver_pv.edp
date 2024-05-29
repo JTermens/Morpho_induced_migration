@@ -655,8 +655,9 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   if (debug) { // Show it always, regardless of the verbosity
     Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
     Pola vDiv = dvxdx(x,y) + dvydy(x,y);
+    Pola vCurl = dvydx(x,y) - dvxdy(x,y);
     Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
-    plot(/*Th,[NDerP1,NDerP2],/*CurlV,*/vABS,/*normal,vDiv,*/ 
+    plot(/*Th,*/vCurl,/*normal,*/ 
       value = true, 
       fill = true, 
       nbiso = 64, 

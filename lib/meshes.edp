@@ -209,6 +209,110 @@ func mesh twoCurvesTriangle(
   return Th;
 }
 
+func mesh roundedTriangle(
+  int obd, real[int] sideLengths, real rRound, int labelBnd
+){
+  // It is only possible to build a triangle if the sum of each pair of
+  // sides is larger than the third one.
+  bool err = 0;
+
+  if(
+    sideLengths[0]+sideLengths[1] <= sideLengths[2] || 
+    sideLengths[1]+sideLengths[2] <= sideLengths[0] || 
+    sideLengths[2]+sideLengths[0] <= sideLengths[1]
+  ){
+    cout << "ERROR: Unable to buid a triangle with side lengths "
+            +sideLengths[0]+", "+sideLengths[1]+" & "+sideLengths[2] << endl;
+  }
+  
+  // Consider P2 = (0,0), P1 = (a, sideLengths[0],0) and compute the position
+  // of the 3rd point such that d(P1,P2) = sideLengths[1] & d(P2,P0) = sideLengths[2]
+  real x2 = (pow(sideLengths[0],2)-pow(sideLengths[1],2)+pow(sideLengths[2],2))/(2*sideLengths[0]);
+  real y2 = sqrt(pow(sideLengths[2],2)-pow(x2,2));
+
+  // Compute the barycenter
+  // Its position is the average of the vertices
+  real xCenter = (sideLengths[0] + x2)/3;
+  real yCenter = y2/3;
+
+  real[int,int] vertices = [
+    [-xCenter, sideLengths[0]-xCenter, x2-xCenter],
+    [-yCenter, -yCenter, y2-yCenter]
+  ];
+
+  // To generate the roundings we need 4 parametrers per vertex
+  real[int,int] roundings(2,3); // centers of the roundings
+  real[int] theta0(3); real[int] dtheta(3); // initial and angle increment
+
+  // Plus the new beginnings and ends of each side
+  real[int,int] sides(2,6);
+
+  real angleSide = 0; // Angle of the side with the horizontal
+  real angleVertex = 0; // Interior angle of the triangle at a vertex
+  real dRoundVertex = 0; // distance between the vertex and the rounding center
+
+  int[int] idx = [1,2,0];
+  int[int] idxPost = [2,0,1];
+
+  for (int iPrev=0; iPrev < 3; iPrev++){
+
+    int i = idx[iPrev];
+    int iPost = idxPost[iPrev];
+
+    angleVertex = acos(
+      ((vertices(0,i)-vertices(0,iPrev))*(vertices(0,i)-vertices(0,iPost))
+        + (vertices(1,i)-vertices(1,iPrev))*(vertices(1,i)-vertices(1,iPost))
+      )/(sideLengths[i]*sideLengths[iPrev])
+    );
+
+    theta0(i) = angleSide - pi/2;
+    dtheta(i) = pi - angleVertex;
+
+    dRoundVertex = rRound/sin(angleVertex/2);
+    roundings(0,i) = vertices(0,i) + dRoundVertex*cos(angleSide+2*pi-angleVertex/2);
+    roundings(1,i) = vertices(1,i) + dRoundVertex*sin(angleSide+2*pi-angleVertex/2);
+
+    sides(0,2*iPrev+1) = roundings(0,i) + rRound*cos(theta0(i)); // Set end of the iPrev side
+    sides(1,2*iPrev+1) = roundings(1,i) + rRound*sin(theta0(i));
+
+    sides(0,2*i) = roundings(0,i) + rRound*cos(theta0(i) + dtheta(i)); // Set start of the i side
+    sides(1,2*i) = roundings(1,i) + rRound*sin(theta0(i) + dtheta(i));
+
+    angleSide += pi - angleVertex;
+  }
+
+  // create multiborder sides
+  border side(t=0,1;i){
+    x = sides(0,2*i) + (sides(0,2*i+1)-sides(0,2*i))*t;
+    y = sides(1,2*i) + (sides(1,2*i+1)-sides(1,2*i))*t;
+    label = labelBnd;
+  }
+
+  // create multiborder roundings
+  border rounding(t=0,1;i){
+    x = roundings(0,i) + rRound*cos(theta0(i)+dtheta(i)*t);
+    y = roundings(1,i) + rRound*sin(theta0(i)+dtheta(i)*t);
+    label = labelBnd;
+  }
+
+  int[int] nBndSide = [
+    lrint(dist((sides(0,1)-sides(0,0)),(sides(1,1)-sides(1,0)))*obd),
+    lrint(dist((sides(0,3)-sides(0,2)),(sides(1,3)-sides(1,2)))*obd),
+    lrint(dist((sides(0,5)-sides(0,4)),(sides(1,5)-sides(1,4)))*obd)
+  ];
+  int[int] nBndRound = [
+    lrint(dtheta(0)*rRound*obd), 
+    lrint(dtheta(1)*rRound*obd), 
+    lrint(dtheta(2)*rRound*obd)
+  ];
+
+  // plot(rounding(nBndRound)+side(nBndSide), wait=1);
+
+  mesh Th = buildmesh(rounding(nBndRound)+side(nBndSide));//buildmesh(side(nBnd));
+
+  return Th;
+}
+
 func mesh closedRemesh(
   real[int,int] bnd, real lBnd, int nBnd,real bndLayerLentgh, int obd, 
   int ibd, int labelBnd, real smoothCoef, bool keepPoints, bool bndLayer
@@ -304,9 +408,9 @@ func mesh closedRemesh(
 }
 
 
-// Construct the mesh -------------------------------------------------------------------------------------------------
+// // Construct the mesh -------------------------------------------------------------------------------------------------
 
-// Common params
+// // Common params
 // int obd = 45;
 // int ibd = 15;
 // real symmAxis = pi/2;
@@ -334,17 +438,27 @@ func mesh closedRemesh(
 // real rIn = 0.3;
 // real rOut = 0.35;
 
+// // triangleMesh params
+// real[int] sideLengths = [2,5,5];
+// real rRound = 0.1;
+
 // // mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelBnd);
 // // mesh Th = oneCutSmooth(obd,cut,r0,fracRarc,symmAxis,labelBnd);
 // // mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
-// mesh Th = twoCurvesTriangle(obd,r0,rIn,rOut,symmAxis,labelBnd);
+// // mesh Th = twoCurvesTriangle(obd,r0,rIn,rOut,symmAxis,labelBnd);
+// mesh Th = roundedTriangle(obd,sideLengths,rRound,labelBnd);
 
+// real L0 = sqrt(Th.measure);
+
+// sideLengths /= L0; rRound /= L0;
+
+// Th = roundedTriangle(obd,sideLengths,rRound,labelBnd);
 
 // // Extract outer boundary
 // // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
 // // for k in (0,Th.nbe-1): 
 // //		bOut(0,k) == x coord kth vertex
-// //		bOut(1,k) == y coord kth vertex
+// //		bOut(1,k) == y coord ktha ( vertex
 // //		bOut(2,k) == arch length at the kth vertex
 // real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelBnd, bMesh);
 
@@ -361,4 +475,4 @@ func mesh closedRemesh(
 //   cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
 // );
 
-//---------------------------------------------------------------------------------------------------------------------
+// //---------------------------------------------------------------------------------------------------------------------

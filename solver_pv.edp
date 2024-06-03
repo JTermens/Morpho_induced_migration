@@ -14,7 +14,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 // include "parameters_sets/parameters_poster_runs.edp"; // load the parameters
-include "parameters_sets/parameters_optimized_tst.edp"; // load the parameters
+include "parameters_sets/parameters_optimized_poster.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
@@ -23,7 +23,10 @@ real cut = cuts[iSimul];         // Initial cut (archlength of the perturbation)
 real R0 = R0s[iSimul];           // Initial radius
 
 // /*real*/string Reff = Reffs[iSimul];     // Effective radius
-// real Lc = Lcs[iSimul];
+real Lc = Lcs[iSimul];
+real eta = etas[iSimul];
+real zeta = zetas[iSimul];
+
 real lambda = sqrt(eta/xi);      // hydrodynamic sceening length
 real La = zeta/zi;               // active length; < 0 (> 0) for contractile (extensile) stress
 real tscale = eta/(zi*Lc);       // Problem timescale
@@ -35,13 +38,13 @@ real tscale = eta/(zi*Lc);       // Problem timescale
 real a = La/Lc;             // Active length, zeta/zi, and effective radius ratio
 real b = R0/lambda;         // Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
 real c = R0/Lc;             // Effective radius and nematic length ratio
-real bLayerThickness = 1/c; // Adim. nematic length
+real bLayerThickness = max(1/c,0.15); // Adim. nematic length
 //---------------------------------------------------------------------------------------------------------------------
 
 
 // Construct the mesh -------------------------------------------------------------------------------------------------
-// mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
-mesh Th = sinePerturb(obd,1,ampFrac,q,symmAxis,labelOut);
+mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
+// mesh Th = sinePerturb(obd,1,ampFrac,q,symmAxis,labelOut);
 
 // Extract outer boundary
 // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
@@ -657,7 +660,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     Pola vDiv = dvxdx(x,y) + dvydy(x,y);
     Pola vCurl = dvydx(x,y) - dvxdy(x,y);
     Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
-    plot(/*Th,*/vCurl,/*normal,*/ 
+    plot(/*Th,*/vABS,/*normal,*/ 
       value = true, 
       fill = true, 
       nbiso = 64, 

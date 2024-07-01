@@ -1,0 +1,71 @@
+// Parameter file for testing optimized sets of parameters
+
+verbosity=0;
+// bool debug=0;
+
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/propulsion_evolution";
+//string rootDir = "/home/joan/Documents/Simul_runs/friction_tension_test";
+
+string[int] simulNames = [
+  "low_zeta_evolution",
+  "mid_zeta_evolution",
+  "high_zeta_evolution"
+  ];
+
+int labelOut = 1; // Mesh identifiers
+int nSimul = 3;   // Number of simulations
+
+// Physical Parameters
+real h = 5;                      // Monolayer heigth, [μm]
+real R0 = 227.61;                // Initial radius of the monolayer [μm].
+real Lc = 40;                    // Nematic length, sqrt(K/a), [μm]
+real eta = 2.5e4;                // Monolayer viscosity, [kPa·s]
+real xi = 0.0354308;             // Friction coefficient, [kPa·s/μm²], fitted so lambda = 840 μm
+real zi = 0.1;                   // Traction coefficient, [kPa/μm],
+real[int] zetas = [-1, -12,-30]; // -Contractility coefficient, [kPa],
+// real tscale = eta/(zi*Lc);       // Timescale corresponding to the advance of a flat front, [s]
+string Reff = "-";
+
+// If surface tension
+// real gamma = 100;                // Surface tension, [mN/m]=[kPa·μm]
+
+// Numerical Parameters
+real obd = 45.;                  // Outer boundary mesh density
+real ibd = 15.;                  // Inner boundary mesh density
+real dt = 5e-3;                  // Adim. time step
+int NiterTime = 2000;            // Number of iterations
+real rateMaxArea = 4;            // Stop the simulation when Area = rateMaxArea * (Initial Area)
+real rateMinArea = 1/4.;         // Stop the simulation when Area = rateMinArea * (Initial Area)
+bool keepPoints = 0;             // Keep the number of boundary points upon remeshing
+
+// If surface tension or different friction
+real maxNwtnResid = 5.e-5;       // Cutoff residue for the Newton method
+int maxNwtnIter = 20;            // Max num, of iterations for the Newton method
+
+// Save parameters
+bool bsave = 0;                  // To save or not
+int dsave = 20;                  // Save frame gap
+
+// Domain parameters
+real cut = pi;                   // Angular length of the cutted portion of the circle
+real symmAxis = pi/2.;	         // Angles of the symmetry axis of each cut
+real fracRarc = 0.1;		         // Adimensionalized radius used to smooth the domain vertices
+
+if(debug){
+  
+  cout << "Simulation: " << simulNames[iSimul] << endl;
+  cout << " |_ Problem lengths and timescales:" << endl;
+  cout << "   |_ Reff = " << Reff << " um" << endl;
+  cout << "   |_ R0 = " << R0 << " um" << endl;
+  cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
+  cout << "   |_ Lc = " << Lc<< " um" << endl;
+  cout << "   |_ La = " << abs(zetas[iSimul]/zi) << " um" << endl;
+  cout << "   |_ tscale = " << eta/(zi*/*Reffs*/Lc) << " s" << endl;
+  cout << "   |_ charact vel = " << 3600*zi*R0*Lc/eta << " um/h" << endl;
+  cout << " |_ Adim. parameters:" << endl;
+  cout << "   |_ a = " << abs(zetas[iSimul])/(zi*R0) << endl;
+  cout << "   |_ b = " << R0/sqrt(eta/xi) << endl;
+  cout << "   |_ c = " << R0/Lc << endl;
+
+  cout << "\nStarting simulations " << iSimul << "..." << endl;
+}

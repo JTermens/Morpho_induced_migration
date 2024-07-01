@@ -43,7 +43,7 @@ real maxNwtnResid = 5.e-5;       // Cutoff residue for the Newton method
 int maxNwtnIter = 20;            // Max num, of iterations for the Newton method
 
 // Save parameters
-bool bsave = 0;                  // To save or not
+bool bsave = 1;                  // To save or not
 int dsave = 20;                  // Save frame gap
 
 // Domain parameters

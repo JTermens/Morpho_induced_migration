@@ -48,6 +48,7 @@ include "getARGV.idp"
 // include <iostream>; // If needed
 
 int iRun = getARGV("-i", 1);
+bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;

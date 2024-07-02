@@ -8,7 +8,7 @@ string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_mot
 // string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 
 // string simulName = "exploration_propulsion";
-string simulName = "exploration_La57xLambda20";
+string simulName = "exploration_La15xLambda11";
 
 int labelOut = 1; // Mesh identifiers
 
@@ -19,7 +19,7 @@ int nCut = 1;
 real minCut = pi;
 real maxCut = pi;
 
-int nLaLc = 57;
+int nLaLc = 15;
 real minLaLc = 0.;
 real maxLaLc = 7./*10.*/;
 
@@ -29,9 +29,9 @@ int nRLc = 1; // R/Lc fixed at 5, as R = 200 μm & Lc = 40 μm
 real minRLc = 5.;
 real maxRLc = 5.;
 
-int nLambdaLc = 20;
+int nLambdaLc = 11;
 real minLambdaLc = 1;
-real maxLambdaLc = 20;
+real maxLambdaLc = 21;
 
 real adimdt = 1.e-3;
 

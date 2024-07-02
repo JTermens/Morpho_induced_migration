@@ -641,11 +641,12 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       
       fileGlobalSol.fixed;
       fileGlobalSol	<< iterTime*dt << "," 
-                    << Xcm 		 << "," << Ycm 		 << "," << Pxcm 	 << "," << Pycm 	   << ","
-                    << dPxcmdt << "," << dPycmdt << "," << Vxcm 	 << "," << Vycm 	   << ","
-                    << Axcm 	 << "," << Aycm 	 << "," << Areai   << "," << dAreadt 	 << "," 
-                    << Ix 		 << "," << Iy 		 << "," << dIxdt 	 << "," << dIydt 	   << "," 
-                    << avgDivV << "," << divXcm  << "," << divYcm  << "," << divXavgcm << "," << divYavgcm << endl;
+                    << Xcm 		 << "," << Ycm 		   << "," << Pxcm 	   << "," << Pycm 	   << ","
+                    << dPxcmdt << "," << dPycmdt   << "," << Vxcm 	   << "," << Vycm 	   << ","
+                    << Vxavg   << "," << Vyavg     << "," << Axcm 	   << "," << Aycm 	   << "," 
+                    << Areai   << "," << dAreadt   << "," << Ix 		   << "," << Iy 		   << "," 
+                    << dIxdt 	 << "," << dIydt 	   << "," << avgDivV   << "," << divXcm    << "," 
+                    << divYcm  << "," << divXavgcm << "," << divYavgcm << endl;
     }
 
     // save the last mesh

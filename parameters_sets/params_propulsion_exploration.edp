@@ -2,13 +2,13 @@
 // 30x30x30x30 is extremely time consuming, a more coarse-grained exploration would be better
 
 verbosity=0;
-bool debug=0; 
+// bool debug=1; 
 
-// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/phase_space_exploration";
-string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/phase_space_exploration";
+// string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 
 // string simulName = "exploration_propulsion";
-string simulName = "exploration_low_zeta_0-7_v2";
+string simulName = "exploration_La57xLambda20";
 
 int labelOut = 1; // Mesh identifiers
 
@@ -23,19 +23,17 @@ int nLaLc = 57;
 real minLaLc = 0.;
 real maxLaLc = 7./*10.*/;
 
-int nRLc = 1;
-real minRLc = 227.601/40.;
-real maxRLc = 227.601/40.;
+int nRLc = 1; // R/Lc fixed at 5, as R = 200 μm & Lc = 40 μm
+// real minRLc = 227.601/40.;
+// real maxRLc = 227.601/40.;
+real minRLc = 5.;
+real maxRLc = 5.;
 
-// int nLambdaLc = 11;
-// real minLambdaLc = 0.5;
-// real maxLambdaLc = 20.5;
-
-int nLambdaLc = 2;
+int nLambdaLc = 20;
 real minLambdaLc = 1;
-real maxLambdaLc = 21;
+real maxLambdaLc = 20;
 
-real adimdt = 5.e-4;
+real adimdt = 1.e-3;
 
 // Mesh parameters
 real fracRarc = 0.1;	// fraction of the radius used to smooth the domain vertices

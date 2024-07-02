@@ -7,13 +7,14 @@ string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_mot
 //string rootDir = "/home/joan/Documents/Simul_runs/friction_tension_test";
 
 string[int] simulNames = [
-  "low_zeta_evolution",
-  "mid_zeta_evolution",
-  "high_zeta_evolution"
+  "zeta-1_evolution",
+  "zeta-12_evolution",
+  "zeta-16_evolution",
+  "zeta-32_evolution"
   ];
 
 int labelOut = 1; // Mesh identifiers
-int nSimul = 3;   // Number of simulations
+int nSimul = 4;   // Number of simulations
 
 // Physical Parameters
 real h = 5;                      // Monolayer heigth, [μm]
@@ -22,7 +23,7 @@ real Lc = 40;                    // Nematic length, sqrt(K/a), [μm]
 real eta = 2.5e4;                // Monolayer viscosity, [kPa·s]
 real xi = 0.0354308;             // Friction coefficient, [kPa·s/μm²], fitted so lambda = 840 μm
 real zi = 0.1;                   // Traction coefficient, [kPa/μm],
-real[int] zetas = [-1, -12,-30]; // -Contractility coefficient, [kPa],
+real[int] zetas = [-1, -12, -16,-32]; // -Contractility coefficient, [kPa],
 // real tscale = eta/(zi*Lc);       // Timescale corresponding to the advance of a flat front, [s]
 string Reff = "-";
 
@@ -34,8 +35,8 @@ real obd = 45.;                  // Outer boundary mesh density
 real ibd = 15.;                  // Inner boundary mesh density
 real dt = 5e-3;                  // Adim. time step
 int NiterTime = 2000;            // Number of iterations
-real rateMaxArea = 4;            // Stop the simulation when Area = rateMaxArea * (Initial Area)
-real rateMinArea = 1/4.;         // Stop the simulation when Area = rateMinArea * (Initial Area)
+real rateMaxArea = 6;            // Stop the simulation when Area = rateMaxArea * (Initial Area)
+real rateMinArea = 1/6.;         // Stop the simulation when Area = rateMinArea * (Initial Area)
 bool keepPoints = 0;             // Keep the number of boundary points upon remeshing
 
 // If surface tension or different friction

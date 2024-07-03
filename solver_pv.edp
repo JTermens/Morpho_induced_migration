@@ -49,9 +49,9 @@ mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
 // Extract outer boundary
 // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
 // for k in (0,Th.nbe-1): 
-//		bOut(0,k) == x coord kth vertex
-//		bOut(1,k) == y coord kth vertex
-//		bOut(2,k) == arch length at the kth vertex
+//    bOut(0,k) == x coord kth vertex
+//    bOut(1,k) == y coord kth vertex
+//    bOut(2,k) == arch length at the kth vertex
 real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelOut, bMesh);
 
 Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelOut,.5,0,1); // Custom mesh adaptation
@@ -78,7 +78,7 @@ if (debug) {
 
 // // if (debug) { // Plot the boundary, usefull to detect mesh problems
 // //   border Outer(t=0,1){ P=Curve(bMesh,bMesh(2,round(t*(bMesh.m-1)))/lMesh);label=labelOut;}
-// //   int nMesh = bMesh.m-1; 								// keep number of elements
+// //   int nMesh = bMesh.m-1;                 // keep number of elements
 // //   plot(Outer(nMesh),value = true, fill = false, nbiso=64, wait=true, cmm = "imported boundary;");
 // // }
 
@@ -98,9 +98,9 @@ if (bsave){
   string fileNameParams = "/params.csv";
   string fileNameGlobalSol = "/global_sol.csv";
 
-  exec("mkdir "+simulHomeDir);							// Make a home directory for the simulation
-  exec("mkdir "+simulHomeDir+"/msh");				// Make and save the meshes in a separeted directory
-  exec("mkdir "+simulHomeDir+"/local_sol");	// Make and save the local solutions in a separeted directory
+  exec("mkdir "+simulHomeDir);              // Make a home directory for the simulation
+  exec("mkdir "+simulHomeDir+"/msh");        // Make and save the meshes in a separeted directory
+  exec("mkdir "+simulHomeDir+"/local_sol");  // Make and save the local solutions in a separeted directory
 
   {ofstream fileParams (simulHomeDir+fileNameParams); // Save the parameters in separate file
 
@@ -109,15 +109,15 @@ if (bsave){
               /*<< ",gamma"*/ <<  endl;
     fileParams << "rad,adim,um,adim," << /*adim, <<*/ "um,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim" 
               /*<< ",kPa*um"*/ << endl;
-    fileParams << cut 		<< "," << R0 		 << "," << Reff	<< "," << fracRarc << ","
-           /*<< areaCst  << ","*/<< h 		 << "," << Lc	  << "," << lambda 	 << ","
-              << La 			<< "," << eta 	 << "," << xi 	<< "," << zi 			 << "," 
-              << zeta 		<< "," << tscale << "," << dt 	<< "," << dsave /*<< "," << gamma*/ << endl;// 
+    fileParams << cut     << "," << R0     << "," << Reff << "," << fracRarc << ","
+           /*<< areaCst  << ","*/<< h      << "," << Lc   << "," << lambda   << ","
+              << La       << "," << eta    << "," << xi   << "," << zi       << "," 
+              << zeta     << "," << tscale << "," << dt   << "," << dsave /*<< "," << gamma*/ << endl;// 
   }
   // Generate a separate file for the global variables (integrates ones)
-  {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);	
+  {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);  
     //fileGlobalSol.fixed;
-    fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm" << endl;
+    fileGlobalSol  << "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm" << endl;
   }
 } 
 //---------------------------------------------------------------------------------------------------------------------
@@ -139,15 +139,15 @@ macro dp [dpxdx,dpxdy,dpydx,dpydy] //               // Gradient of the polarity 
 macro dq [dqxdx,dqxdy,dqydx,dqydy] //               // Gradient of the polarity test functions
 macro dv [dvxdx,dvxdy,dvydx,dvydy] //               // Gradient of the velocity field
 macro du [duxdx,duxdy,duydx,duydy] //               // Gradient of the velocity test functions
-macro d2px [dpxdxx,dpxdxy,dpxdyx,dpxdyy] //			    // Hessian of the x-polarity
-macro d2py [dpydxx,dpydxy,dpydyx,dpydyy] //			    // Hessian of the y-polarity
-macro d2qx [dqxdxx,dqxdxy,dqxdyx,dqxdyy] //			    // Hessian of the x-polarity test function
-macro d2qy [dqydxx,dqydxy,dqydyx,dqydyy] //			    // Hessian of the y-polarity test 
+macro d2px [dpxdxx,dpxdxy,dpxdyx,dpxdyy] //         // Hessian of the x-polarity
+macro d2py [dpydxx,dpydxy,dpydyx,dpydyy] //         // Hessian of the y-polarity
+macro d2qx [dqxdxx,dqxdxy,dqxdyx,dqxdyy] //         // Hessian of the x-polarity test function
+macro d2qy [dqydxx,dqydxy,dqydyx,dqydyy] //         // Hessian of the y-polarity test 
       
 macro grad(u) [dx(u),dy(u)] //                      // Gradient of a sclar
 macro Grad(ux,uy) [dx(ux),dy(ux),dx(uy),dy(uy)] //  // Gradient of a vector
 macro GradT(ux,uy) [dx(ux),dx(uy),dy(ux),dy(uy)] // // Grad vector transpose
-macro Hessian(u) [dxx(u),dxy(u),dyx(u),dyy(u)] //	  // Hessian of a scalar
+macro Hessian(u) [dxx(u),dxy(u),dyx(u),dyy(u)] //   // Hessian of a scalar
 macro pp(px,py) [px*px,px*py,py*px,py*py] //        // Active stress tensor
 
 macro Norm(u) dist(u#x,u#y) + 1.e-12 //             // Vector norm + offset to avoid 0-length vectors
@@ -163,8 +163,8 @@ fespace Vel(Th, [P1b, P1b]);        // For velocity vector
 fespace dVel(Th,[P1b,P1b,P1b,P1b]); // For the gradient of the velocity vector
 fespace prodVel(Th, P1b);
 
-// fespace Vor(Th,P1b);								// To compute the vorticity & divergence
-fespace Nh(Th,[P1,P1]);						  // For the corrected normal vector at the boundary
+// fespace Vor(Th,P1b);                // To compute the vorticity & divergence
+fespace Nh(Th,[P1,P1]);              // For the corrected normal vector at the boundary
 //---------------------------------------------------------------------------------------------------------------------
 
 // Extract the new boundary for future computations and compute its orientation
@@ -323,7 +323,7 @@ dpxdx[]=solGradP(0:dPol.ndof-1);
 varf aGradV(dv, du) = int2d(Th)(dv'*du);
 varf lGradV(dv, du) = int2d(Th)(Grad(vx,vy)'*du);
 
-matrix AGradV = aGradV(dVel, dVel);	// LHS matrix
+matrix AGradV = aGradV(dVel, dVel); // LHS matrix
 real[int] bGradV = lGradV(0, dVel); // RHS vector
 
 real[int] solGradV(dVel.ndof);
@@ -336,8 +336,8 @@ dvxdx[]=solGradV(0:dVel.ndof-1);
 varf aHessPx(d2px,d2qx) = int2d(Th)(d2px'*d2qx);
 varf lHessPx(d2px,d2qx) = int2d(Th)(Hessian(px)'*d2qx);
 
-matrix AHessPx = aHessPx(dPol, dPol);	// LHS matrix
-real[int] bHessPx = lHessPx(0, dPol);	// RHS vector
+matrix AHessPx = aHessPx(dPol, dPol);  // LHS matrix
+real[int] bHessPx = lHessPx(0, dPol);  // RHS vector
 
 real[int] solHessPx(dPol.ndof);
 solHessPx=AHessPx^-1*bHessPx;
@@ -348,8 +348,8 @@ dpxdxx[]=solHessPx(0:dPol.ndof-1);
 varf aHessPy(d2py,d2qy) = int2d(Th)(d2py'*d2qy);
 varf lHessPy(d2py,d2qy) = int2d(Th)(Hessian(py)'*d2qy);
 
-matrix AHessPy = aHessPy(dPol, dPol);	// LHS matrix
-real[int] bHessPy = lHessPy(0, dPol);	// RHS vector
+matrix AHessPy = aHessPy(dPol, dPol);  // LHS matrix
+real[int] bHessPy = lHessPy(0, dPol);  // RHS vector
 
 real[int] solHessPy(dPol.ndof);
 solHessPy=AHessPy^-1*bHessPy;
@@ -374,8 +374,8 @@ dpydxx[]=solHessPy(0:dPol.ndof-1);
 //---------------------------------------------------------------------------------------------------------------------
 
 // Compute the intial values of the global variables ------------------------------------------------------------------
-real Areai = Area0;	                            // Current area
-real AreaP = Areai;	                            // Previous area
+real Areai = Area0;                             // Current area
+real AreaP = Areai;                             // Previous area
 real dAreadt = (Areai-AreaP)/dt;                // time-derivative of the area (backward)
 
 real Xcm = Xcm0;                                // Current x of the center of mass (x_cm)
@@ -396,8 +396,8 @@ real PycmP = Pycm;                              // Previous P_y cm
 real dPxcmdt = (Pxcm-PxcmP)/dt;                 // time-derivative of P_x cm (backward)
 real dPycmdt = (Pycm-PycmP)/dt;                 // time-derivative of P_y cm (backward)
 
-real Ix = int2d(Th)(pow(y-Ycm,2))/Areai;	      // Current 2nd Moment of area with respect to x axis at the CM
-real Iy = int2d(Th)(pow(x-Xcm,2))/Areai;	      // Current 2nd Moment of area with respect to y axis at the CM
+real Ix = int2d(Th)(pow(y-Ycm,2))/Areai;        // Current 2nd Moment of area with respect to x axis at the CM
+real Iy = int2d(Th)(pow(x-Xcm,2))/Areai;        // Current 2nd Moment of area with respect to y axis at the CM
 real IxP = Ix;                                  // Previous 2n Moment of x
 real IyP = Iy;                                  // Previous 2n Moment of y
 real dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
@@ -527,8 +527,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   varf aGradP(dp, dq) = int2d(Th)(dp'*dq);
   varf lGradP(dp, dq) = int2d(Th)(Grad(px,py)'*dq);
 
-  matrix AGradP = aGradP(dPol, dPol);		// LHS matrix
-  real[int] bGradP = lGradP(0, dPol);	// RHS vector
+  matrix AGradP = aGradP(dPol, dPol);  // LHS matrix
+  real[int] bGradP = lGradP(0, dPol);  // RHS vector
 
   real[int] solGradP(dPol.ndof);
   solGradP=AGradP^-1*bGradP;
@@ -541,8 +541,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   varf aGradV(dv, du) = int2d(Th)(dv'*du);
   varf lGradV(dv, du) = int2d(Th)(Grad(vx,vy)'*du);
 
-  matrix AGradV = aGradV(dVel, dVel);	// LHS matrix
-  real[int] bGradV = lGradV(0, dVel);	// RHS vector
+  matrix AGradV = aGradV(dVel, dVel);  // LHS matrix
+  real[int] bGradV = lGradV(0, dVel);  // RHS vector
 
   real[int] solGradV(dVel.ndof);
   solGradV=AGradV^-1*bGradV;
@@ -554,8 +554,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   varf aHessPx(d2px,d2qx) = int2d(Th)(d2px'*d2qx);
   varf lHessPx(d2px,d2qx) = int2d(Th)(Hessian(px)'*d2qx);
 
-  matrix AHessPx = aHessPx(dPol, dPol);	// LHS matrix
-  real[int] bHessPx = lHessPx(0, dPol);	// RHS vector
+  matrix AHessPx = aHessPx(dPol, dPol);  // LHS matrix
+  real[int] bHessPx = lHessPx(0, dPol);  // RHS vector
 
   real[int] solHessPx(dPol.ndof);
   solHessPx=AHessPx^-1*bHessPx;
@@ -566,8 +566,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   varf aHessPy(d2py,d2qy) = int2d(Th)(d2py'*d2qy);
   varf lHessPy(d2py,d2qy) = int2d(Th)(Hessian(py)'*d2qy);
 
-  matrix AHessPy = aHessPy(dPol, dPol);	// LHS matrix
-  real[int] bHessPy = lHessPy(0, dPol);	// RHS vector
+  matrix AHessPy = aHessPy(dPol, dPol);  // LHS matrix
+  real[int] bHessPy = lHessPy(0, dPol);  // RHS vector
 
   real[int] solHessPy(dPol.ndof);
   solHessPy=AHessPy^-1*bHessPy;
@@ -575,11 +575,11 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dpydxx[]=solHessPy(0:dPol.ndof-1);
 
   // Compute the global variables -------------------------------------------------------------------------------------
-  Areai = Th.measure;	// Current area
+  Areai = Th.measure;  // Current area
   dAreadt = (Areai-AreaP)/dt; // time-derivative of the area (backward)
 
-  Xcm = int2d(Th)(x)/Areai;	                 // Current Xcm
-  Ycm = int2d(Th)(y)/Areai;	                 // Current Ycm
+  Xcm = int2d(Th)(x)/Areai;                  // Current Xcm
+  Ycm = int2d(Th)(y)/Areai;                  // Current Ycm
   Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
   Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
   real Vxavg = int2d(Th)(vx)/Areai;          // Current avg(v_x)
@@ -587,13 +587,13 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
   Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 
-  Pxcm = int2d(Th)(px)/Areai;	               // Current P_x cm
-  Pycm = int2d(Th)(py)/Areai;	               // Current P_y cm
+  Pxcm = int2d(Th)(px)/Areai;                // Current P_x cm
+  Pycm = int2d(Th)(py)/Areai;                // Current P_y cm
   dPxcmdt = (Pxcm-PxcmP)/dt;                 // time-derivative of P_x cm (backward)
   dPycmdt = (Pycm-PycmP)/dt;                 // time-derivative of P_y cm (backward)
   
-  Ix = int2d(Th)(pow(y-Ycm,2));	             // 2nd Moment of area with respect to x axis at the CM
-  Iy = int2d(Th)(pow(x-Xcm,2));	             // 2nd Moment of area with respect to y axis at the CM
+  Ix = int2d(Th)(pow(y-Ycm,2));              // 2nd Moment of area with respect to x axis at the CM
+  Iy = int2d(Th)(pow(x-Xcm,2));              // 2nd Moment of area with respect to y axis at the CM
   dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
   dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
 
@@ -620,19 +620,19 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       fileLocalSols.fixed;
       int NbVertices = Th.nv;
       fileLocalSols << "# LocalSolutions" << endl
-                    << "# NumFields: " << 20 << "	NumberVertices: " << NbVertices << " cut: " << cut << " a: " << a << " b: " << b << " c: " << c << endl
-                    << "# px	py	vx	vy	dpxdx	dpxdy	dpydx	dpydy	dvxdx	dvxdy	dvydx	dvydy	" << "dpxdxx	dpxdxy	dpxdyx	dpxdyy	dpydxx	dpydxy	dpydyx	dpydyy" << endl;
+                    << "# NumFields: " << 20 << "  NumberVertices: " << NbVertices << " cut: " << cut << " a: " << a << " b: " << b << " c: " << c << endl
+                    << "# px  py  vx  vy  dpxdx  dpxdy  dpydx  dpydy  dvxdx  dvxdy  dvydx  dvydy  " << "dpxdxx  dpxdxy  dpxdyx  dpxdyy  dpydxx  dpydxy  dpydyx  dpydyy" << endl;
       for (int i = 0; i < NbVertices; i++){
-        fileLocalSols << px(Th(i).x,Th(i).y) 	 << "	" << py(Th(i).x,Th(i).y) 	 << "	"  // {px,py}
-                << vx(Th(i).x,Th(i).y) 	 << "	" << vy(Th(i).x,Th(i).y) 	 << "	"  // {vx,vy}
-                << dpxdx(Th(i).x,Th(i).y)  << "	" << dpxdy(Th(i).x,Th(i).y)  << "	"  // {dpxdx,dpxdy}
-                << dpydx(Th(i).x,Th(i).y)  << "	" << dpydy(Th(i).x,Th(i).y)  << "	"  // {dpydx,dpydy}
-                << dvxdx(Th(i).x,Th(i).y)  << "	" << dvxdy(Th(i).x,Th(i).y)  << "	"  // {dvxdx,dvxdy}
-                << dvydx(Th(i).x,Th(i).y)  << "	" << dvydy(Th(i).x,Th(i).y)  << "	"  // {dvydx,dvydy}
-                << dpxdxx(Th(i).x,Th(i).y) << "	" << dpxdxy(Th(i).x,Th(i).y) << "	"  // {dpxdxx,dpxdxy}
-                << dpxdyx(Th(i).x,Th(i).y) << "	" << dpydyy(Th(i).x,Th(i).y) << "	"  // {dpxdyx,dpxdyy}
-                << dpydxx(Th(i).x,Th(i).y) << "	" << dpydxy(Th(i).x,Th(i).y) << "	"  // {dpydxx,dpydxy}
-                << dpydyx(Th(i).x,Th(i).y) << "	" << dpydyy(Th(i).x,Th(i).y) << endl;  // {dpydyx,dpydyy}
+        fileLocalSols << px(Th(i).x,Th(i).y) << "  " << py(Th(i).x,Th(i).y)     << "  "  // {px,py}
+                << vx(Th(i).x,Th(i).y)       << "  " << vy(Th(i).x,Th(i).y)     << "  "  // {vx,vy}
+                << dpxdx(Th(i).x,Th(i).y)    << "  " << dpxdy(Th(i).x,Th(i).y)  << "  "  // {dpxdx,dpxdy}
+                << dpydx(Th(i).x,Th(i).y)    << "  " << dpydy(Th(i).x,Th(i).y)  << "  "  // {dpydx,dpydy}
+                << dvxdx(Th(i).x,Th(i).y)    << "  " << dvxdy(Th(i).x,Th(i).y)  << "  "  // {dvxdx,dvxdy}
+                << dvydx(Th(i).x,Th(i).y)    << "  " << dvydy(Th(i).x,Th(i).y)  << "  "  // {dvydx,dvydy}
+                << dpxdxx(Th(i).x,Th(i).y)   << "  " << dpxdxy(Th(i).x,Th(i).y) << "  "  // {dpxdxx,dpxdxy}
+                << dpxdyx(Th(i).x,Th(i).y)   << "  " << dpydyy(Th(i).x,Th(i).y) << "  "  // {dpxdyx,dpxdyy}
+                << dpydxx(Th(i).x,Th(i).y)   << "  " << dpydxy(Th(i).x,Th(i).y) << "  "  // {dpydxx,dpydxy}
+                << dpydyx(Th(i).x,Th(i).y)   << "  " << dpydyy(Th(i).x,Th(i).y) << endl; // {dpydyx,dpydyy}
       }
     }
 
@@ -640,13 +640,13 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol, append);
       
       fileGlobalSol.fixed;
-      fileGlobalSol	<< iterTime*dt << "," 
-                    << Xcm 		 << "," << Ycm 		   << "," << Pxcm 	   << "," << Pycm 	   << ","
-                    << dPxcmdt << "," << dPycmdt   << "," << Vxcm 	   << "," << Vycm 	   << ","
-                    << Vxavg   << "," << Vyavg     << "," << Axcm 	   << "," << Aycm 	   << "," 
-                    << Areai   << "," << dAreadt   << "," << Ix 		   << "," << Iy 		   << "," 
-                    << dIxdt 	 << "," << dIydt 	   << "," << avgDivV   << "," << divXcm    << "," 
-                    << divYcm  << "," << divXavgcm << "," << divYavgcm << endl;
+      fileGlobalSol  << iterTime*dt << "," 
+              << Xcm     << "," << Ycm       << "," << Pxcm      << "," << Pycm   << ","
+              << dPxcmdt << "," << dPycmdt   << "," << Vxcm      << "," << Vycm   << ","
+              << Vxavg   << "," << Vyavg     << "," << Axcm      << "," << Aycm   << "," 
+              << Areai   << "," << dAreadt   << "," << Ix        << "," << Iy     << "," 
+              << dIxdt   << "," << dIydt     << "," << avgDivV   << "," << divXcm << "," 
+              << divYcm  << "," << divXavgcm << "," << divYavgcm << endl;
     }
 
     // save the last mesh
@@ -680,9 +680,9 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
 
 
   // Update previous global variables ---------------------------------------------------------------------------------
-  AreaP = Areai;	                  // Previous area
-  XcmP[1] = XcmP[0]; XcmP[0] = Xcm;	// Previous x_cms (-dt & -2*dt)
-  YcmP[1] = YcmP[0]; YcmP[0] = Ycm;	// Previous y_cms (-dt & -2*dt)
+  AreaP = Areai;                    // Previous area
+  XcmP[1] = XcmP[0]; XcmP[0] = Xcm; // Previous x_cms (-dt & -2*dt)
+  YcmP[1] = YcmP[0]; YcmP[0] = Ycm; // Previous y_cms (-dt & -2*dt)
   PxcmP = Pxcm;                     // Previous P_x cm
   PycmP = Pycm;                     // Previous P_y cm
   IxP = Ix;                         // Previous 2n Moment of x

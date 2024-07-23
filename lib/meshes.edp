@@ -407,6 +407,36 @@ func mesh closedRemesh(
   return Th;
 }
 
+func real computeDistAxis(real xPoint, real yPoint, real[int] axis){
+  real[int] axisP1 = [0,axis[0]], axisP2 = [0,axis[1]];
+
+  return abs((axisP2[0]-axisP1[0])*(axisP1[1]-yPoint) - (axisP2[1]-axisP1[1])*(axisP1[0]-xPoint)) /
+         dist(axisP1[1]-axisP2[1],axisP1[0]-axisP2[0]);
+}
+
+func int computeFrontRear(real[int,int] bnd, int nBnd, real[int,int] frontRear){
+  real[int] distAxis(nBnd), bestFourY(4);
+  int[int] pointIdx(nBnd), bestFourIdx(4);
+  real[int] axis = [0,1];
+
+  for (int i=0; i < nBnd; i++){
+    pointIdx[i] = i;
+    distAxis[i] = computeDistAxis(bnd(0,i),bnd(1,i),axis);
+  }
+  sort(distAxis,pointIdx); // Find the 4 closest points to the symmetry axis
+  for (int i=0; i<4; i++){
+    bestFourIdx[i] = pointIdx[i];
+    bestFourY[i] = bnd(1,pointIdx[i]);
+  }
+  sort(bestFourY,bestFourIdx); // Find the indices of the front & rear points
+
+  cout << pointIdx[0] << endl;
+  frontRear(0,0) = bnd(0,bestFourIdx[3]); frontRear(0,1) = bnd(1,bestFourIdx[3]); // Front
+  frontRear(1,0) = bnd(0,bestFourIdx[0]); frontRear(1,1) = bnd(1,bestFourIdx[0]); // Rear
+  
+  return 0;
+}
+
 
 // // Construct the mesh -------------------------------------------------------------------------------------------------
 
@@ -426,7 +456,7 @@ func mesh closedRemesh(
 // real rRight = 0.25;
 // real d = 0.5;
 
-// // oneCutSmooth params
+// oneCutSmooth params
 // real cut = 2*pi/3;
 // real fracRarc = 0.1;
 
@@ -442,10 +472,18 @@ func mesh closedRemesh(
 // real[int] sideLengths = [2,5,5];
 // real rRound = 0.1;
 
-// // mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelBnd);
-// // mesh Th = oneCutSmooth(obd,cut,r0,fracRarc,symmAxis,labelBnd);
-// // mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
-// // mesh Th = twoCurvesTriangle(obd,r0,rIn,rOut,symmAxis,labelBnd);
+// mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelBnd);
+// mesh Th = oneCutSmooth(obd,cut,r0,fracRarc,symmAxis,labelBnd);
+// mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
+// mesh Th = twoCurvesTriangle(obd,r0,rInreal Area0 = Th.measure; // Inital Area of the Fluid Domain
+// real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
+// real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
+
+
+// plot(
+//   Th,value = true, fill = false, nbiso=64, wait=true, 
+//   cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
+// );,rOut,symmAxis,labelBnd);
 // mesh Th = roundedTriangle(obd,sideLengths,rRound,labelBnd);
 
 // real L0 = sqrt(Th.measure);
@@ -461,6 +499,11 @@ func mesh closedRemesh(
 // //		bOut(1,k) == y coord ktha ( vertex
 // //		bOut(2,k) == arch length at the kth vertex
 // real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelBnd, bMesh);
+
+// real[int,int] frontRear(2,2);
+// cout << frontRear << endl;
+// int err = computeFrontRear(bMesh, bMesh.m-1, frontRear);
+// cout << frontRear << endl;
 
 // Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelBnd,.5,0,1); // Custom mesh adaptation
 

@@ -3,13 +3,19 @@
 verbosity=0;
 // bool debug=0;
 
-string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/propulsion_evolution";
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/propulsion_evolution_v2";
 //string rootDir = "/home/joan/Documents/Simul_runs/friction_tension_test";
 
 string[int] simulNames = [
+  "zeta-0_evolution",
   "zeta-1_evolution",
+  "zeta-4_evolution",
+  "zeta-8_evolution",
   "zeta-12_evolution",
   "zeta-16_evolution",
+  "zeta-20_evolution",
+  "zeta-24_evolution",
+  "zeta-28_evolution",
   "zeta-32_evolution"
   ];
 
@@ -18,12 +24,13 @@ int nSimul = 4;   // Number of simulations
 
 // Physical Parameters
 real h = 5;                      // Monolayer heigth, [μm]
-real R0 = 227.61;                // Initial radius of the monolayer [μm].
+real R0 = 200;//227.61;                // Initial radius of the monolayer [μm].
 real Lc = 40;                    // Nematic length, sqrt(K/a), [μm]
 real eta = 2.5e4;                // Monolayer viscosity, [kPa·s]
-real xi = 0.0354308;             // Friction coefficient, [kPa·s/μm²], fitted so lambda = 840 μm
+real xi = 0.1;                   // Friction coefficient, [kPa·s/μm²], fitted so lambda = 840 μm
 real zi = 0.1;                   // Traction coefficient, [kPa/μm],
-real[int] zetas = [-1, -12, -16,-32]; // -Contractility coefficient, [kPa],
+// real[int] zetas = [-1, -12, -16,-32]; // -Contractility coefficient, [kPa],
+real[int] zetas = [0,-1,-4,-8,-12,-16,-20,-24,-28,-32];
 // real tscale = eta/(zi*Lc);       // Timescale corresponding to the advance of a flat front, [s]
 string Reff = "-";
 
@@ -33,10 +40,10 @@ string Reff = "-";
 // Numerical Parameters
 real obd = 45.;                  // Outer boundary mesh density
 real ibd = 15.;                  // Inner boundary mesh density
-real dt = 5e-3;                  // Adim. time step
-int NiterTime = 2000;            // Number of iterations
-real rateMaxArea = 6;            // Stop the simulation when Area = rateMaxArea * (Initial Area)
-real rateMinArea = 1/6.;         // Stop the simulation when Area = rateMinArea * (Initial Area)
+real dt = 1e-3;                  // Adim. time step
+int NiterTime = 6000;            // Number of iterations
+real rateMaxArea = 8;            // Stop the simulation when Area = rateMaxArea * (Initial Area)
+real rateMinArea = 1/8.;         // Stop the simulation when Area = rateMinArea * (Initial Area)
 bool keepPoints = 0;             // Keep the number of boundary points upon remeshing
 
 // If surface tension or different friction
@@ -45,12 +52,12 @@ int maxNwtnIter = 20;            // Max num, of iterations for the Newton method
 
 // Save parameters
 bool bsave = 1;                  // To save or not
-int dsave = 20;                  // Save frame gap
+int dsave = 20;                   // Save frame gap
 
 // Domain parameters
 real cut = pi;                   // Angular length of the cutted portion of the circle
-real symmAxis = pi/2.;	         // Angles of the symmetry axis of each cut
-real fracRarc = 0.1;		         // Adimensionalized radius used to smooth the domain vertices
+real symmAxis = pi/2.;           // Angles of the symmetry axis of each cut
+real fracRarc = 0.1;             // Adimensionalized radius used to smooth the domain vertices
 
 if(debug){
   

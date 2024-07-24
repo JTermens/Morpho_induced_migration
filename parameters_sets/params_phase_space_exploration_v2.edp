@@ -9,14 +9,14 @@ string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_mot
 
 string simulName = "exploration_15x15x11x11";
 
-// Run 0:  pi/6,   pi/4,   pi/3, 5pi/12,  pi/2  // i=0,  i<5
-// Run 1: 7pi/12, 2pi/3,  3pi/4, 5pi/6, 11pi/12 // i=5,  i<10
-// Run 2:  pi,   13pi/12, 7pi/6, 5pi/4,  4pi/3  // i=10, i<15
+// Run 0:  pi/6,    pi/4,   pi/3,                               // i=0, i<3
+// Run 1: 5pi/12,   pi/2,  7pi/12,  2pi/3,  3pi/4               // i=3, i<8
+// Run 2: 5pi/6,  11pi/12,  pi,    13pi/12, 7pi/6, 5pi/4, 4pi/3 // i=8, i<15
 
 int labelOut = 1; // Mesh identifiers
 
-int[int] i0Cut = [0,5,10];
-int[int] ifCut = [5,10,15];
+int[int] i0Cut = [0,3,8];
+int[int] ifCut = [3,8,15];
 
 int nCut = 15;
 real minCut = pi/6.;

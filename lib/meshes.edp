@@ -430,7 +430,6 @@ func int computeFrontRear(real[int,int] bnd, int nBnd, real[int,int] frontRear){
   }
   sort(bestFourY,bestFourIdx); // Find the indices of the front & rear points
 
-  cout << pointIdx[0] << endl;
   frontRear(0,0) = bnd(0,bestFourIdx[3]); frontRear(0,1) = bnd(1,bestFourIdx[3]); // Front
   frontRear(1,0) = bnd(0,bestFourIdx[0]); frontRear(1,1) = bnd(1,bestFourIdx[0]); // Rear
   

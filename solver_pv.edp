@@ -249,11 +249,11 @@ varf lp(p, q) = int2d(Th)(
     - c*c*(pD'*q)
   ) + on(labelOut, px = 0.0) + on(labelOut, py = 0.0);
 
-// Assembly P
+// Assembly p
 matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
 real[int] bp = lp(0, Pol); // RHS
 
-// P solution with vanishing Dirichlet data
+// p solution with vanishing Dirichlet data
 real[int] solP(Pol.ndof);
 //set(Ap,solver=sparsesolver);
 solP=Ap^-1*bp;

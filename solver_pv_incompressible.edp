@@ -111,13 +111,13 @@ if (bsave){
   // Generate a separate file for the global variables (integrates ones)
   {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);	
     //fileGlobalSol.fixed;
-    fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm" << endl;
+    fileGlobalSol	<< "Time,Xcm,Ycm,Pxcm,Pycm,dPxcmdt,dPycmdt,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV" << endl;
   }
 } 
 //---------------------------------------------------------------------------------------------------------------------
 
 // Console Log
-cout << "Simul: " << simulNames[iSimul] << ", saving = " << bsave << endl;
+cout << "Simul: " << simulNames[iSimul] << " incomp, saving = " << bsave << endl;
 cout << "a (La/Lc) = " << a << ", b (R0/lambda) = " << b << ", c (R0/Lc) = " << c << ", tscale = " << tscale << endl;  
 
 
@@ -125,19 +125,26 @@ cout << "a (La/Lc) = " << a << ", b (R0/lambda) = " << b << ", c (R0/Lc) = " << 
 macro pD [pDx, pDy] //                              // P2 extension for Dirichlet data
 macro p [px, py] //                                 // Polarity vector field
 macro q [qx, qy] //                                 // Polarity test functions
-macro v [vx, vy, Pr] //                                 // Velocity vector field + pressure
-macro u [ux, uy,phi] //                                 // Velocity + pressure test functions
+macro v [vx, vy, Pr] //                             // Velocity vector field + pressure
+macro u [ux, uy, phi] //                            // Velocity + pressure test functions
 macro normal [nx, ny] //                            // Normal vectors at the boundary (null outside of it)
 
 macro dp [dpxdx,dpxdy,dpydx,dpydy] //               // Gradient of the polarity field
 macro dq [dqxdx,dqxdy,dqydx,dqydy] //               // Gradient of the polarity test functions
 macro dv [dvxdx,dvxdy,dvydx,dvydy] //               // Gradient of the velocity field
 macro du [duxdx,duxdy,duydx,duydy] //               // Gradient of the velocity test functions
+macro dPr [dPrdx, dPrdy] //                         // Pressure gradient
+macro dphi [dphidx, dphidx] //                      // Gradient of the pressure test function
+macro d2px [dpxdxx,dpxdxy,dpxdyx,dpxdyy] //         // Hessian of the x-polarity
+macro d2py [dpydxx,dpydxy,dpydyx,dpydyy] //         // Hessian of the y-polarity
+macro d2qx [dqxdxx,dqxdxy,dqxdyx,dqxdyy] //         // Hessian of the x-polarity test function
+macro d2qy [dqydxx,dqydxy,dqydyx,dqydyy] //         // Hessian of the y-polarity test 
 			
 macro grad(u) [dx(u),dy(u)] //                      // Gradient of a sclar
 macro Grad(ux,uy) [dx(ux),dy(ux),dx(uy),dy(uy)] //  // Gradient of a vector
 macro GradT(ux,uy) [dx(ux),dx(uy),dy(ux),dy(uy)] // // Grad vector transpose
 macro div(ux,uy) (dx(ux) + dy(uy)) //               // Divergence of a vector
+macro Hessian(u) [dxx(u),dxy(u),dyx(u),dyy(u)] //   // Hessian of a scalar
 macro pp(px,py) [px*px,px*py,py*px,py*py] //        // Active stress tensor
 
 macro Norm(u) dist(u#x,u#y) + 1.e-12 //             // Vector norm + offset to avoid 0-length vectors
@@ -149,11 +156,11 @@ fespace Pol(Th, [P2, P2]);          // For polarity vector
 fespace Pola(Th, P2 );              // For |p| (not essential, just visualization)
 fespace dPol(Th,[P2,P2,P2,P2]);     // For the gradient of the polarity vector
 
-fespace Vel(Th, [P1b,P1b,P1]);        // For velocity vector
+fespace Vel(Th, [P1b,P1b,P1]);      // For velocity vector + pressure
 fespace dVel(Th,[P1b,P1b,P1b,P1b]); // For the gradient of the velocity vector
-fespace prodVel(Th, P1b);
+fespace dPre(Th,[P1,P1]);            // For the gradient of the pressure
 
-// fespace Vor(Th,P1b);								// To compute the vorticity & divergence
+// fespace Vor(Th,P1b);							// To compute the vorticity & divergence
 fespace Nh(Th,[P1,P1]);						  // For the corrected normal vector at the boundary
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -167,7 +174,18 @@ int nBnd = bOut.m-1; // instead of Th.nbe to avoid problems with mesh labels
 // int orientBorder = ((bOut(0,0)-Xcm0)*(bOut(1,1)-bOut(1,0))-(bOut(1,0)-Ycm0)*(bOut(0,1)-bOut(0,0))) > 0 ? 1:-1;
 
 
-// if (debug) {
+// if (debug) {// Compute the gradient of v for the posterior analysis ---------------------------------------------------------------
+varf aGradV(dv, du) = int2d(Th)(dv'*du);
+varf lGradV(dv, du) = int2d(Th)(Grad(vx,vy)'*du);
+
+matrix AGradV = aGradV(dVel, dVel);	// LHS matrix
+real[int] bGradV = lGradV(0, dVel); // RHS vector
+
+real[int] solGradV(dVel.ndof);
+solGradV=AGradV^-1*bGradV;
+dVel dv=[0,0,0,0];
+dvxdx[]=solGradV(0:dVel.ndof-1);
+//---------------------------------------------------------------------------------------------------------------------
 //   cout << "Orientation = (" << orientBConn << ", " << orientBorder << ");" << endl;
 // }
 
@@ -239,11 +257,11 @@ varf lp(p, q) = int2d(Th)(
     - c*c*(pD'*q)
   ) + on(labelOut, px = 0.0) + on(labelOut, py = 0.0);
 
-// Assembly P
+// Assembly p
 matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
 real[int] bp = lp(0, Pol); // RHS
 
-// P solution with vanishing Dirichlet data
+// p solution with vanishing Dirichlet data
 real[int] solP(Pol.ndof);
 //set(Ap,solver=sparsesolver);
 solP=Ap^-1*bp;
@@ -263,13 +281,13 @@ if (debug) {
 //---------------------------------------------------------------------------------------------------------------------
 
 
-// Define & solve the velocity equation -------------------------------------------------------------------------------
+// Define & solve the velocity-pressure equation -------------------------------------------------------------------------------
 // Bilinear and linear variational forms V
 varf av(v, u) = int2d(Th)(
     ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) 
     + pow(b,2)*(v'*u)
-    - div(vx,vy)*phi
-    - Pr*div(ux,uy)
+    - div(vx,vy)*phi // phi is the test function of the pressure
+    - Pr*div(ux,uy)  // pressure term, ensures the incompressibility
   ); // -viscosity -friction - pressure
 
 varf lv(v, u) = int2d(Th)(
@@ -298,7 +316,10 @@ if (debug) {
 }
 //---------------------------------------------------------------------------------------------------------------------
 
-
+real divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
+real divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
+real divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
+real divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
 // Compute the gradient of p for the posterior analysis ---------------------------------------------------------------
 varf aGradP(dp, dq) = int2d(Th)(dp'*dq);
 varf lGradP(dp, dq) = int2d(Th)(Grad(px,py)'*dq);
@@ -323,6 +344,19 @@ real[int] solGradV(dVel.ndof);
 solGradV=AGradV^-1*bGradV;
 dVel dv=[0,0,0,0];
 dvxdx[]=solGradV(0:dVel.ndof-1);
+//---------------------------------------------------------------------------------------------------------------------
+
+// Compute the pressure gradient for the posterior analysis ---------------------------------------------------------------
+varf aGradPr(dPr, dphi) = int2d(Th)(dPr'*dphi);
+varf lGradPr(dPr, dphi) = int2d(Th)(grad(Pr)'*dphi);
+
+matrix AGradPr = aGradPr(dPr, dPr);	 // LHS matrix
+real[int] bGradPr = lGradPr(0, dPr); // RHS vector
+
+real[int] solGradPr(dPr.ndof);
+solGradPr=AGradPr^-1*bGradPr;
+dPre dPr=[0,0];
+dPrdx[]=solGradPr(0:dPr.ndof-1);
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -356,11 +390,7 @@ real IyP = Iy;                                  // Previous 2n Moment of y
 real dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
 real dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
 
-real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
-real divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
-real divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
-real divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
-real divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
+real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity, just for testing
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -457,7 +487,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   //-------------------------------------------------------------------------------------------------------------------
 
 
-  // Solve the velocity equation --------------------------------------------------------------------------------------
+  // Solve the velocity.pressure equation --------------------------------------------------------------------------------------
   // Assembly V
   varf lv(v, u) = int2d(Th)(
       + a*(pp(px,py)'*Grad(ux,uy))
@@ -503,6 +533,19 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dvxdx[]=solGradV(0:dVel.ndof-1);
   //-------------------------------------------------------------------------------------------------------------------
 
+  // Compute the pressure gradient for the posterior analysis ---------------------------------------------------------------
+  varf aGradPr(dPr, dphi) = int2d(Th)(dPr'*dphi);
+  varf lGradPr(dPr, dphi) = int2d(Th)(grad(Pr)'*dphi);
+
+  matrix AGradPr = aGradPr(dPr, dPr);	 // LHS matrix
+  real[int] bGradPr = lGradPr(0, dPr); // RHS vector
+
+  real[int] solGradPr(dPr.ndof);
+  solGradPr=AGradPr^-1*bGradPr;
+  dPre dPr=[0,0];
+  dPrdx[]=solGradPr(0:dPr.ndof-1);
+  //---------------------------------------------------------------------------------------------------------------------
+
 
   // Compute the global variables -------------------------------------------------------------------------------------
   Areai = Th.measure;	// Current area
@@ -527,11 +570,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
   dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
 
-  avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
-  divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
-  divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
-  divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
-  divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
+  avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity, just for testing
   //-------------------------------------------------------------------------------------------------------------------
 
   // Export data ------------------------------------------------------------------------------------------------------
@@ -558,7 +597,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
                       << dpydx(Th(i).x,Th(i).y) << "	" << dpydy(Th(i).x,Th(i).y) << "	"	 // {dpydx,dpydy}
                       << dvxdx(Th(i).x,Th(i).y) << "	" << dvxdy(Th(i).x,Th(i).y) << "	"	 // {dvxdx,dvxdy}
                       << dvydx(Th(i).x,Th(i).y) << "	" << dvydy(Th(i).x,Th(i).y) << "  " // {dvydx,dvydy}
-                      << Pr(Th(i).x,Th(i).y)    << endl; // pressure
+                      << Pr(Th(i).x,Th(i).y)    << "  " // Pr
+                      << dPrdx(Th(i).x,Th(i).y) << "  " << dPrdy(Th(i).x,Th(i).y) << endl; // {dPrdx,dPrdy}
       }
     }
 
@@ -576,9 +616,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
                     << Areai       << "," << dAreadt 	 << ","
                     << Ix 				 << "," << Iy 			 << ","
                     << dIxdt 			 << "," << dIydt 	   << ","
-                    << avgDivV 	   << "," 
-                    << divXcm      << "," << divYcm    << ","
-                    << divXavgcm   << "," << divYavgcm << endl;
+                    << avgDivV 	   << endl;
     }
 
     // save the last mesh
@@ -591,6 +629,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   if (debug) { // Show it always, regardless of the verbosity
   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
+  Pola Pressure = Pr(x,y);
   plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS*/normal,vABS, 
     value = true, 
     fill = true, 

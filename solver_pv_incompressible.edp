@@ -23,7 +23,7 @@ real R0 = R0s[iSimul];              // Initial radius
 // /*real*/string Reff = Reffs[iSimul];          // Effective radius
 // real Lc = Lcs[iSimul];
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
-real La = zeta/zi;             // active length; < 0 (> 0) for contractile (extensile) stress
+real La = zeta/zi;                  // active length; < 0 (> 0) for contractile (extensile) stress
 real tscale = eta/(zi*Lc);          // Problem timescale
 // real R0 = sqrt(pi/areaCst);         // Adimensionalized radius so that adim Area = pi
 // real tscale = eta/(zi*Reffs[i]);    // Problem timescale
@@ -39,6 +39,7 @@ real bLayerThickness = 1/c; // Adim. nematic length
 
 // Construct the mesh -------------------------------------------------------------------------------------------------
 mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
+// mesh Th = circle(obd,1,labelOut);
 
 // Extract outer boundary
 // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
@@ -134,7 +135,7 @@ macro dq [dqxdx,dqxdy,dqydx,dqydy] //               // Gradient of the polarity 
 macro dv [dvxdx,dvxdy,dvydx,dvydy] //               // Gradient of the velocity field
 macro du [duxdx,duxdy,duydx,duydy] //               // Gradient of the velocity test functions
 macro dPr [dPrdx, dPrdy] //                         // Pressure gradient
-macro dphi [dphidx, dphidx] //                      // Gradient of the pressure test function
+macro dphi [dphidx, dphidy] //                      // Gradient of the pressure test function
 macro d2px [dpxdxx,dpxdxy,dpxdyx,dpxdyy] //         // Hessian of the x-polarity
 macro d2py [dpydxx,dpydxy,dpydyx,dpydyy] //         // Hessian of the y-polarity
 macro d2qx [dqxdxx,dqxdxy,dqxdyx,dqxdyy] //         // Hessian of the x-polarity test function
@@ -173,19 +174,6 @@ int nBnd = bOut.m-1; // instead of Th.nbe to avoid problems with mesh labels
 // int orientBConn = ((Th.be(0)[1].x-Xcm0)*(Th.be(1)[1].y-Th.be(0)[1].y)-(Th.be(0)[1].y-Ycm0)*(Th.be(1)[1].x-Th.be(0)[1].x)) > 0 ? 1:-1;
 // int orientBorder = ((bOut(0,0)-Xcm0)*(bOut(1,1)-bOut(1,0))-(bOut(1,0)-Ycm0)*(bOut(0,1)-bOut(0,0))) > 0 ? 1:-1;
 
-
-// if (debug) {// Compute the gradient of v for the posterior analysis ---------------------------------------------------------------
-varf aGradV(dv, du) = int2d(Th)(dv'*du);
-varf lGradV(dv, du) = int2d(Th)(Grad(vx,vy)'*du);
-
-matrix AGradV = aGradV(dVel, dVel);	// LHS matrix
-real[int] bGradV = lGradV(0, dVel); // RHS vector
-
-real[int] solGradV(dVel.ndof);
-solGradV=AGradV^-1*bGradV;
-dVel dv=[0,0,0,0];
-dvxdx[]=solGradV(0:dVel.ndof-1);
-//---------------------------------------------------------------------------------------------------------------------
 //   cout << "Orientation = (" << orientBConn << ", " << orientBorder << ");" << endl;
 // }
 
@@ -285,7 +273,7 @@ if (debug) {
 // Bilinear and linear variational forms V
 varf av(v, u) = int2d(Th)(
     ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy)) 
-    + pow(b,2)*(v'*u)
+    + pow(b,2)*([vx,vy]'*[ux,uy]) // Take care to not include the pressure into the product
     - div(vx,vy)*phi // phi is the test function of the pressure
     - Pr*div(ux,uy)  // pressure term, ensures the incompressibility
   ); // -viscosity -friction - pressure
@@ -316,10 +304,6 @@ if (debug) {
 }
 //---------------------------------------------------------------------------------------------------------------------
 
-real divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
-real divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
-real divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
-real divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
 // Compute the gradient of p for the posterior analysis ---------------------------------------------------------------
 varf aGradP(dp, dq) = int2d(Th)(dp'*dq);
 varf lGradP(dp, dq) = int2d(Th)(Grad(px,py)'*dq);
@@ -350,13 +334,13 @@ dvxdx[]=solGradV(0:dVel.ndof-1);
 varf aGradPr(dPr, dphi) = int2d(Th)(dPr'*dphi);
 varf lGradPr(dPr, dphi) = int2d(Th)(grad(Pr)'*dphi);
 
-matrix AGradPr = aGradPr(dPr, dPr);	 // LHS matrix
-real[int] bGradPr = lGradPr(0, dPr); // RHS vector
+matrix AGradPr = aGradPr(dPre, dPre);	// LHS matrix
+real[int] bGradPr = lGradPr(0, dPre); // RHS vector
 
-real[int] solGradPr(dPr.ndof);
+real[int] solGradPr(dPre.ndof);
 solGradPr=AGradPr^-1*bGradPr;
 dPre dPr=[0,0];
-dPrdx[]=solGradPr(0:dPr.ndof-1);
+dPrdx[]=solGradPr(0:dPre.ndof-1);
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -472,8 +456,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       - c*c*(pD'*q)
     ) + on(labelOut, px = 0.0) + on(labelOut, py=0.0);
 
-  matrix Ap = ap(Pol, Pol, tgv = -2); 	// LHS matrix
-  real[int] bp = lp(0, Pol); 			// RHS
+  matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
+  real[int] bp = lp(0, Pol); 			    // RHS
 
   // P solution with vanishing Dirichlet data
   real[int] sol(Pol.ndof);
@@ -537,13 +521,13 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   varf aGradPr(dPr, dphi) = int2d(Th)(dPr'*dphi);
   varf lGradPr(dPr, dphi) = int2d(Th)(grad(Pr)'*dphi);
 
-  matrix AGradPr = aGradPr(dPr, dPr);	 // LHS matrix
-  real[int] bGradPr = lGradPr(0, dPr); // RHS vector
+  matrix AGradPr = aGradPr(dPre, dPre);	 // LHS matrix
+  real[int] bGradPr = lGradPr(0, dPre); // RHS vector
 
-  real[int] solGradPr(dPr.ndof);
+  real[int] solGradPr(dPre.ndof);
   solGradPr=AGradPr^-1*bGradPr;
   dPre dPr=[0,0];
-  dPrdx[]=solGradPr(0:dPr.ndof-1);
+  dPrdx[]=solGradPr(0:dPre.ndof-1);
   //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -630,12 +614,12 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
   Pola Pressure = Pr(x,y);
-  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS*/normal,vABS, 
+  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS,normal,*/vABS,/*Pressure,*/
     value = true, 
     fill = true, 
     nbiso = 64, 
     wait = false, 
-    bb=[[-2,-2],[2,2]],
+    bb=[[Xcm-2,Ycm-2],[Xcm+2,Ycm+2]],
     cmm = "iTime="+(iterTime)+"; "
       +"t="+(dt*iterTime)+"; "
       /*+"Orientation=("+orientBConn+", "+orientBorder+"); "*/

@@ -20,7 +20,7 @@ real h = 5;			    // Monolayer heigth, [μm]
 real eta = 30e3;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
 real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
 real zi = 0.1;			// Traction coefficient, [kPa/μm], 0.04-0.16 kPa/μm
-real zeta = -100/*-20*/;		// -Contractility coefficient, [kPa], 5-50 kPa
+real zeta = -20;		// -Contractility coefficient, [kPa], 5-50 kPa
 real Lc = 40;       // Nematic length, sqrt(K/a), [μm]
 // real[int] Rc = .5*(3.*Lc-zeta/zi);    // Critical radius of a circular monolayer, [μm]
 // If surface tension
@@ -39,7 +39,7 @@ string Reff = "-";
 // Numerical Parameters
 real obd = 45.;           // Outer boundary mesh density
 real ibd = 15.;           // Inner boundary mesh density
-real dt = 5e-4;           // Adim. time step
+real dt = 5e-3;           // Adim. time step
 int NiterTime = 40000;    // Number of iterations
 real rateMaxArea = 4;     // Stop the simulation when Area = rateMaxArea * (Initial Area)
 real rateMinArea = 1/4.;  // Stop the simulation when Area = rateMinArea * (Initial Area)

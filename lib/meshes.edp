@@ -436,6 +436,22 @@ func int computeFrontRear(real[int,int] bnd, int nBnd, real[int,int] frontRear){
   return 0;
 }
 
+func mesh circle(
+  int obd, real r0, int labelBnd
+){
+  // Outer border of a circle
+  border arch(t=0,1){
+    x = r0*cos(2*pi*t);
+    y = r0*sin(2*pi*t);
+    label = labelBnd;
+  };
+  mesh Th = buildmesh(
+    arch(obd*r0*2*pi)
+  );
+
+  return Th;
+}
+
 
 // // Construct the mesh -------------------------------------------------------------------------------------------------
 

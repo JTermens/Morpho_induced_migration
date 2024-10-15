@@ -20,6 +20,7 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 // Problem length & timescales ----------------------------------------------------------------------------------------
 real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
 real R0 = R0s[iSimul];              // Initial radius
+real zeta = zetas[iSimul];          // Contractility
 // /*real*/string Reff = Reffs[iSimul];          // Effective radius
 // real Lc = Lcs[iSimul];
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
@@ -573,7 +574,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       int NbVertices = Th.nv;
       fileLocalSols << "# LocalSolutions" << endl
                     << "# NumFields: " << 12 << "	NumberVertices: " << NbVertices /*<< " cut: " << cut*/ << " a: " << a << " b: " << b << " c: " << c << endl
-                    << "# px	py	vx	vy	dpxdx	dpxdy	dpydx	dpydy	dvxdx	dvxdy	dvydx	dvydy Pr" << endl;
+                    << "# px	py	vx	vy	dpxdx	dpxdy	dpydx	dpydy	dvxdx	dvxdy	dvydx	dvydy	Pr" << endl;
       for (int i = 0; i < NbVertices; i++){
         fileLocalSols << px(Th(i).x,Th(i).y) 		<< "	" << py(Th(i).x,Th(i).y) 		<< "	"  // {px,py}
                       << vx(Th(i).x,Th(i).y) 		<< "	" << vy(Th(i).x,Th(i).y) 		<< "	"	 // {vx,vy}
@@ -614,7 +615,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2);
   Pola Pressure = Pr(x,y);
-  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS,normal,*/vABS,/*Pressure,*/
+  plot(/*Th,[NDerP1,NDerP2],/*CurlV,pABS,normal,vABS,*/Pressure,
     value = true, 
     fill = true, 
     nbiso = 64, 

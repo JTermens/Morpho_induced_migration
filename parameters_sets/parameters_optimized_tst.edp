@@ -3,12 +3,12 @@
 verbosity=0;
 // bool debug=1;
 
-// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/optimized_params_test";
-string rootDir = "/home/joan/Documents/Simul_runs/optimized_params";
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Incompressible_tissues/Simul_runs/initial_tests";
+// string rootDir = "/home/joan/Documents/Simul_runs/optimized_params";
 
 string[int] simulNames = [
-  "optimized_2pi3_Rc_simple",
-  "optimized_3pi3_Rc_simple"
+  "tst_incomp_3pi3_0zeta",
+  "tst_incomp_3pi3_20zeta"
   ];
 
 int labelOut = 1; // Mesh identifiers
@@ -20,7 +20,7 @@ real h = 5;			    // Monolayer heigth, [μm]
 real eta = 30e3;		// Monolayer viscosity, [kPa·s], 3-30 MPa·s
 real xi = 0.1;			// Friction coefficient, [kPa·s/μm²]
 real zi = 0.1;			// Traction coefficient, [kPa/μm], 0.04-0.16 kPa/μm
-real zeta = -20;		// -Contractility coefficient, [kPa], 5-50 kPa
+real[int] zetas = [0,-20];		// -Contractility coefficient, [kPa], 5-50 kPa
 real Lc = 40;       // Nematic length, sqrt(K/a), [μm]
 // real[int] Rc = .5*(3.*Lc-zeta/zi);    // Critical radius of a circular monolayer, [μm]
 // If surface tension
@@ -30,8 +30,10 @@ real gamma = 5.;    // Surface tension, [mN/m]=[kPa·μm]
 // Effective initial radius of the monolayer [μm].
 // Reffs is the radius of a circle with the same area as the monolayer.
 real[int] R0s = [
-  166.806,
-  227.601
+  /* 166.806,
+  227.601*/
+  200,
+  200
 ];
 
 string Reff = "-";
@@ -40,9 +42,9 @@ string Reff = "-";
 real obd = 45.;           // Outer boundary mesh density
 real ibd = 15.;           // Inner boundary mesh density
 real dt = 5e-3;           // Adim. time step
-int NiterTime = 40000;    // Number of iterations
-real rateMaxArea = 4;     // Stop the simulation when Area = rateMaxArea * (Initial Area)
-real rateMinArea = 1/4.;  // Stop the simulation when Area = rateMinArea * (Initial Area)
+int NiterTime = 2000;    // Number of iterations
+real rateMaxArea = 4;     // Stop the simulation when Area >= rateMaxArea * (Initial Area)
+real rateMinArea = 1/4.;  // Stop the simulation when Area <= rateMinArea * (Initial Area)
 bool keepPoints = 0;      // Keep the number of boundary points upon remeshing
 
 real ampFrac = 0.5;
@@ -53,12 +55,12 @@ real maxNewtonResidu = 1.e-6;    // Cutoff residue for the Newton method
 int maxNewtonIter = 20;         // Max num, of iterations for the Newton method
 
 // Save parameters
-bool bsave = 0;			// To save or not
-int dsave = 20;			// Save frame gap
+bool bsave = 1;			// To save or not
+int dsave = 4;			// Save frame gap
 
 // Domain parameters
 real[int] cuts = [ // Angular length of the cutted portion of the circle
-  2.*pi/3.,
+  3.*pi/3.,
   3.*pi/3.
 ];
 
@@ -66,18 +68,15 @@ real symmAxis = pi/2.;	// Angles of the symmetry axis of each cut
 real fracRarc = 0.1;		// Adimensionalized radius used to smooth the domain vertices
 
 if(debug){
-  
-  cout << "Simulation: " << simulNames[iSimul] << endl;
-  cout << " |_ Problem lengths and timescales:" << endl;
   cout << "   |_ R0 = " << R0s[iSimul] << " um" << endl;
   cout << "   |_ Reff = " << Reff << " um" << endl;
   cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
   cout << "   |_ Lc = " << Lc << " um" << endl;
-  cout << "   |_ La = " << abs(zeta/zi) << " um" << endl;
+  cout << "   |_ La = " << zetas[iSimul]/zi << " um" << endl;
   cout << "   |_ tscale = " << eta/(zi*/*Reffs*/Lc) << " s" << endl;
   cout << "   |_ charact vel = " << 3600*zi*R0s[iSimul]*Lc/eta << " um/h" << endl;
   cout << " |_ Adim. parameters:" << endl;
-  cout << "   |_ a = " << abs(zeta)/(zi*Lc) << endl;
+  cout << "   |_ a = " << zetas[iSimul]/(zi*Lc) << endl;
   cout << "   |_ b = " << R0s[iSimul]/sqrt(eta/xi) << endl;
   cout << "   |_ c = " << R0s[iSimul]/Lc << endl;
 

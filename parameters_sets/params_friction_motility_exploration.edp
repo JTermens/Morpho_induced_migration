@@ -24,8 +24,8 @@ real[int] LambdaList = [2,5,10,15,20,25,30,35,40,50,60,70,80,90,100,120,140,160,
 
 // Mesh parameters
 real fracRarc = 0.1;		// fraction of the radius used to smooth the domain vertices
-real obd = 300.;  				// Boundary mesh density
-real ibd = 100.;         // Inner boundary mesh density
+real obd = 1000.;  				// Boundary mesh density
+real ibd = 200.;         // Inner boundary mesh density
 real symmAxis = pi/2.;  // Orientation of the normal of the cut
 int labelOut = 1;       // Mesh identifiers
 

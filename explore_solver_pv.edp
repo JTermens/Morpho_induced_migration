@@ -142,7 +142,12 @@ macro pp(px,py) [px*px,px*py,py*px,py*py] //        // Active stress tensor
 for (int iCut=0; iCut<nCut; iCut++){
 
   string cutName = CutNameList[iCut];
-  string fileNameMsh = "/msh/mesh_"+cutName+".msh";
+
+  string fileNameMsh = "-";
+  if(saveLocalSols){
+    string fileNameMsh = "/msh/mesh_"+cutName+".msh";
+  }
+  
   real cut = CutList[iCut]; // Cut of the circular domain
 
   // Generate initial mesh (timestep 0) that, due to the adimensionalization, only depend on the cut
@@ -173,15 +178,17 @@ for (int iCut=0; iCut<nCut; iCut++){
 
   real Area0 = Th0.measure; // Inital Area
 
-  {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
+  if (saveLocalSols){}
+    {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
 
-    fileParamsMhs.fixed;
-    fileParamsMhs << cut <<","<< R <<","<< fracRarc <<","<< obd <<","<< ibd <<","
-                  << bLayerThickness <<","<< areaCst <<","<< Area0 <<","
-                /*<< frontRear(0,0) <<","<< frontRear(0,1) <<","*/
-                 /*<< frontRear(1,0) <<","<< frontRear(1,1) <<","*/
-                  << fileNameMsh << endl;
-  }
+      fileParamsMhs.fixed;
+      fileParamsMhs << cut <<","<< R <<","<< fracRarc <<","<< obd <<","<< ibd <<","
+                    << bLayerThickness <<","<< areaCst <<","<< Area0 <<","
+                  /*<< frontRear(0,0) <<","<< frontRear(0,1) <<","*/
+                  /*<< frontRear(1,0) <<","<< frontRear(1,1) <<","*/
+                    << fileNameMsh << endl;
+    }
+}
   
   // Plot the initial mesh
   if (debug) {
@@ -189,8 +196,10 @@ for (int iCut=0; iCut<nCut; iCut++){
   }
 
   // Save initial mesh
-  savemesh(Th,simulHomeDir+fileNameMsh);
-
+  if (saveLocalSols){
+    savemesh(Th,simulHomeDir+fileNameMsh);
+  }
+  
   //FEM spaces
   fespace Pol(Th, [P2, P2]);          // For polarity vector
   fespace dPol(Th,[P2,P2,P2,P2]);     // For the gradient of the polarity vector
@@ -219,8 +228,10 @@ for (int iCut=0; iCut<nCut; iCut++){
           real b = R/Lambda;
           real c = R/Lc;
           
-          string fileNameLocalSol = "/local_sols/sol_"+cutName+"_"+(iLc+1)+"Lc_"+(iLa+1)+"La_"+(iR+1)+"R_"+(iLambda+1)+"Lambda.txt";
-
+          string fileNameLocalSol = "-";
+          if (saveLocalSols){
+            fileNameLocalSol = "/local_sols/sol_"+cutName+"_"+(iLc+1)+"Lc_"+(iLa+1)+"La_"+(iR+1)+"R_"+(iLambda+1)+"Lambda.txt";
+          }
           // Simul timestep 0 with mesh Th
 
           // Extract the new boundary for future computations and compute its orientation

@@ -44,7 +44,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_friction_motility_exploration.edp";
+include "parameters_sets/params_general_exploration_solenoidal.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 simulName = simulName + "_incompressible";
@@ -148,10 +148,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
   string cutName = CutNameList[iCut];
 
-  string fileNameMsh = "-";
-  if(saveLocalSols){
-    string fileNameMsh = "/msh/mesh_"+cutName+".msh";
-  }
+  string fileNameMsh = "/msh/mesh_"+cutName+".msh";
   
   real cut = CutList[iCut]; // Cut of the circular domain
 
@@ -183,7 +180,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
   real Area0 = Th0.measure; // Inital Area
 
-  if (saveLocalSols){}
+  if (saveLocalSols){
     {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
 
       fileParamsMhs.fixed;
@@ -216,10 +213,11 @@ for (int iCut=0; iCut<nCut; iCut++){
   // fespace Dh(Th, P1);                 // For distance function (remeshing scheme) and data exports
   fespace Nh(Th,[P1,P1]);             // For the corrected normal vector at the boundary
 
-  for (int iLc=iLcI[iRun]; iLc<iLcF[iRun]; iLc++){
+  for (int iLc=0; iLc<nLc; iLc++){
     for (int iZeta=0; iZeta<nZeta; iZeta++){
       for (int iR=0; iR<nR; iR++){
         for (int iLambda=0; iLambda<nLambda; iLambda++){
+
 
           Th = Th0; // Restore the mesh
 
@@ -323,7 +321,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
           varf lv(v, u) = int2d(Th)(
             + a*(pp(px,py)'*Grad(ux,uy)) 
-            + c*(p'*u)
+            + c*(p'*[ux,uy])
           ); //contractility +active traction
 
           // Assembly V

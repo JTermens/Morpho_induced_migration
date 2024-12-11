@@ -44,7 +44,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_friction_motility_exploration_contractility.edp";
+include "parameters_sets/params_general_exploration_solenoidal.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;

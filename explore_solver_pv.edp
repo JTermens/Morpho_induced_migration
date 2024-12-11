@@ -44,7 +44,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_friction_motility_exploration.edp";
+include "parameters_sets/params_friction_motility_exploration_contractility.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;
@@ -55,7 +55,7 @@ string fileNameGlobalSols = "/global_sols.csv";
 // Lengths of each parameter list
 int nCut = CutList.n;
 int nLc = LcList.n;
-int nLa = LaList.n;
+int nZeta = ZetaList.n;
 int nR = RList.n;
 int nLambda = LambdaList.n;
 
@@ -72,6 +72,7 @@ if (iRun == 0){
 
       fileParams << "pathGlobalSols" << "," << fileNameGlobalSols << endl;
       fileParams << "pathParamsMsh" << "," << fileNameParamsMhs << endl;
+      fileParams << "maxStress" << "," << maxStress << endl;
 
       fileParams << "Cut"; // Save the list of cuts
       for [j, jCut:CutList]{fileParams << "," << jCut;}
@@ -81,8 +82,8 @@ if (iRun == 0){
       for [j, jLc:LcList]{fileParams << "," << jLc;}
       fileParams << endl;
 
-      fileParams << "La"; // Save the list of La/Lc
-      for [j, jLa:LaList]{fileParams << "," << jLa;}
+      fileParams << "Zeta"; // Save the list of La/Lc
+      for [j, jZeta:ZetaList]{fileParams << "," << jZeta;}
       fileParams << endl;
 
       fileParams << "R"; // Save the list of R/Lc
@@ -105,7 +106,7 @@ if (iRun == 0){
 
     //fileGlobalSol.fixed;
     fileGlobalSols << "Global_Solutions" << endl
-            << "Cut.i,"<<"Lc.i,"<<"La.i,"<<"R.i,"<<"Lambda.i,"
+            << "Cut.i,"<<"Lc.i,"<<"Zeta.i,"<<"R.i,"<<"Lambda.i,"
             <<"Xcm,Ycm,Pxcm,Pycm,"<</*"dPxcmdt,dPycmdt,Vxcm,Vycm,"<<*/"Vxavg,Vyavg,"<</*"Axcm,Aycm,"<<*/"Area,"
             <</*"dAreadt,"<<*/"Ix,Iy,"<</*"dIxdt,dIydt,<<"*/"avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,divTermsX,divTermsY,"
             <</*"vxFront,vyFront,vxRear,vyRear,"<<*/"pathMsh,pathLocalSol" << endl
@@ -143,10 +144,10 @@ for (int iCut=0; iCut<nCut; iCut++){
 
   string cutName = CutNameList[iCut];
 
-  string fileNameMsh = "-";
-  if(saveLocalSols){
+  // string fileNameMsh = "-";
+  // if(saveLocalSols){
     string fileNameMsh = "/msh/mesh_"+cutName+".msh";
-  }
+  // }
   
   real cut = CutList[iCut]; // Cut of the circular domain
 
@@ -178,7 +179,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
   real Area0 = Th0.measure; // Inital Area
 
-  if (saveLocalSols){}
+  if (saveLocalSols){
     {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
 
       fileParamsMhs.fixed;
@@ -206,11 +207,11 @@ for (int iCut=0; iCut<nCut; iCut++){
   fespace Pola(Th, P2 );              // For |p| (not essential, just visualization)
   fespace Vel(Th, [P1b, P1b]);        // For velocity vector
   fespace dVel(Th,[P1b,P1b,P1b,P1b]); // For the gradient of the velocity vector
-  // fespace Dh(Th, P1);                 // For distance function (remeshing scheme) and data exports
+  // fespace Dh(Th, P1);              // For distance function (remeshing scheme) and data exports
   fespace Nh(Th,[P1,P1]);             // For the corrected normal vector at the boundary
 
-  for (int iLc=iLcI[iRun]; iLc<iLcF[iRun]; iLc++){
-    for (int iLa=0; iLa<nLa; iLa++){
+  for (int iLc=0; iLc<nLc; iLc++){
+    for (int iZeta=0; iZeta<nZeta; iZeta++){
       for (int iR=0; iR<nR; iR++){
         for (int iLambda=0; iLambda<nLambda; iLambda++){
 
@@ -219,19 +220,19 @@ for (int iCut=0; iCut<nCut; iCut++){
           // Problem Parameters
           // Adim. with length = Lc (good for physics)
           real Lc = LcList[iLc];             // Nematic length
-          real La = LaList[iLa];             // Active |zeta|/zi length
+          real Zeta = ZetaList[iZeta];       // -Constractility
           real R = RList[iR];                // ClusterRadius
           real Lambda = LambdaList[iLambda]; // Hydrodynamic screening length, sqrt(eta/xi)
 
           // Adim with length = Lc
-          real a = -La/Lc; // Negative sign to compensate La = |zeta|/zi
+          real a = -Zeta/maxStress; // Negative sign to compensate La = |zeta|/zi
           real b = R/Lambda;
           real c = R/Lc;
           
-          string fileNameLocalSol = "-";
-          if (saveLocalSols){
-            fileNameLocalSol = "/local_sols/sol_"+cutName+"_"+(iLc+1)+"Lc_"+(iLa+1)+"La_"+(iR+1)+"R_"+(iLambda+1)+"Lambda.txt";
-          }
+          // string fileNameLocalSol = "-";
+          // if (saveLocalSols){
+            string fileNameLocalSol = "/local_sols/sol_"+cutName+"_"+(iLc+1)+"Lc_"+(iZeta+1)+"Zeta_"+(iR+1)+"R_"+(iLambda+1)+"Lambda.txt";
+          // }
           // Simul timestep 0 with mesh Th
 
           // Extract the new boundary for future computations and compute its orientation
@@ -399,7 +400,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
 
           if (debug) {
-            cout << "{iCut,iLc,iLa,iR,iLambda} = {"+iCut+", "+iLc+", "+iLa+", "+iR+", "+iLambda+"}; cut = "+cutName+";  -La/Lc = "+a+";  R/Lc = "+c+";  R/lambda = "+b << endl;
+            cout << "{iCut,iLc,iZeta,iR,iLambda} = {"+iCut+", "+iLc+", "+iZeta+", "+iR+", "+iLambda+"}; cut = "+cutName+";  -La/Lc = "+a+";  R/Lc = "+c+";  R/lambda = "+b << endl;
             Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
             plot(/*Th,*/vABS,normal, 
               value = true,
@@ -572,7 +573,7 @@ for (int iCut=0; iCut<nCut; iCut++){
             // Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,vxFront,vyFront,vxRear,vyRear,pathMsh,pathLocalSol"
 
             fileGlobalSols.fixed;
-            fileGlobalSols << iCut      << ","  << iLc      << ","  << iLa       << ","  << iR       << "," << iLambda << ","
+            fileGlobalSols << iCut      << ","  << iLc      << ","  << iZeta       << ","  << iR       << "," << iLambda << ","
                           << Xcm       << ","  << Ycm       << ","  << Pxcm      << "," << Pycm      << ","
                         /*<< dPxcmdt   << ","  << dPycmdt   << ","  << Vxcm      << "," << Vycm      << ","*/
                           << Vxavg     << ","  << Vyavg     << ","/*<< Axcm      << "," << Aycm      << ","*/

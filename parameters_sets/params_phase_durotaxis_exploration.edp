@@ -1,0 +1,49 @@
+// Parameter file for a phase space exploration
+// 30x30x30x30 is extremely time consuming, a more coarse-grained exploration would be better
+
+verbosity=0;
+// bool debug=1; 
+
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/durotaxis_exploration";
+// string rootDir = "/home/joan/Documents/Simul_runs/durotaxis_exploration";
+
+string simulName = "exploration_durotaxis_v7";
+
+int labelOut = 1; // Mesh identifiers
+
+int nCut = 2;
+real minCut = 0;
+real maxCut = pi;
+
+real eta = 20e3;
+real xi = 0.1;
+real Lc = 15;
+real zeta = -2;
+real zi0 = 0.05;
+
+real tscale = (eta/(zi0*Lc))/3600; // Divide by 3600 to give time in h
+
+int nGradZi = 21;
+real minGradZi = -1e-4;
+real maxGradZi = 1e-4;
+
+int nLaLc = 1;
+real minLaLc = abs(zeta)/(zi0*Lc);
+real maxLaLc = abs(zeta)/(zi0*Lc);
+
+int nRLc = 4;
+real minRLc = 5.;
+real maxRLc = 20.;
+
+int nLambdaLc = 1;
+real minLambdaLc = sqrt(eta/xi)/Lc;
+real maxLambdaLc = sqrt(eta/xi)/Lc;
+
+real adimdt = 1.e-3;
+
+// Mesh parameters
+real fracRarc = 0.1;	// fraction of the radius used to smooth the domain vertices
+real obd = 45.;         // Outer boundary mesh density
+real ibd = 15.;         // Inner boundary mesh density
+real symmAxis = pi/2.;  // Orientation of the normal of the cut
+real refArea = pi/2;    // Reference area, equal to the one of a unit circle

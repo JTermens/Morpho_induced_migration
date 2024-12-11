@@ -7,6 +7,7 @@ string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_mot
 //string rootDir = "/home/joan/Documents/Simul_runs/friction_tension_test";
 
 string[int] simulNames = [
+  "dry_mode_3",
   "zeta-0_evolution",
   "zeta-1_evolution",
   "zeta-4_evolution",
@@ -20,17 +21,17 @@ string[int] simulNames = [
   ];
 
 int labelOut = 1; // Mesh identifiers
-int nSimul = 4;   // Number of simulations
+int nSimul = 11;   // Number of simulations
 
 // Physical Parameters
 real h = 5;                      // Monolayer heigth, [μm]
 real R0 = 200;//227.61;                // Initial radius of the monolayer [μm].
 real Lc = 40;                    // Nematic length, sqrt(K/a), [μm]
-real eta = 2.5e4;                // Monolayer viscosity, [kPa·s]
+real eta = 10;// 2.5e4;                // Monolayer viscosity, [kPa·s]
 real xi = 0.1;                   // Friction coefficient, [kPa·s/μm²], fitted so lambda = 840 μm
 real zi = 0.1;                   // Traction coefficient, [kPa/μm],
 // real[int] zetas = [-1, -12, -16,-32]; // -Contractility coefficient, [kPa],
-real[int] zetas = [0,-1,-4,-8,-12,-16,-20,-24,-28,-32];
+real[int] zetas = [0,0,-1,-4,-8,-12,-16,-20,-24,-28,-32];
 // real tscale = eta/(zi*Lc);       // Timescale corresponding to the advance of a flat front, [s]
 string Reff = "-";
 

@@ -1,0 +1,62 @@
+// Parameter file for testing optimized sets of parameters
+
+verbosity=0;
+// bool debug=1;
+
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/summary_runs";
+// string rootDir = "/home/joan/Documents/Simul_runs/optimized_params";
+
+string[int] simulNames = [
+  "one_cut_2pi3_Lc4_incompressible"
+  ];
+
+int labelOut = 1; // Mesh identifiers
+int nSimul = 1;   // Number of simulations
+
+
+// Physiscal Parameters
+
+real h = 5;			      // Monolayer heigth, [μm]
+real eta = 50e3;		  // Monolayer viscosity, [kPa·s], 3-30 MPa·s
+real xi = 0.1;			  // Friction coefficient, [kPa·s/μm²]
+real zi = 0.1;			  // Traction coefficient, [kPa/μm], 0.04-0.16 kPa/μm
+real zeta = -20;		  // -Contractility coefficient, [kPa], 5-50 kPa
+real Lc = 65.384615;  // Nematic length, sqrt(K/a), [μm]
+real R0 = 261.538462; // 
+
+string Reff = "-";
+
+// Numerical Parameters
+real obd = 45.;           // Outer boundary mesh density
+real ibd = 15.;           // Inner boundary mesh density
+real dt = 1e-3;           // Adim. time step
+int NiterTime = 7500;    // Number of iterations
+real rateMaxArea = 4;     // Stop the simulation when Area >= rateMaxArea * (Initial Area)
+real rateMinArea = 1/4.;  // Stop the simulation when Area <= rateMinArea * (Initial Area)
+
+// Save parameters
+bool bsave = 1;			// To save or not
+int dsave = 20;			// Save frame gap
+
+// Domain parameters
+real cut = 2*pi/3; // Angular length of the cutted portion of the circle
+
+real symmAxis = pi/2.;	// Angles of the symmetry axis of each cut
+real fracRarc = 0.1;		// Adimensionalized radius used to smooth the domain vertices
+bool keepPoints = 0;      // Keep the number of boundary points upon remeshing
+
+if(debug){
+  cout << "   |_ R0 = " << R0 << " um" << endl;
+  cout << "   |_ Reff = " << Reff << " um" << endl;
+  cout << "   |_ lambda = " << sqrt(eta/xi) << " um" << endl;
+  cout << "   |_ Lc = " << Lc << " um" << endl;
+  cout << "   |_ La = " << zeta/zi << " um" << endl;
+  cout << "   |_ tscale = " << eta/(zi*/*Reffs*/Lc) << " s" << endl;
+  cout << "   |_ charact vel = " << 3600*zi*R0*Lc/eta << " um/h" << endl;
+  cout << " |_ Adim. parameters:" << endl;
+  cout << "   |_ a = " << zeta/(zi*Lc) << endl;
+  cout << "   |_ b = " << R0/sqrt(eta/xi) << endl;
+  cout << "   |_ c = " << R0/Lc << endl;
+
+  cout << "\nStarting simulations " << iSimul << " ..." << endl;
+}

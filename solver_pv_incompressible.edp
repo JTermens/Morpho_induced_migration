@@ -13,21 +13,21 @@ int iSimul = getARGV("-i", 1);
 bool debug = getARGV("-d", 1);
 bool err = 0;
 
-include "parameters_sets/parameters_optimized_tst.edp"; // load the parameters
+include "parameters_sets/parameters_optimized_incompressible.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 
 // Problem length & timescales ----------------------------------------------------------------------------------------
-real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
-real R0 = R0s[iSimul];              // Initial radius
-real zeta = zetas[iSimul];          // Contractility
-// /*real*/string Reff = Reffs[iSimul];          // Effective radius
-// real Lc = Lcs[iSimul];
+// real cut = cuts[iSimul];            // Initial cut (archlength of the perturbation)
+// real R0 = R0s[iSimul];              // Initial radius
+// real zeta = zetas[iSimul];          // Contractility
+// // /*real*/string Reff = Reffs[iSimul];          // Effective radius
+// // real Lc = Lcs[iSimul];
 real lambda = sqrt(eta/xi);         // hydrodynamic sceening length
 real La = zeta/zi;                  // active length; < 0 (> 0) for contractile (extensile) stress
 real tscale = eta/(zi*Lc);          // Problem timescale
-// real R0 = sqrt(pi/areaCst);         // Adimensionalized radius so that adim Area = pi
-// real tscale = eta/(zi*Reffs[i]);    // Problem timescale
+// // real R0 = sqrt(pi/areaCst);         // Adimensionalized radius so that adim Area = pi
+// // real tscale = eta/(zi*Reffs[i]);    // Problem timescale
 
 
 // Problem Parameters

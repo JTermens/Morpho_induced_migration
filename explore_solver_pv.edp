@@ -44,7 +44,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_general_exploration_solenoidal.edp";
+include "parameters_sets/params_multipole_exploration.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;
@@ -109,11 +109,17 @@ if (iRun == 0){
             << "Cut.i,"<<"Lc.i,"<<"Zeta.i,"<<"R.i,"<<"Lambda.i,"
             <<"Xcm,Ycm,Pxcm,Pycm,"<</*"dPxcmdt,dPycmdt,Vxcm,Vycm,"<<*/"Vxavg,Vyavg,"<</*"Axcm,Aycm,"<<*/"Area,"
             <</*"dAreadt,"<<*/"Ix,Iy,"<</*"dIxdt,dIydt,<<"*/"avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,divTermsX,divTermsY,"
-            <</*"vxFront,vyFront,vxRear,vyRear,"<<*/"pathMsh,pathLocalSol" << endl
+            /*<<"vxFront,vyFront,vxRear,vyRear,"<<*/
+            <<"MxxP,MxyP,MyyP,MxxV,MxyV,MyyV,"
+            <<"MxxxP,MxxyP,MxyxP,MxyyP,MyyxP,MyyyP,MxxxV,MxxyV,MxyxV,MxyyV,MyyxV,MyyyV,"
+            <<"pathMsh,pathLocalSol" << endl
             << "adim,"<<"adim,"<<"adim,"<<"adim,"<<"adim,"
             <<"R,R,adim,adim,"<</*"1/tscale,1/tscale,R/tscale,R/tscale,"<<*/"R/tscale,R/tscale,"<</*"R/tscale^2,R/tscale^2,"<<*/"R^2,"
             <</*"R^2/tscale,"<<*/"R^2,R^2,"<</*"R^2/tscale,R^2/tscale,"<<*/"1/tscale,R/tscale,R/tscale,R/tscale,R/tscale,R/tscale,R/tscale,"
-            <</*"R/tscale,R/tscale,R/tscale,R/tscale,"<<*/"path,path" << endl;
+            /*<<"R/tscale,R/tscale,R/tscale,R/tscale,"<<*/
+            <<"R^4,R^4,R^4,R^5/tscale,R^5/tscale,R^5/tscale,"
+            <<"R^5,R^5,R^5,R^5,R^5,R^5,R^6/tscale,R^6/tscale,R^6/tscale,R^6/tscaleyF,R^6/tscale,R^6/tscale,"
+            <<"path,path" << endl;
   }
 }
 
@@ -179,7 +185,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
   real Area0 = Th0.measure; // Inital Area
 
-  if (saveLocalSols){
+  // if (saveLocalSols){
     {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
 
       fileParamsMhs.fixed;
@@ -189,7 +195,7 @@ for (int iCut=0; iCut<nCut; iCut++){
                   /*<< frontRear(1,0) <<","<< frontRear(1,1) <<","*/
                     << fileNameMsh << endl;
     }
-}
+  // }
   
   // Plot the initial mesh
   if (debug) {
@@ -225,7 +231,7 @@ for (int iCut=0; iCut<nCut; iCut++){
           real Lambda = LambdaList[iLambda]; // Hydrodynamic screening length, sqrt(eta/xi)
 
           // Adim with length = Lc
-          real a = -Zeta/maxStress; // Negative sign to compensate La = |zeta|/zi
+          real a = -Zeta*Lc/maxStress; // Negative sign to compensate La = |zeta|/zi
           real b = R/Lambda;
           real c = R/Lc;
           
@@ -397,6 +403,29 @@ for (int iCut=0; iCut<nCut; iCut++){
           // real vyFront = vy(frontRear(0,0),frontRear(0,1));        // y-component of the local velocity at the front
           // real vxRear = vx(frontRear(1,0),frontRear(1,1));         // x-component of the local velocity at the rear
           // real vyRear = vy(frontRear(1,0),frontRear(1,1));         // x-component of the local velocity at the rear
+          // Polarity Dipole
+          real MxxP = int2d(Th)(x*px);
+          real MxyP = int2d(Th)(x*py);
+          real MyyP = int2d(Th)(y*py);
+          // Velocity Dipoñle
+          real MxxV = int2d(Th)(x*vx);
+          real MxyV = int2d(Th)(x*vy);
+          real MyyV = int2d(Th)(y*vy);
+          // Polarity Quadrupole
+          real MxxxP = int2d(Th)(x*x*px);
+          real MxxyP = int2d(Th)(x*x*py);
+          real MxyxP = int2d(Th)(x*y*px);
+          real MxyyP = int2d(Th)(x*y*py);
+          real MyyxP = int2d(Th)(y*y*px);
+          real MyyyP = int2d(Th)(y*y*py);
+          // Velocity Quadrupole
+          real MxxxV = int2d(Th)(x*x*vx);
+          real MxxyV = int2d(Th)(x*x*vy);
+          real MxyxV = int2d(Th)(x*y*vx);
+          real MxyyV = int2d(Th)(x*y*vy);
+          real MyyxV = int2d(Th)(y*y*vx);
+          real MyyyV = int2d(Th)(y*y*vy);
+
 
 
           if (debug) {
@@ -582,6 +611,10 @@ for (int iCut=0; iCut<nCut; iCut++){
                           << divXcm    << ","  << divYcm    << ","  << divXavgcm << "," << divYavgcm << ","
                           << divTermsX << ","  << divTermsY << ","
                         /*<< vxFront   << ","  << vyFront   << ","  << vxRear    << "," << vyRear    << ","*/
+                          << MxxP      << ","  << MxyP      << ","  << MyyP      << ","
+                          << MxxV      << ","  << MxyV      << ","  << MyyV      << "," 
+                          << MxxxP     << ","  << MxxyP     << ","  << MxyxP     << "," << MxyyP     << "," << MyyxP << "," << MyyyP << ","
+                          << MxxxV     << ","  << MxxyV     << ","  << MxyxV     << "," << MxyyV     << "," << MyyxV << "," << MyyyV << ","
                           << fileNameMsh << "," << fileNameLocalSol << endl;          
           }
         }

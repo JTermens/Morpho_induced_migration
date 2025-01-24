@@ -117,8 +117,8 @@ if (iRun == 0){
             <<"R,R,adim,adim,"<</*"1/tscale,1/tscale,R/tscale,R/tscale,"<<*/"R/tscale,R/tscale,"<</*"R/tscale^2,R/tscale^2,"<<*/"R^2,"
             <</*"R^2/tscale,"<<*/"R^2,R^2,"<</*"R^2/tscale,R^2/tscale,"<<*/"1/tscale,R/tscale,R/tscale,R/tscale,R/tscale,R/tscale,R/tscale,"
             /*<<"R/tscale,R/tscale,R/tscale,R/tscale,"<<*/
-            <<"R^4,R^4,R^4,R^5/tscale,R^5/tscale,R^5/tscale,"
-            <<"R^5,R^5,R^5,R^5,R^5,R^5,R^6/tscale,R^6/tscale,R^6/tscale,R^6/tscaleyF,R^6/tscale,R^6/tscale,"
+            <<"R^3,R^3,R^3,R^4/tscale,R^4/tscale,R^4/tscale,"
+            <<"R^4,R^4,R^4,R^4,R^4,R^4,R^5/tscale,R^5/tscale,R^5/tscale,R^5/tscaleyF,R^5/tscale,R^5/tscale,"
             <<"path,path" << endl;
   }
 }
@@ -404,27 +404,27 @@ for (int iCut=0; iCut<nCut; iCut++){
           // real vxRear = vx(frontRear(1,0),frontRear(1,1));         // x-component of the local velocity at the rear
           // real vyRear = vy(frontRear(1,0),frontRear(1,1));         // x-component of the local velocity at the rear
           // Polarity Dipole
-          real MxxP = int2d(Th)(x*px);
-          real MxyP = int2d(Th)(x*py);
-          real MyyP = int2d(Th)(y*py);
+          real MxxP = int2d(Th)((x-Xcm)*px);
+          real MxyP = int2d(Th)((x-Xcm)*py);
+          real MyyP = int2d(Th)((y-Ycm)*py);
           // Velocity Dipoñle
-          real MxxV = int2d(Th)(x*vx);
-          real MxyV = int2d(Th)(x*vy);
-          real MyyV = int2d(Th)(y*vy);
+          real MxxV = int2d(Th)((x-Xcm)*vx);
+          real MxyV = int2d(Th)((x-Xcm)*vy);
+          real MyyV = int2d(Th)((y-Ycm)*vy);
           // Polarity Quadrupole
-          real MxxxP = int2d(Th)(x*x*px);
-          real MxxyP = int2d(Th)(x*x*py);
-          real MxyxP = int2d(Th)(x*y*px);
-          real MxyyP = int2d(Th)(x*y*py);
-          real MyyxP = int2d(Th)(y*y*px);
-          real MyyyP = int2d(Th)(y*y*py);
+          real MxxxP = int2d(Th)(pow((x-Xcm),2)*px);
+          real MxxyP = int2d(Th)(pow((x-Xcm),2)*py);
+          real MxyxP = int2d(Th)((x-Xcm)*(y-Ycm)*px);
+          real MxyyP = int2d(Th)((x-Xcm)*(y-Ycm)*py);
+          real MyyxP = int2d(Th)(pow((y-Ycm),2)*px);
+          real MyyyP = int2d(Th)(pow((y-Ycm),2)*py);
           // Velocity Quadrupole
-          real MxxxV = int2d(Th)(x*x*vx);
-          real MxxyV = int2d(Th)(x*x*vy);
-          real MxyxV = int2d(Th)(x*y*vx);
-          real MxyyV = int2d(Th)(x*y*vy);
-          real MyyxV = int2d(Th)(y*y*vx);
-          real MyyyV = int2d(Th)(y*y*vy);
+          real MxxxV = int2d(Th)(pow((x-Xcm),2)*vx);
+          real MxxyV = int2d(Th)(pow((x-Xcm),2)*vy);
+          real MxyxV = int2d(Th)((x-Xcm)*(y-Ycm)*vx);
+          real MxyyV = int2d(Th)((x-Xcm)*(y-Ycm)*vy);
+          real MyyxV = int2d(Th)(pow((y-Ycm),2)*vx);
+          real MyyyV = int2d(Th)(pow((y-Ycm),2)*vy);
 
 
 

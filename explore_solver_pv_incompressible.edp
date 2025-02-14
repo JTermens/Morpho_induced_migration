@@ -45,7 +45,7 @@ bool err = 0;
 
 //include <iostream>;
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
-include "parameters_sets/params_general_exploration_solenoidal.edp";
+include "parameters_sets/params_multipole_exploration_mode4.edp";
 
 simulName = simulName + "_incompressible";
 
@@ -74,7 +74,7 @@ if (iRun == 0){
 
       fileParams << "pathGlobalSols" << "," << fileNameGlobalSols << endl;
       fileParams << "pathParamsMsh" << "," << fileNameParamsMhs << endl;
-      fileParams << "Traction" << "," << zi << endl;
+      fileParams << "maxStress" << "," << maxStress << endl;
 
       fileParams << "Cut"; // Save the list of cuts
       for [j, jCut:CutList]{fileParams << "," << jCut;}
@@ -101,7 +101,7 @@ if (iRun == 0){
 
     //fileParamsMhs.fixed;
     fileParamsMhs << "Mesh_Parameters" << endl
-            << "cut,R,fracRarc,obd,ibd,BndLayer,AreaCst,Area," << /*"xFront,yFront,xRear,yRear," << */"pathMesh" << endl;
+            << "cut,R,fracRarc,obd,ibd,BndLayer,CutCst,Area," << /*"xFront,yFront,xRear,yRear," << */"pathMesh" << endl;
   }
 
   {ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols); // Generate a separate file for the global variables (integrates ones)
@@ -162,9 +162,9 @@ for (int iCut=0; iCut<nCut; iCut++){
   real R = 1;
   real Rarc = fracRarc*R;
   mesh Th = oneCutSmooth(obd,cut,R,Rarc,symmAxis,labelOut);
-  real areaCst = Th.measure;
+  real cutCst = Th.measure;
 
-  // R = sqrt(refArea/areaCst);
+  // R = sqrt(refArea/cutCst);
   // Rarc = fracRarc*R;
   // Th = oneCutSmooth(obd,cut,R,Rarc,symmAxis,labelOut);
 
@@ -191,7 +191,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
       fileParamsMhs.fixed;
       fileParamsMhs << cut <<","<< R <<","<< fracRarc <<","<< obd <<","<< ibd <<","
-                    << bLayerThickness <<","<< areaCst <<","<< Area0 <<","
+                    << bLayerThickness <<","<< cutCst <<","<< Area0 <<","
                   /*<< frontRear(0,0) <<","<< frontRear(0,1) <<","*/
                   /*<< frontRear(1,0) <<","<< frontRear(1,1) <<","*/
                     << fileNameMsh << endl;
@@ -235,7 +235,7 @@ for (int iCut=0; iCut<nCut; iCut++){
           real Lambda = LambdaList[iLambda]; // Hydrodynamic screening length, sqrt(eta/xi)
 
           // Adim with length = Lc
-          real a = -Zeta/(Lc*zi)/*maxStress*/; // Negative sign to compensate La = |zeta|/zi
+          real a = -Zeta/maxStress/*(Lc*zi)*/; // Negative sign to compensate La = |zeta|/zi
           real b = R/Lambda;
           real c = R/Lc;
           

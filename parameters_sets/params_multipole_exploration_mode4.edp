@@ -1,0 +1,28 @@
+// Parameter file for a phase space exploration
+
+verbosity=0;
+// bool debug=1; 
+
+// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/phase_space_exploration";
+string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
+
+// string simulName = "exploration_7Lcx5Lambda";
+string simulName = "exploration_multipoles_mode4";
+
+string[int] CutNameList = ["pi"];
+real[int] CutList = [pi]; // Multiple shapes
+real[int] LcList = [10,20,30,40]; // Varying Lc
+real[int] ZetaList = [0,10,20]; // Varying contractility
+real[int] RList  = [200]; // R fixed to 200 um
+real[int] LambdaList = [2,5,10,15,20,25,30,35,40,50,60,70,80,90,100,120,140,160,180,200,225,250,300,350,400,450,500,550,600,650,700,750]; // Varying Lambda as multiples of R
+real maxStress = 0.1*10; // zi*Lc,[kPa]
+
+// Mesh parameters
+real fracRarc = 0.1;	 // fraction of the radius used to smooth the domain vertices
+real obd = 50.;  	     // Boundary mesh density
+real ibd = 20.;         // Inner boundary mesh density
+real symmAxis = pi/2.;   // Orientation of the normal of the cut
+int labelOut = 1;        // Mesh identifiers
+
+bool saveLocalSols = 1;
+

@@ -7,7 +7,7 @@ verbosity=0;
 string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 
 // string simulName = "exploration_7Lcx5Lambda";
-string simulName = "exploration_multipoles_mode4";
+string simulName = "exploration_multipoles_incomp"/*mode4"*/;
 
 string[int] CutNameList = ["pi"];
 real[int] CutList = [pi]; // Multiple shapes

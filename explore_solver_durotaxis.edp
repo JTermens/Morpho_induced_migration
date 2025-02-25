@@ -48,13 +48,21 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_phase_durotaxis_exploration.edp";
+include "parameters_sets/params_durotaxis_semicircle_exploration.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;
 string fileNameParams = "/params.csv";
 string fileNameParamsMhs = "/params_msh.csv";
 string fileNameGlobalSols = "/global_sols.csv";
+
+// Lengths of each parameter list
+int nCut = CutList.n;
+int nGradZi = GradZiList.n;
+int nLc = LcList.n;
+int nZeta = ZetaList.n;
+int nR = RList.n;
+int nLambda = LambdaList.n;
 
 if (iRun == 0){
   exec("mkdir "+simulHomeDir);                // Make a home directory for the simulation
@@ -193,7 +201,9 @@ for (int iCut=0; iCut<nCut; iCut++){
   Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelOut,.5,0,1); // Custom mesh adaptation
   mesh Th0 = Th; // Save Th0 as Th will be modified
 
-  real Area0 = Th0.measure;       // Inital Area
+  real Area0 = Th0.measure;       // Initial Area
+  real Xcm0 = int2d(Th)(x)/Area0; // Initial Xcm
+  real Ycm0 = int2d(Th)(y)/Area0; // Initial Ycm
   
   // if (saveLocalSols){
     {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
@@ -443,7 +453,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
 
             if (debug) {
-              cout << "{iCut,iGradZi,iLc,iZeta,iR,iLambda} = {"+iCut+", "+iGradZi+", "+iLc+", "+iZeta+", "+iRLc+", "+iLambdaLc+"}; cut = "+cutName+";  Lc = "+Lc++";  -Zeta = "+Zeta+";  zi' = "+GradZi+";  R = "+R+";  lambda = "+Lambda << endl;
+              cout << "{iCut,iGradZi,iLc,iZeta,iR,iLambda} = {"+iCut+", "+iGradZi+", "+iLc+", "+iZeta+", "+iR+", "+iLambda+"}; cut = "+cutName+";  Lc = "+Lc+";  -Zeta = "+Zeta+";  zi' = "+GradZi+";  R = "+R+";  lambda = "+Lambda << endl;
               Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
               plot(/*Th,*/vABS,normal, 
                 value = true,

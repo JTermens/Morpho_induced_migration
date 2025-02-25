@@ -10,7 +10,7 @@ string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 // string simulName = "exploration_7Lcx5Lambda";
 string simulName = "exploration_15Cutx15Lcx3Zeta_areaCst";
 
-real refCst = pi; // Area of the reference shape (cricle) with R = 1
+real refCst = pi; // Area of the reference shape (circle) with R = 1
 real refR = 200;  // Refrence radii [um]
 
 string[int] CutNameList = ["pi_6","pi_4","pi_3","5pi_12","pi_2","7pi_12","2pi_3","3pi_4","5pi_6","11pi_12","pi","13pi_12","7pi_6","5pi_4","4pi_3"];

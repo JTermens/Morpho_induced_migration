@@ -83,8 +83,8 @@ if (iRun == 0){
       for [j, jCut:CutList]{fileParams << "," << jCut;}
       fileParams << endl;
 
-      fileParams << "GradZi"; // Save the list of cuts
-      for [j, jCut:CutList]{fileParams << "," << jCut;}
+      fileParams << "GradZi"; // Save the list of cutsMobilitat articulacions
+      for [j, jGradZi:GradZiList]{fileParams << "," << jGradZi;}
       fileParams << endl;
 
       fileParams << "Lc"; // Save the list of La/Lc
@@ -122,7 +122,7 @@ if (iRun == 0){
             <<"MxxP,MxyP,MyyP,MxxV,MxyV,MyyV,"
             <<"MxxxP,MxxyP,MxyxP,MxyyP,MyyxP,MyyyP,MxxxV,MxxyV,MxyxV,MxyyV,MyyxV,MyyyV,"
             <<"pathMsh,pathLocalSol" << endl
-            << "adim,"<<"adim,"<<"adim,"<<"adim,"<<"adim,"
+            << "adim,"<<"adim,"<<"adim,"<<"adim,"<<"adim,"<<"adim,"
             <<"R,R,adim,adim,"<</*"1/tscale,1/tscale,R/tscale,R/tscale,"<<*/"R/tscale,R/tscale,"<</*"R/tscale^2,R/tscale^2,"<<*/"R^2,"
             <</*"R^2/tscale,"<<*/"R^2,R^2,"<</*"R^2/tscale,R^2/tscale,"<<*/"1/tscale,R/tscale,R/tscale,R/tscale,R/tscale,R/tscale,R/tscale,"
             /*<<"R/tscale,R/tscale,R/tscale,R/tscale,"<<*/
@@ -256,9 +256,10 @@ for (int iCut=0; iCut<nCut; iCut++){
             func zi = zi0+GradZi*R*(y-Ycm0);
 
             // Adim with length = Lc
-            func a = -Zeta/(zi*Lc); // Negative sign to compensate La = |zeta|/zi
+            real a = -Zeta/(zi0*Lc); // Negative sign to compensate La = |zeta|/zi
             real b = R/Lambda;
             real c = R/Lc;
+            func d = (zi*R)/(zi0*Lc);
             
             // string fileNameLocalSol = "-";
             // if (saveLocalSols){
@@ -346,7 +347,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
             varf lv(v, u) = int2d(Th)(
               + a*(pp(px,py)'*Grad(ux,uy)) 
-              + c*(p'*u)
+              + d*(p'*u)
             ); //contractility +active traction
 
             // Assembly V

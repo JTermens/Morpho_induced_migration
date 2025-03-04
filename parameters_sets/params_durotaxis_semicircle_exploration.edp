@@ -6,7 +6,7 @@ verbosity=0;
 // string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/phase_space_exploration";
 string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 
-string simulName = "exploration_durotaxis_semicircle";
+string simulName = "exploration_durotaxis_semicircle_v2";
 
 real refCst = pi;                        // Area of a circle with unit radii
 real cutCst = 1.565497;                  // Area of a rounded semicirlce with unit radii
@@ -18,11 +18,11 @@ real[int] CutList = [pi];                // Multiple shapes
 real[int] GradZiList = [                 //Multiple traction gradients
   -1e-4,-9e-5,-8e-5,-7e-5,-6e-5,-5e-5,-4e-5,-3e-5,-2e-5,-1e-5,0,1e-5,2e-5,3e-5,4e-5,5e-5,6e-5,7e-5,8e-5,9e-5,1e-4
   ]; 
-real[int] LcList = [15,20,40];           // Varying Lc [um]
+real[int] LcList = [25,30,35,40];        // Varying Lc [um]
 real[int] ZetaList = [0,2,10,20];        // Varying contractility [kPa]
-real[int] RList = [1*100,radiiCorr*100,2*100,1*200,radiiCorr*200,2*200]; // Fixed reference radius [um]
+real[int] RList = [1*100/*,radiiCorr*100,2*100*/,1*200/*,radiiCorr*200,2*200*/]; // Fixed reference radius [um]
 real[int] LambdaList = [sqrt(20e3/0.1)]; // Fixed Lambda [um]
-real zi0 = 0.05;                         // fixed traction offset [kPa/um]
+real zi0 = 0.1;                         // fixed traction offset [kPa/um]
 
 // Mesh parameters
 real fracRarc = 0.1;	                  // fraction of the radius used to smooth the domain vertices

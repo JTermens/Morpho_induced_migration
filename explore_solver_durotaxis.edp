@@ -433,7 +433,7 @@ for (int iCut=0; iCut<nCut; iCut++){
             real MxxP = int2d(Th)((x-Xcm)*px);
             real MxyP = int2d(Th)((x-Xcm)*py);
             real MyyP = int2d(Th)((y-Ycm)*py);
-            // Velocity Dipoñle
+            // Velocity Dipole
             real MxxV = int2d(Th)((x-Xcm)*vx);
             real MxyV = int2d(Th)((x-Xcm)*vy);
             real MyyV = int2d(Th)((y-Ycm)*vy);

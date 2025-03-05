@@ -15,45 +15,22 @@ bool err = 0;
 
 // include "parameters_sets/parameters_poster_runs.edp"; // load the parameters
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
-include "parameters_sets/parameters_propulsion_evolution.edp"; // load the parameters
-
-
-// Problem physical parameters ----------------------------------------------------------------------------------------
-real cut = cutList[iSimul];
-real R0 = R0List[iSimul];
-real Lc = LcList[iSimul];
-
-real eta = etaList[iSimul];
-real xi = xiList[iSimul];
-real zeta = zetaList[iSimul];
-real zi = ziList[iSimul];
-
-// real cut = cuts[iSimul];         // Initial cut (archlength of the perturbation)
-// real R0 = R0s[iSimul];           // Initial radius
-
-// /*real*/string Reff = Reffs[iSimul];     // Effective radius
-// real Lc = Lcs[iSimul];
-// real eta = etas[iSimul];
-real zeta = zetas[iSimul];
-
-real lambda = sqrt(eta/xi);      // hydrodynamic sceening length
-real La = zeta/zi;               // active length; < 0 (> 0) for contractile (extensile) stress
-real tscale = eta/(zi*Lc);       // Problem timescale
-// real R0 = sqrt(pi/areaCst);      // Adimensionalized radius so that adim Area = pi
-// real tscale = eta/(zi*Reffs[i]); // Problem timescale
-
-
-// Problem Parameters
-real a = La/Lc;             // Active length, zeta/zi, and effective radius ratio
-real b = R0/lambda;         // Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
-real c = R0/Lc;             // Effective radius and nematic length ratio
-real bLayerThickness = max(1/c,0.15); // Adim. nematic length
-//---------------------------------------------------------------------------------------------------------------------
-
+include "parameters_sets/parameters_durotaxis_evolution.edp"; // load the parameters
 
 // Construct the mesh -------------------------------------------------------------------------------------------------
+
+
 mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
 // mesh Th = sinePerturb(obd,1,ampFrac,q,symmAxis,labelOut);
+
+real cut = cutList[iSimul];
+mesh Th;
+
+if (cut < 1e-6) {
+    Th = circle(obd, 1,labelOut);
+  } else {
+    Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
+  }
 
 // Extract outer boundary
 // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
@@ -79,27 +56,31 @@ if (debug) {
 //---------------------------------------------------------------------------------------------------------------------
 
 
-// Import a mesh ------------------------------------------------------------------------------------------------------
-// mesh Th = readmesh(rootDir+"/time_evol_2pi3_4c_Rc_test/msh/mesh_1000190"+".msh"); // begin from an imported mesh
-// // Th = change(Th, rmInternalEdges=1);
+// Problem physical parameters ----------------------------------------------------------------------------------------
+real R0 = R0List[iSimul];
+real Lc = LcList[iSimul];
 
-// real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelOut, bMesh);
+real eta = etaList[iSimul];
+real xi = xiList[iSimul];
+real zeta = zetaList[iSimul];
+real zi0 = ziList[iSimul];
+real gradZi = gradZiList[iSimul];
 
-// // if (debug) { // Plot the boundary, usefull to detect mesh problems
-// //   border Outer(t=0,1){ P=Curve(bMesh,bMesh(2,round(t*(bMesh.m-1)))/lMesh);label=labelOut;}
-// //   int nMesh = bMesh.m-1;                 // keep number of elements
-// //   plot(Outer(nMesh),value = true, fill = false, nbiso=64, wait=true, cmm = "imported boundary;");
-// // }
+// Durotaxis
+func zi = zi0+GradZi*R*(y-Ycm0);
 
-// // Initial variables for shape characterization
-// real Area0 = Th.measure; // Inital Area of the Fluid Domain
-// real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
-// real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
+real lambda = sqrt(eta/xi);      // hydrodynamic sceening length
+real La = zeta/zi0;              // active length; < 0 (> 0) for contractile (extensile) stress
+real tscale = eta/(zi0*Lc);      // Problem timescale
+real vscale = R0/tscale;         // Problem velocity scale
 
-// if (debug) {
-//   plot(Th,value = true, fill = false, nbiso=64, wait=true, cmm = "imported mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")");
-// }
+// Problem Parameters
+real a = La/Lc;             // Active length, zeta/zi, and effective radius ratio
+real b = R0/lambda;         // Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
+real c = R0/Lc;             // Effective radius and nematic length ratio
+func d = (zi*R0)/(zi0*Lc);
 //---------------------------------------------------------------------------------------------------------------------
+
 
 // Create folder structure, parameters' file & header of the global solutions' file -----------------------------------
 if (bsave){
@@ -114,25 +95,32 @@ if (bsave){
   {ofstream fileParams (simulHomeDir+fileNameParams); // Save the parameters in separate file
 
     fileParams.fixed;
-    fileParams << "cut,R0,fracRarc,obd,ibd,bLayerThickness,Lc,lambda,La,eta,xi,zi,zeta,tscale,dt,dsave" << endl;
-    fileParams << "rad,um,adim,adim,adim,adim,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,adim,adim" << endl;
-    fileParams << cut   << "," << R0     << "," << fracRarc        << ","
-               << obd   << "," << ibd    << "," << bLayerThickness << ","
-               << Lc    << "," << lambda << "," << La              << "," 
-               << eta   << "," << xi     << "," << zi              << "," 
-               << zeta  << "," << tscale << "," << dt              << "," 
-               << dsave << endl;
+    fileParams << "cut,R0,fracRarc,obd,ibd,bLayerThickness,Lc,lambda,La,eta,xi,zi0,gradZi,zeta,dt,tscale,vscale,dsave" << endl;
+    fileParams << "rad,um,adim,adim,adim,adim,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa/um^2,kPa,s,s,um/s,adim" << endl;
+    fileParams << cut    << "," << R0        << "," << fracRarc        << ","
+               << obd    << "," << ibd       << "," << bLayerThickness << ","
+               << Lc     << "," << lambda    << "," << La              << "," 
+               << eta    << "," << xi        << "," << zi0             << ","
+               << gradZi << "," << zeta      << "," << tscale*dt       << "," 
+               << tscale << "," << vscale    << "," << dsave           << endl;
   }
   // Generate a separate file for the global variables (integrates ones)
   {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);  
     //fileGlobalSol.fixed;
-    fileGlobalSol  << "Time,Xcm,Ycm,Txcm,Tycm,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm" << endl;
+    fileGlobalSols << "Global_Solutions" << endl
+            << "Time,Xcm,Ycm,Txcm,Tycm,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,Ix,Iy,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,divTermsX,divTermsY,"
+            << "MxxT,MxyT,MyyT,MxxF,MxyF,MyyF,"
+            << "MxxxT,MxxyT,MxyxT,MxyyT,MyyxT,MyyyT,MxxxF,MxxyF,MxyxF,MxyyF,MyyxF,MyyyF"<< endl
+            << "s,um,um,kPa/um,kPa/um,um/s,um/s,um/s,um/s,um/s^2,um/s^2,um^2,um^2,1/s,um/s,um/s,um/s,um/s,um/s,um/s,"
+            << "kPa*um^2,kPa*um^2,kPa*um^2,kPa*um^2,kPa*um^2,kPa*um^2,"
+            << "kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3"
+            << endl;
   }
 } 
 //---------------------------------------------------------------------------------------------------------------------
 
 // Console Log
-cout << "Simul: " << simulNames[iSimul] << ", saving = " << bsave << endl;
+cout << "Simul durotaxis: " << simulNames[iSimul] << ", saving = " << bsave << endl;
 cout << "a (La/Lc) = " << a << ", b (R0/lambda) = " << b << ", c (R0/Lc) = " << c << ", tscale = " << tscale << endl;  
 
 
@@ -291,7 +279,7 @@ varf av(v, u) = int2d(Th)(
 
 varf lv(v, u) = int2d(Th)(
     + a*(pp(px,py)'*Grad(ux,uy)) 
-    + c*(p'*u)
+    + d*(p'*u)
   ); //contractility +active traction
 
 // Assembly V
@@ -365,27 +353,9 @@ solHessPy=AHessPy^-1*bHessPy;
 dPol d2py=[0,0,0,0];
 dpydxx[]=solHessPy(0:dPol.ndof-1);
 
-// Compute and plot friction -----------------------------------------------------------------------------------------------
-// varf aFrict(frict, testFrict) = int2d(Th)(frict*testFrict);
-// varf lFrict(frict, testFrict) = int2d(Th)((xiParallel+.5*(xiAntiParallel-xiParallel)*(1-(vx*px + vy*py)/(Norm(v)*Norm(p))))*testFrict);
-
-// matrix AFrict = aFrict(prodVel, prodVel);
-// real[int] bFrict = lFrict(0, prodVel);
-
-// real[int] solFrict(prodVel.ndof);
-// solFrict = AFrict^-1*bFrict;
-// prodVel frict = 0;
-// frict[] = solFrict(0:prodVel.ndof-1);
-
-// if (debug) {
-//   plot(Th,frict, value = true, fill = true, nbiso = 64, wait = true, cmm = "xi(y,Ycm)");
-// }
-//---------------------------------------------------------------------------------------------------------------------
-
 // Compute the intial values of the global variables ------------------------------------------------------------------
 real Areai = Area0;                             // Current area
 real AreaP = Areai;                             // Previous area
-real dAreadt = (Areai-AreaP)/dt;                // time-derivative of the area (backward)
 
 real Xcm = Xcm0;                                // Current x of the center of mass (x_cm)
 real Ycm = Ycm0;                                // Current y of the center of mass (y_cm)
@@ -398,25 +368,41 @@ real Vyavg = int2d(Th)(vy)/Areai;               // Current avg(v_y)
 real Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
 real Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
 
-real Pxcm = int2d(Th)(px)/Areai;                // Current P_x cm
-real Pycm = int2d(Th)(py)/Areai;                // Current P_y cm
-real PxcmP = Pxcm;                              // Previous P_x cm
-real PycmP = Pycm;                              // Previous P_y cm
-real dPxcmdt = (Pxcm-PxcmP)/dt;                 // time-derivative of P_x cm (backward)
-real dPycmdt = (Pycm-PycmP)/dt;                 // time-derivative of P_y cm (backward)
+real Txcm = int2d(Th)(zi*px)/Areai;                // Current zi(y)P_x cm
+real Tycm = int2d(Th)(zi*py)/Areai;                // Current zi(y)P_y cm
 
 real Ix = int2d(Th)(pow(y-Ycm,2))/Areai;        // Current 2nd Moment of area with respect to x axis at the CM
 real Iy = int2d(Th)(pow(x-Xcm,2))/Areai;        // Current 2nd Moment of area with respect to y axis at the CM
-real IxP = Ix;                                  // Previous 2n Moment of x
-real IyP = Iy;                                  // Previous 2n Moment of y
-real dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
-real dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
 
 real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
 real divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
 real divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
-real divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
-real divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
+real divXavgcm = Xcm*avgDivV;    // x-component of the avg's divergergence of the velocity's CM 
+real divYavgcm = Ycm*avgDivV;    // y-component of the avg's divergergence of the velocity's CM 
+real divTermsX = int2d(Th)((x-Xcm)*(dvxdx+dvydy))/Area0; // x-component of the Vcm divergence term
+real divTermsY = int2d(Th)((y-Ycm)*(dvxdx+dvydy))/Area0; // y-component of the Vcm divergence term
+// Traction Dipole
+real MxxP = int2d(Th)((x-Xcm)*zi*px);
+real MxyP = int2d(Th)((x-Xcm)*zi*py);
+real MyyP = int2d(Th)((y-Ycm)*zi*py);
+// Friction Dipole
+real MxxV = int2d(Th)((x-Xcm)*xi*vx);
+real MxyV = int2d(Th)((x-Xcm)*xi*vy);
+real MyyV = int2d(Th)((y-Ycm)*xi*vy);
+// Traction Quadrupole
+real MxxxP = int2d(Th)(pow((x-Xcm),2)*zi*px);
+real MxxyP = int2d(Th)(pow((x-Xcm),2)*zi*py);
+real MxyxP = int2d(Th)((x-Xcm)*(y-Ycm)*zi*px);
+real MxyyP = int2d(Th)((x-Xcm)*(y-Ycm)*zi*py);
+real MyyxP = int2d(Th)(pow((y-Ycm),2)*zi*px);
+real MyyyP = int2d(Th)(pow((y-Ycm),2)*zi*py);
+// Friction Quadrupole
+real MxxxV = int2d(Th)(pow((x-Xcm),2)*xi*vx);
+real MxxyV = int2d(Th)(pow((x-Xcm),2)*xi*vy);
+real MxyxV = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vx);
+real MxyyV = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vy);
+real MyyxV = int2d(Th)(pow((y-Ycm),2)*xi*vx);
+real MyyyV = int2d(Th)(pow((y-Ycm),2)*xi*vy);
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -517,7 +503,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   // Assembly V
   varf lv(v, u) = int2d(Th)(
       + a*(pp(px,py)'*Grad(ux,uy))
-      + c*(p'*u)
+      + d*(p'*u)
     ); //contractility + active traction
 
   matrix Av = av(Vel, Vel);  // LHS matrix
@@ -584,9 +570,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dpydxx[]=solHessPy(0:dPol.ndof-1);
 
   // Compute the global variables -------------------------------------------------------------------------------------
-  Areai = Th.measure;  // Current area
-  dAreadt = (Areai-AreaP)/dt; // time-derivative of the area (backward)
-
+  Areai = Th.measure;                        // Current area
   Xcm = int2d(Th)(x)/Areai;                  // Current Xcm
   Ycm = int2d(Th)(y)/Areai;                  // Current Ycm
   Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
@@ -595,22 +579,39 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   real Vyavg = int2d(Th)(vy)/Areai;          // Current avg(v_y)
   Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
   Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
-
-  Pxcm = int2d(Th)(px)/Areai;                // Current P_x cm
-  Pycm = int2d(Th)(py)/Areai;                // Current P_y cm
-  dPxcmdt = (Pxcm-PxcmP)/dt;                 // time-derivative of P_x cm (backward)
-  dPycmdt = (Pycm-PycmP)/dt;                 // time-derivative of P_y cm (backward)
-  
+  Txcm = int2d(Th)(zi*px)/Areai;             // Current zi*P_x cm
+  Tycm = int2d(Th)(zi*py)/Areai;             // Current zi*P_y cm
   Ix = int2d(Th)(pow(y-Ycm,2));              // 2nd Moment of area with respect to x axis at the CM
   Iy = int2d(Th)(pow(x-Xcm,2));              // 2nd Moment of area with respect to y axis at the CM
-  dIxdt = (Ix-IxP)/dt;                       // time-derivative of Ix (backward)
-  dIydt = (Iy-IyP)/dt;                       // time-derivative of Iy (backward)
-
   avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
   divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
   divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
-  divXavgcm = int2d(Th)(x*avgDivV)/Areai;    // x-component of the avg's divergergence of the velocity's CM 
-  divYavgcm = int2d(Th)(y*avgDivV)/Areai;    // y-component of the avg's divergergence of the velocity's CM 
+  divXavgcm = Xcm*avgDivV;    // x-component of the avg's divergergence of the velocity's CM 
+  divYavgcm = Ycm*avgDivV;    // y-component of the avg's divergergence of the velocity's CM 
+  divTermsX = int2d(Th)((x-Xcm)*(dvxdx+dvydy))/Area0; // x-component of the Vcm divergence term
+  divTermsY = int2d(Th)((y-Ycm)*(dvxdx+dvydy))/Area0; // y-component of the Vcm divergence term
+  // Traction Dipole
+  MxxP = int2d(Th)((x-Xcm)*zi*px);
+  MxyP = int2d(Th)((x-Xcm)*zi*py);
+  MyyP = int2d(Th)((y-Ycm)*zi*py);
+  // Friction Dipole
+  MxxV = int2d(Th)((x-Xcm)*xi*vx);
+  MxyV = int2d(Th)((x-Xcm)*xi*vy);
+  MyyV = int2d(Th)((y-Ycm)*xi*vy);
+  // Traction Quadrupole
+  MxxxP = int2d(Th)(pow((x-Xcm),2)*zi*px);
+  MxxyP = int2d(Th)(pow((x-Xcm),2)*zi*py);
+  MxyxP = int2d(Th)((x-Xcm)*(y-Ycm)*zi*px);
+  MxyyP = int2d(Th)((x-Xcm)*(y-Ycm)*zi*py);
+  MyyxP = int2d(Th)(pow((y-Ycm),2)*zi*px);
+  MyyyP = int2d(Th)(pow((y-Ycm),2)*zi*py);
+  // Friction Quadrupole
+  MxxxV = int2d(Th)(pow((x-Xcm),2)*xi*vx);
+  MxxyV = int2d(Th)(pow((x-Xcm),2)*xi*vy);
+  MxyxV = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vx);
+  MxyyV = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vy);
+  MyyxV = int2d(Th)(pow((y-Ycm),2)*xi*vx);
+  MyyyV = int2d(Th)(pow((y-Ycm),2)*xi*vy);
   //-------------------------------------------------------------------------------------------------------------------
 
   // Export data ------------------------------------------------------------------------------------------------------
@@ -630,18 +631,19 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       int NbVertices = Th.nv;
       fileLocalSols << "# LocalSolutions" << endl
                     << "# NumFields: " << 20 << "  NumberVertices: " << NbVertices << " cut: " << cut << " a: " << a << " b: " << b << " c: " << c << endl
-                    << "# px  py  vx  vy  dpxdx  dpxdy  dpydx  dpydy  dvxdx  dvxdy  dvydx  dvydy  " << "dpxdxx  dpxdxy  dpxdyx  dpxdyy  dpydxx  dpydxy  dpydyx  dpydyy" << endl;
+                    << "# px  py  vx  vy  dpxdx  dpxdy  dpydx  dpydy  dvxdx  dvxdy  dvydx  dvydy  " << "dpxdxx  dpxdxy  dpxdyx  dpxdyy  dpydxx  dpydxy  dpydyx  dpydyy" << endl
+                    << "# adim  adim  um/s  um/s  1/um  1/um  1/um  1/um  1/s  1/s  1/s  1/s  " << "1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2" << endl;
       for (int i = 0; i < NbVertices; i++){
-        fileLocalSols << px(Th(i).x,Th(i).y) << "  " << py(Th(i).x,Th(i).y)     << "  "  // {px,py}
-                << vx(Th(i).x,Th(i).y)       << "  " << vy(Th(i).x,Th(i).y)     << "  "  // {vx,vy}
-                << dpxdx(Th(i).x,Th(i).y)    << "  " << dpxdy(Th(i).x,Th(i).y)  << "  "  // {dpxdx,dpxdy}
-                << dpydx(Th(i).x,Th(i).y)    << "  " << dpydy(Th(i).x,Th(i).y)  << "  "  // {dpydx,dpydy}
-                << dvxdx(Th(i).x,Th(i).y)    << "  " << dvxdy(Th(i).x,Th(i).y)  << "  "  // {dvxdx,dvxdy}
-                << dvydx(Th(i).x,Th(i).y)    << "  " << dvydy(Th(i).x,Th(i).y)  << "  "  // {dvydx,dvydy}
-                << dpxdxx(Th(i).x,Th(i).y)   << "  " << dpxdxy(Th(i).x,Th(i).y) << "  "  // {dpxdxx,dpxdxy}
-                << dpxdyx(Th(i).x,Th(i).y)   << "  " << dpydyy(Th(i).x,Th(i).y) << "  "  // {dpxdyx,dpxdyy}
-                << dpydxx(Th(i).x,Th(i).y)   << "  " << dpydxy(Th(i).x,Th(i).y) << "  "  // {dpydxx,dpydxy}
-                << dpydyx(Th(i).x,Th(i).y)   << "  " << dpydyy(Th(i).x,Th(i).y) << endl; // {dpydyx,dpydyy}
+        fileLocalSols << px(Th(i).x,Th(i).y)               << "  " << py(Th(i).x,Th(i).y)                   << "  "  // {px,py}
+                << vscale*vx(Th(i).x,Th(i).y)              << "  " << vscale*vy(Th(i).x,Th(i).y)            << "  "  // {vx,vy}
+                << (1/R0)*dpxdx(Th(i).x,Th(i).y)           << "  " << (1/R0)*dpxdy(Th(i).x,Th(i).y)         << "  "  // {dpxdx,dpxdy}
+                << (1/R0)*dpydx(Th(i).x,Th(i).y)           << "  " << (1/R0)*dpydy(Th(i).x,Th(i).y)         << "  "  // {dpydx,dpydy}
+                << (vscale/R0)*dvxdx(Th(i).x,Th(i).y)      << "  " << (vscale/R0)*dvxdy(Th(i).x,Th(i).y)    << "  "  // {dvxdx,dvxdy}
+                << (vscale/R0)*dvydx(Th(i).x,Th(i).y)      << "  " << (vscale/R0)*dvydy(Th(i).x,Th(i).y)    << "  "  // {dvydx,dvydy}
+                << (1/pow(R0,2))*dpxdxx(Th(i).x,Th(i).y)   << "  " << (1/pow(R0,2))*dpxdxy(Th(i).x,Th(i).y) << "  "  // {dpxdxx,dpxdxy}
+                << (1/pow(R0,2))*dpxdyx(Th(i).x,Th(i).y)   << "  " << (1/pow(R0,2))*dpydyy(Th(i).x,Th(i).y) << "  "  // {dpxdyx,dpxdyy}
+                << (1/pow(R0,2))*dpydxx(Th(i).x,Th(i).y)   << "  " << (1/pow(R0,2))*dpydxy(Th(i).x,Th(i).y) << "  "  // {dpydxx,dpydxy}
+                << (1/pow(R0,2))*dpydyx(Th(i).x,Th(i).y)   << "  " << (1/pow(R0,2))*dpydyy(Th(i).x,Th(i).y) << endl; // {dpydyx,dpydyy}
       }
     }
 
@@ -649,13 +651,28 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol, append);
       
       fileGlobalSol.fixed;
-      fileGlobalSol  << iterTime*dt << "," 
-              << Xcm     << "," << Ycm       << "," << Pxcm      << "," << Pycm   << ","
-              << dPxcmdt << "," << dPycmdt   << "," << Vxcm      << "," << Vycm   << ","
-              << Vxavg   << "," << Vyavg     << "," << Axcm      << "," << Aycm   << "," 
-              << Areai   << "," << dAreadt   << "," << Ix        << "," << Iy     << "," 
-              << dIxdt   << "," << dIydt     << "," << avgDivV   << "," << divXcm << "," 
-              << divYcm  << "," << divXavgcm << "," << divYavgcm << endl;
+      fileGlobalSol  << tscale*iterTime*dt        << "," 
+                     << R0*Xcm                    << "," << R0*Ycm                    << "," 
+                     << Txcm                      << "," << Tycm                      << ","
+                     << vscale*Vxcm               << "," << vscale*Vycm               << ","
+                     << vscale*Vxavg              << "," << vscale*Vyavg              << "," 
+                     << (vscale/tscale)*Axcm      << "," << (vscale/tscale)*Aycm      << "," 
+                     << pow(R0,2)*Areai           << "," 
+                     << pow(R0,2)*Ix              << "," << pow(R0,2)*Iy              << "," 
+                     << (1/tscale)*avgDivV        << "," 
+                     << (vscale/tscale)*divXcm    << "," << (vscale/tscale)*divYcm    << "," 
+                     << (vscale/tscale)*divXavgcm << "," << (vscale/tscale)*divYavgcm << ","
+                     << (vscale/tscale)*divTermsX << "," << (vscale/tscale)*divTermsY << ","
+                     << pow(R0,3)*MxxT            << "," << pow(R0,3)*MxyT            << "," 
+                     << pow(R0,3)*MyyT            << "," 
+                     << pow(R0,3)*vscale*MxxF     << "," << pow(R0,3)*vscale*MxyF     << "," 
+                     << pow(R0,3)*vscale*MyyF     << ","
+                     << pow(R0,4)*MxxxT           << "," << pow(R0,4)*MxxyT           << "," 
+                     << pow(R0,4)*MxyxT           << "," << pow(R0,4)*MxyyT           << "," 
+                     << pow(R0,4)*MyyxT           << "," << pow(R0,4)*MyyyT           << ","
+                     << pow(R0,4)*vscale*MxxxF    << "," << pow(R0,4)*vscale*MxxyF    << "," 
+                     << pow(R0,4)*vscale*MxyxF    << "," << pow(R0,4)*vscale*MxyyF    << "," 
+                     << pow(R0,4)*vscale*MyyxF    << "," << pow(R0,4)*vscale*MyyyF    << endl;
     }
 
     // save the last mesh
@@ -682,20 +699,14 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
         +"A/A0="+(Areai/Area0)+"; "
         +"Rcm(t)-Rcm(0)=("+(Xcm-Xcm0)+","+(Ycm-Ycm0)+"); "
         +"Vcm(t)=("+Vxcm+","+Vycm+"); "
-        +"(c/b)Pcm(t)=("+(c/b)*Pxcm+","+(c/b)*Pycm+");"
     );
   }
   //-------------------------------------------------------------------------------------------------------------------
 
 
   // Update previous global variables ---------------------------------------------------------------------------------
-  AreaP = Areai;                    // Previous area
   XcmP[1] = XcmP[0]; XcmP[0] = Xcm; // Previous x_cms (-dt & -2*dt)
   YcmP[1] = YcmP[0]; YcmP[0] = Ycm; // Previous y_cms (-dt & -2*dt)
-  PxcmP = Pxcm;                     // Previous P_x cm
-  PycmP = Pycm;                     // Previous P_y cm
-  IxP = Ix;                         // Previous 2n Moment of x
-  IyP = Iy;                         // Previous 2n Moment of y
   //-------------------------------------------------------------------------------------------------------------------
 
 

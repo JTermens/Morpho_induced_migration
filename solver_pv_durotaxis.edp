@@ -117,7 +117,7 @@ if (bsave){
 // Console Log
 cout << "Simul durotaxis: " << simulNames[iSimul] << ", saving = " << bsave << endl;
 cout << "a (La/Lc) = " << a << ", b (R0/lambda) = " << b << ", c (R0/Lc) = " << c 
-     << "d (zi*R0/zi0*Lc) = " << zi0*R0 << "+" << gradZi*pow(R0,2) << "*(y-" << Ycm0 << ")/(" << zi0*Lc << ")"
+     << "d (zi*R0/zi0*Lc) = (" << zi0*R0 << "+" << gradZi*pow(R0,2) << "*(y-(" << Ycm0 << ")))/" << zi0*Lc
      << ", tscale = " << tscale << endl;  
 
 
@@ -590,7 +590,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   // Traction Dipole
   MxxT = int2d(Th)((x-Xcm)*zi*px);
   MxyT = int2d(Th)((x-Xcm)*zi*py);
-  MyyT = int2d(Th)((y-Ycm)*zi*py);d: (" << zi0*R0 << "+" << gradZi*pow(R0,2) << "*(y-" << Ycm0 << ")/(" << zi0*Lc << ")"
+  MyyT = int2d(Th)((y-Ycm)*zi*py);
   // Friction Dipole
   MxxF = int2d(Th)((x-Xcm)*xi*vx);
   MxyF = int2d(Th)((x-Xcm)*xi*vy);
@@ -627,7 +627,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       fileLocalSols.fixed;
       int NbVertices = Th.nv;
       fileLocalSols << "# LocalSolutions" << endl
-                    << "# NumFields: " << 20 << "  NumberVertices: " << NbVertices << " cut: " << cut << " a: " << a << " b: " << b << " c: " << c << " d: (" << zi0*R0 << "+" << gradZi*pow(R0,2) << "*(y-" << Ycm0 << ")/(" << zi0*Lc << ")"<< endl
+                    << "# NumFields: " << 20 << "  NumberVertices: " << NbVertices << " cut: " << cut << " a: " << a << " b: " << b << " c: " << c << " d: (" << zi0*R0 << "+" << gradZi*pow(R0,2) << "*(y-(" << Ycm0 << ")))/" << zi0*Lc << endl
                     << "# px  py  vx  vy  dpxdx  dpxdy  dpydx  dpydy  dvxdx  dvxdy  dvydx  dvydy  " 
                     << "dpxdxx  dpxdxy  dpxdyx  dpxdyy  dpydxx  dpydxy  dpydyx  dpydyy" << endl
                     << "# adim  adim  um/s  um/s  1/um  1/um  1/um  1/um  1/s  1/s  1/s  1/s  " 

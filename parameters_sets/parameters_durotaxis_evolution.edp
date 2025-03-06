@@ -26,7 +26,7 @@ real obd = 45.;                      // Outer boundary mesh density, obd points 
 real ibd = 15.;                      // Inner boundary mesh density.
 real bLayerThickness = 0.25;         // Adim. width of the boundary layer (finer mesh), >= Lc/R0. 
 real dt = 1e-3;                      // Adim. time step, real time step = dt * eta/(zi0*Lc).
-int NiterTime = 6000;                // Number of iterations, Max time = NiteTime * dt * eta/(zi0*Lc).
+int NiterTime = 4000;                // Number of iterations, Max time = NiteTime * dt * eta/(zi0*Lc).
 real rateMaxArea = 8;                // Stop the simulation when Area = rateMaxArea * (Initial Area).
 real rateMinArea = 1/8.;             // Stop the simulation when Area = rateMinArea * (Initial Area).
 bool keepPoints = 0;                 // Keep the number of boundary points upon remeshing.

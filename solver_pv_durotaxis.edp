@@ -106,7 +106,7 @@ if (bsave){
             << "Time,Xcm,Ycm,Txcm,Tycm,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,Ix,Iy,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,divTermsX,divTermsY,"
             << "MxxT,MxyT,MyyT,MxxF,MxyF,MyyF,"
             << "MxxxT,MxxyT,MxyxT,MxyyT,MyyxT,MyyyT,MxxxF,MxxyF,MxyxF,MxyyF,MyyxF,MyyyF"<< endl
-            << "s,um,um,kPa/um,kPa/um,um/s,um/s,um/s,um/s,um/s^2,um/s^2,um^2,um^2,1/s,um/s,um/s,um/s,um/s,um/s,um/s,"
+            << "s,um,um,kPa/um,kPa/um,um/s,um/s,um/s,um/s,um/s^2,um/s^2,um^2,um^2,um^2,1/s,um/s,um/s,um/s,um/s,um/s,um/s,"
             << "kPa*um^2,kPa*um^2,kPa*um^2,kPa*um^2,kPa*um^2,kPa*um^2,"
             << "kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3,kPa*um^3"
             << endl;
@@ -659,9 +659,9 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
                      << pow(R0,2)*Areai           << "," 
                      << pow(R0,2)*Ix              << "," << pow(R0,2)*Iy              << "," 
                      << (1/tscale)*avgDivV        << "," 
-                     << (vscale/tscale)*divXcm    << "," << (vscale/tscale)*divYcm    << "," 
-                     << (vscale/tscale)*divXavgcm << "," << (vscale/tscale)*divYavgcm << ","
-                     << (vscale/tscale)*divTermsX << "," << (vscale/tscale)*divTermsY << ","
+                     << vscale*divXcm             << "," << vscale*divYcm             << "," 
+                     << vscale*divXavgcm          << "," << vscale*divYavgcm          << ","
+                     << vscale*divTermsX          << "," << vscale*divTermsY          << ","
                      << pow(R0,3)*MxxT            << "," << pow(R0,3)*MxyT            << "," 
                      << pow(R0,3)*MyyT            << "," 
                      << pow(R0,3)*vscale*MxxF     << "," << pow(R0,3)*vscale*MxyF     << "," 

@@ -116,7 +116,9 @@ if (bsave){
 
 // Console Log
 cout << "Simul durotaxis: " << simulNames[iSimul] << ", saving = " << bsave << endl;
-cout << "a (La/Lc) = " << a << ", b (R0/lambda) = " << b << ", c (R0/Lc) = " << c << ", tscale = " << tscale << endl;  
+cout << "a (La/Lc) = " << a << ", b (R0/lambda) = " << b << ", c (R0/Lc) = " << c 
+     << "d (zi*R0/zi0*Lc) = " << zi0*R0 << "+" << gradZi*pow(R0,2) << "*(y-" << Ycm0 << ")/(" << zi0*Lc << ")"
+     << ", tscale = " << tscale << endl;  
 
 
 // Define the macros --------------------------------------------------------------------------------------------------
@@ -588,7 +590,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   // Traction Dipole
   MxxT = int2d(Th)((x-Xcm)*zi*px);
   MxyT = int2d(Th)((x-Xcm)*zi*py);
-  MyyT = int2d(Th)((y-Ycm)*zi*py);
+  MyyT = int2d(Th)((y-Ycm)*zi*py);d: (" << zi0*R0 << "+" << gradZi*pow(R0,2) << "*(y-" << Ycm0 << ")/(" << zi0*Lc << ")"
   // Friction Dipole
   MxxF = int2d(Th)((x-Xcm)*xi*vx);
   MxyF = int2d(Th)((x-Xcm)*xi*vy);

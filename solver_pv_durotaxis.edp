@@ -18,11 +18,6 @@ include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 include "parameters_sets/parameters_durotaxis_evolution.edp"; // load the parameters
 
 // Construct the mesh -------------------------------------------------------------------------------------------------
-
-
-mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
-// mesh Th = sinePerturb(obd,1,ampFrac,q,symmAxis,labelOut);
-
 real cut = cutList[iSimul];
 mesh Th;
 
@@ -63,11 +58,11 @@ real Lc = LcList[iSimul];
 real eta = etaList[iSimul];
 real xi = xiList[iSimul];
 real zeta = zetaList[iSimul];
-real zi0 = ziList[iSimul];
+real zi0 = zi0List[iSimul];
 real gradZi = gradZiList[iSimul];
 
 // Durotaxis
-func zi = zi0+GradZi*R*(y-Ycm0);
+func zi = zi0+gradZi*R0*(y-Ycm0);
 
 real lambda = sqrt(eta/xi);      // hydrodynamic sceening length
 real La = zeta/zi0;              // active length; < 0 (> 0) for contractile (extensile) stress
@@ -107,7 +102,7 @@ if (bsave){
   // Generate a separate file for the global variables (integrates ones)
   {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);  
     //fileGlobalSol.fixed;
-    fileGlobalSols << "Global_Solutions" << endl
+    fileGlobalSol << "Global_Solutions" << endl
             << "Time,Xcm,Ycm,Txcm,Tycm,Vxcm,Vycm,Vxavg,Vyavg,Axcm,Aycm,Area,Ix,Iy,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,divTermsX,divTermsY,"
             << "MxxT,MxyT,MyyT,MxxF,MxyF,MyyF,"
             << "MxxxT,MxxyT,MxyxT,MxyyT,MyyxT,MyyyT,MxxxF,MxxyF,MxyxF,MxyyF,MyyxF,MyyyF"<< endl
@@ -382,27 +377,27 @@ real divYavgcm = Ycm*avgDivV;    // y-component of the avg's divergergence of th
 real divTermsX = int2d(Th)((x-Xcm)*(dvxdx+dvydy))/Area0; // x-component of the Vcm divergence term
 real divTermsY = int2d(Th)((y-Ycm)*(dvxdx+dvydy))/Area0; // y-component of the Vcm divergence term
 // Traction Dipole
-real MxxP = int2d(Th)((x-Xcm)*zi*px);
-real MxyP = int2d(Th)((x-Xcm)*zi*py);
-real MyyP = int2d(Th)((y-Ycm)*zi*py);
+real MxxT = int2d(Th)((x-Xcm)*zi*px);
+real MxyT = int2d(Th)((x-Xcm)*zi*py);
+real MyyT = int2d(Th)((y-Ycm)*zi*py);
 // Friction Dipole
-real MxxV = int2d(Th)((x-Xcm)*xi*vx);
-real MxyV = int2d(Th)((x-Xcm)*xi*vy);
-real MyyV = int2d(Th)((y-Ycm)*xi*vy);
+real MxxF = int2d(Th)((x-Xcm)*xi*vx);
+real MxyF = int2d(Th)((x-Xcm)*xi*vy);
+real MyyF = int2d(Th)((y-Ycm)*xi*vy);
 // Traction Quadrupole
-real MxxxP = int2d(Th)(pow((x-Xcm),2)*zi*px);
-real MxxyP = int2d(Th)(pow((x-Xcm),2)*zi*py);
-real MxyxP = int2d(Th)((x-Xcm)*(y-Ycm)*zi*px);
-real MxyyP = int2d(Th)((x-Xcm)*(y-Ycm)*zi*py);
-real MyyxP = int2d(Th)(pow((y-Ycm),2)*zi*px);
-real MyyyP = int2d(Th)(pow((y-Ycm),2)*zi*py);
+real MxxxT = int2d(Th)(pow((x-Xcm),2)*zi*px);
+real MxxyT = int2d(Th)(pow((x-Xcm),2)*zi*py);
+real MxyxT = int2d(Th)((x-Xcm)*(y-Ycm)*zi*px);
+real MxyyT = int2d(Th)((x-Xcm)*(y-Ycm)*zi*py);
+real MyyxT = int2d(Th)(pow((y-Ycm),2)*zi*px);
+real MyyyT = int2d(Th)(pow((y-Ycm),2)*zi*py);
 // Friction Quadrupole
-real MxxxV = int2d(Th)(pow((x-Xcm),2)*xi*vx);
-real MxxyV = int2d(Th)(pow((x-Xcm),2)*xi*vy);
-real MxyxV = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vx);
-real MxyyV = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vy);
-real MyyxV = int2d(Th)(pow((y-Ycm),2)*xi*vx);
-real MyyyV = int2d(Th)(pow((y-Ycm),2)*xi*vy);
+real MxxxF = int2d(Th)(pow((x-Xcm),2)*xi*vx);
+real MxxyF = int2d(Th)(pow((x-Xcm),2)*xi*vy);
+real MxyxF = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vx);
+real MxyyF = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vy);
+real MyyxF = int2d(Th)(pow((y-Ycm),2)*xi*vx);
+real MyyyF = int2d(Th)(pow((y-Ycm),2)*xi*vy);
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -570,48 +565,48 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   dpydxx[]=solHessPy(0:dPol.ndof-1);
 
   // Compute the global variables -------------------------------------------------------------------------------------
-  Areai = Th.measure;                        // Current area
-  Xcm = int2d(Th)(x)/Areai;                  // Current Xcm
-  Ycm = int2d(Th)(y)/Areai;                  // Current Ycm
-  Vxcm = (Xcm-XcmP[0])/dt;                   // Center of mass x velocity (backward)
-  Vycm = (Ycm-YcmP[0])/dt;                   // Center of mass y velocity (backward)
-  real Vxavg = int2d(Th)(vx)/Areai;          // Current avg(v_x)
-  real Vyavg = int2d(Th)(vy)/Areai;          // Current avg(v_y)
-  Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2); // Center of mass x acceleration (2nd order backward)
-  Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2); // Center of mass y acceleration (2nd order backward)
-  Txcm = int2d(Th)(zi*px)/Areai;             // Current zi*P_x cm
-  Tycm = int2d(Th)(zi*py)/Areai;             // Current zi*P_y cm
-  Ix = int2d(Th)(pow(y-Ycm,2));              // 2nd Moment of area with respect to x axis at the CM
-  Iy = int2d(Th)(pow(x-Xcm,2));              // 2nd Moment of area with respect to y axis at the CM
-  avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;    // Average divergergence of the velocity
-  divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai; // x-component of the vel's divergergence CM
-  divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai; // y-component of the vel's divergergence CM
-  divXavgcm = Xcm*avgDivV;    // x-component of the avg's divergergence of the velocity's CM 
-  divYavgcm = Ycm*avgDivV;    // y-component of the avg's divergergence of the velocity's CM 
+  Areai = Th.measure;                                 // Current area
+  Xcm = int2d(Th)(x)/Areai;                           // Current Xcm
+  Ycm = int2d(Th)(y)/Areai;                           // Current Ycm
+  Vxcm = (Xcm-XcmP[0])/dt;                            // Center of mass x velocity (backward)
+  Vycm = (Ycm-YcmP[0])/dt;                            // Center of mass y velocity (backward)
+  Vxavg = int2d(Th)(vx)/Areai;                        // Current avg(v_x)
+  Vyavg = int2d(Th)(vy)/Areai;                        // Current avg(v_y)
+  Axcm = (Xcm-2.*XcmP[0]+XcmP[1])/pow(dt,2);          // Center of mass x acceleration (2nd order backward)
+  Aycm = (Ycm-2.*YcmP[0]+YcmP[1])/pow(dt,2);          // Center of mass y acceleration (2nd order backward)
+  Txcm = int2d(Th)(zi*px)/Areai;                      // Current zi*P_x cm
+  Tycm = int2d(Th)(zi*py)/Areai;                      // Current zi*P_y cm
+  Ix = int2d(Th)(pow(y-Ycm,2));                       // 2nd Moment of area with respect to x axis at the CM
+  Iy = int2d(Th)(pow(x-Xcm,2));                       // 2nd Moment of area with respect to y axis at the CM
+  avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;             // Average divergergence of the velocity
+  divXcm = int2d(Th)(x*(dvxdx+dvydy))/Areai;          // x-component of the vel's divergergence CM
+  divYcm = int2d(Th)(y*(dvxdx+dvydy))/Areai;          // y-component of the vel's divergergence CM
+  divXavgcm = Xcm*avgDivV;                            // x-component of the avg's divergergence of the velocity's CM 
+  divYavgcm = Ycm*avgDivV;                            // y-component of the avg's divergergence of the velocity's CM 
   divTermsX = int2d(Th)((x-Xcm)*(dvxdx+dvydy))/Area0; // x-component of the Vcm divergence term
   divTermsY = int2d(Th)((y-Ycm)*(dvxdx+dvydy))/Area0; // y-component of the Vcm divergence term
   // Traction Dipole
-  MxxP = int2d(Th)((x-Xcm)*zi*px);
-  MxyP = int2d(Th)((x-Xcm)*zi*py);
-  MyyP = int2d(Th)((y-Ycm)*zi*py);
+  MxxT = int2d(Th)((x-Xcm)*zi*px);
+  MxyT = int2d(Th)((x-Xcm)*zi*py);
+  MyyT = int2d(Th)((y-Ycm)*zi*py);
   // Friction Dipole
-  MxxV = int2d(Th)((x-Xcm)*xi*vx);
-  MxyV = int2d(Th)((x-Xcm)*xi*vy);
-  MyyV = int2d(Th)((y-Ycm)*xi*vy);
+  MxxF = int2d(Th)((x-Xcm)*xi*vx);
+  MxyF = int2d(Th)((x-Xcm)*xi*vy);
+  MyyF = int2d(Th)((y-Ycm)*xi*vy);
   // Traction Quadrupole
-  MxxxP = int2d(Th)(pow((x-Xcm),2)*zi*px);
-  MxxyP = int2d(Th)(pow((x-Xcm),2)*zi*py);
-  MxyxP = int2d(Th)((x-Xcm)*(y-Ycm)*zi*px);
-  MxyyP = int2d(Th)((x-Xcm)*(y-Ycm)*zi*py);
-  MyyxP = int2d(Th)(pow((y-Ycm),2)*zi*px);
-  MyyyP = int2d(Th)(pow((y-Ycm),2)*zi*py);
+  MxxxT = int2d(Th)(pow((x-Xcm),2)*zi*px);
+  MxxyT = int2d(Th)(pow((x-Xcm),2)*zi*py);
+  MxyxT = int2d(Th)((x-Xcm)*(y-Ycm)*zi*px);
+  MxyyT = int2d(Th)((x-Xcm)*(y-Ycm)*zi*py);
+  MyyxT = int2d(Th)(pow((y-Ycm),2)*zi*px);
+  MyyyT = int2d(Th)(pow((y-Ycm),2)*zi*py);
   // Friction Quadrupole
-  MxxxV = int2d(Th)(pow((x-Xcm),2)*xi*vx);
-  MxxyV = int2d(Th)(pow((x-Xcm),2)*xi*vy);
-  MxyxV = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vx);
-  MxyyV = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vy);
-  MyyxV = int2d(Th)(pow((y-Ycm),2)*xi*vx);
-  MyyyV = int2d(Th)(pow((y-Ycm),2)*xi*vy);
+  MxxxF = int2d(Th)(pow((x-Xcm),2)*xi*vx);
+  MxxyF = int2d(Th)(pow((x-Xcm),2)*xi*vy);
+  MxyxF = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vx);
+  MxyyF = int2d(Th)((x-Xcm)*(y-Ycm)*xi*vy);
+  MyyxF = int2d(Th)(pow((y-Ycm),2)*xi*vx);
+  MyyyF = int2d(Th)(pow((y-Ycm),2)*xi*vy);
   //-------------------------------------------------------------------------------------------------------------------
 
   // Export data ------------------------------------------------------------------------------------------------------
@@ -630,9 +625,11 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       fileLocalSols.fixed;
       int NbVertices = Th.nv;
       fileLocalSols << "# LocalSolutions" << endl
-                    << "# NumFields: " << 20 << "  NumberVertices: " << NbVertices << " cut: " << cut << " a: " << a << " b: " << b << " c: " << c << endl
-                    << "# px  py  vx  vy  dpxdx  dpxdy  dpydx  dpydy  dvxdx  dvxdy  dvydx  dvydy  " << "dpxdxx  dpxdxy  dpxdyx  dpxdyy  dpydxx  dpydxy  dpydyx  dpydyy" << endl
-                    << "# adim  adim  um/s  um/s  1/um  1/um  1/um  1/um  1/s  1/s  1/s  1/s  " << "1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2" << endl;
+                    << "# NumFields: " << 20 << "  NumberVertices: " << NbVertices << " cut: " << cut << " a: " << a << " b: " << b << " c: " << c << " d: (" << zi0*R0 << "+" << gradZi*pow(R0,2) << "*(y-" << Ycm0 << ")/(" << zi0*Lc << ")"<< endl
+                    << "# px  py  vx  vy  dpxdx  dpxdy  dpydx  dpydy  dvxdx  dvxdy  dvydx  dvydy  " 
+                    << "dpxdxx  dpxdxy  dpxdyx  dpxdyy  dpydxx  dpydxy  dpydyx  dpydyy" << endl
+                    << "# adim  adim  um/s  um/s  1/um  1/um  1/um  1/um  1/s  1/s  1/s  1/s  " 
+                    << "1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2  1/um^2" << endl;
       for (int i = 0; i < NbVertices; i++){
         fileLocalSols << px(Th(i).x,Th(i).y)               << "  " << py(Th(i).x,Th(i).y)                   << "  "  // {px,py}
                 << vscale*vx(Th(i).x,Th(i).y)              << "  " << vscale*vy(Th(i).x,Th(i).y)            << "  "  // {vx,vy}

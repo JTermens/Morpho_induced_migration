@@ -32,7 +32,7 @@ real rateMinArea = 1/8.;             // Stop the simulation when Area = rateMinA
 bool keepPoints = 0;                 // Keep the number of boundary points upon remeshing.
 
 // Save parameters
-bool bsave = 0;                      // To save the solutions or not, handy for debugging.
+bool bsave = 1;                      // To save the solutions or not, handy for debugging.
 int dsave = 20;                      // Save frame gap. Usually we do not need that many solutions to 
                                      // represent an evolution and also it will save memory and loading time.
 

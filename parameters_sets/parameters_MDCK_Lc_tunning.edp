@@ -3,7 +3,7 @@
 verbosity=0;
 // bool debug=0;
 
-string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/MDCK_Lc_tuning/MDCK_visc06_25";
+string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tuning/MDCK_visc10_00";//"/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/MDCK_Lc_tuning/MDCK_visc10_00";
 //string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tunning/MCF10a_tension";
 
 string[int] simulNames = [
@@ -18,24 +18,27 @@ string[int] simulNames = [
   "MDCK_3pi3_R200_Lc10_visc10_00",
   "MCF10a_3pi3_R200_Lc40_gamma5",
   "MDCK_3pi3_R200_Lc10_visc06_25_xi0003",
-  "MDCK_3pi3_R200_Lc10_visc06_25_zi03"
+  "MDCK_3pi3_R200_Lc10_visc06_25_zi03",
+  "MDCK_3pi3_R200_Lc10_visc10_00_zi0035",
+  "MDCK_3pi3_R200_Lc10_visc10_00_xi0028",
+  "MDCK_3pi3_R200_Lc10_visc10_00_zi01_xi1"
   ];
 
 int labelOut = 1; // Mesh identifiers
-int nSimul = 10;   // Number of simulations
+int nSimul = 15;   // Number of simulations
 
 // Physiscal Parameters
 real h = 5;                 // Monolayer heigth, [μm]
-real eta = 6.25e3;          // Monolayer viscosity, [kPa·s]
-real xi = /*0.1*/0.01/3;              // Friction coefficient, [kPa·s/μm²]
-real zi = 0.01/*0.3*/;      // Traction coefficient, [kPa/μm],
+real eta = 10e3/*6.25e3*/;          // Monolayer viscosity, [kPa·s]
+real xi = 0.1;              // Friction coefficient, [kPa·s/μm²]
+real zi = 0.035;      // Traction coefficient, [kPa/μm],
 real zeta = -0;             // -Contractility coefficient, [kPa], very low estimation
 // real tscale = eta/(zi*Lc);  // Timescale corresponding to the advance of a flat front, [s]
 // If surface tension
 real gamma = 5.;           // Surface tension, [mN/m]=[kPa·μm]
 
 // Nematic length, sqrt(K/a), [μm]
-real[int] Lcs = [40, 50, 45, 35, 30, 25, 20, 15, 10, 40, 10, 10];               
+real[int] Lcs = [40, 50, 45, 35, 30, 25, 20, 15, 10, 40, 10, 10, 10, 10, 10];               
 
 // Initial radius of the monolayer [μm].
 // Same as in the bigger microfabrication mask

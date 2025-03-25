@@ -3,7 +3,7 @@
 verbosity=0;
 // bool debug=0;
 
-string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tuning/MDCK_visc06_25" 
+string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tunning/MDCK_visc06_25" 
 // "/home/joan/Documents/Simul_runs/MDCK_Lc_tuning/MDCK_visc10_00";
 // "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/MDCK_Lc_tuning/MDCK_visc10_00";
 // string rootDir = "/home/joan/Documents/Simul_runs/MDCK_Lc_tunning/MCF10a_tension";

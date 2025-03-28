@@ -1,0 +1,41 @@
+// Parameter file for simulations of the evolution of durotaxis
+// by Joan Térmens; 06/03/2025 
+
+verbosity=0;
+// bool debug=0;
+
+string rootDir = "/home/joan/Documents/Simul_runs/durotaxis/durotaxis_3";
+
+int nSimul = 4;   // Number of simulations
+string[int] simulNames = ["0_durotaxis_3","pi3_durotaxis_3","2pi3_durotaxis_3","pi_durotaxis_3"];
+
+
+// Physical parameters of each problem
+real[int] cutList = [0, pi/3, 2*pi/3, pi];         // Angular length of the cutted portion of the circle, [rad].
+real[int] R0List = [175.74, 178.33, 195.93, 248.54];       // Initial radius of the monolayer, [μm].
+real[int] LcList = [40, 40, 40, 40];         // Nematic length, sqrt(K/a), [μm].
+real[int] etaList = [2.5e4, 2.5e4, 2.5e4, 2.5e4];  // Monolayer viscosity, [kPa·s].
+real[int] xiList = [0.1, 0.1, 0.1, 0.1];       // Friction coef, [kPa·s/μm²].
+real[int] zetaList = [-25, -25, -25, -25];     // -Contractility coef, [kPa]. < 0 to generate contractile stress.
+real[int] zi0List = [0.1, 0.1, 0.1, 0.1];      // Offset traction coef, [kPa/μm]. Initial traction at the CM.
+real[int] gradZiList = [-5e-5, -5e-5, -5e-5, -5e-5]; // Durotactic traction gradient, [kPa/μm²].
+
+// Numerical parameters of the simulations
+int labelOut = 1;                    // Mesh identifiers
+real obd = 45.;                      // Outer boundary mesh density, obd points for adim. unit length.
+real ibd = 15.;                      // Inner boundary mesh density.
+real bLayerThickness = 0.25;         // Adim. width of the boundary layer (finer mesh), >= Lc/R0. 
+real dt = 1e-3;                      // Adim. time step, real time step = dt * eta/(zi0*Lc).
+int NiterTime = 2000;                // Number of iterations, Max time = NiteTime * dt * eta/(zi0*Lc).
+real rateMaxArea = 8;                // Stop the simulation when Area = rateMaxArea * (Initial Area).
+real rateMinArea = 1/8.;             // Stop the simulation when Area = rateMinArea * (Initial Area).
+bool keepPoints = 0;                 // Keep the number of boundary points upon remeshing.
+
+// Save parameters
+bool bsave = 1;                      // To save the solutions or not, handy for debugging.
+int dsave = 20;                      // Save frame gap. Usually we do not need that many solutions to 
+                                     // represent an evolution and also it will save memory and loading time.
+
+// Domain parameters
+real symmAxis = pi/2.;               // Angle of the symmetry axis of each assymetric shape.
+real fracRarc = 0.1;                 // Adimensionalized radius used to smooth the domain vertices.

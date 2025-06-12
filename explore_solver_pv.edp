@@ -289,7 +289,7 @@ for (int iCut=0; iCut<nCut; iCut++){
           }
 
           // P2 extension of polarity Dirichlet data
-          varf bndDirichlet(pD, q) = on(labelOut, pDx = nx) + on(labelOut, pDy = ny);
+          varf bndDirichlet(pD, q) = on(labelOut, pDx = N.x/*nx*/) + on(labelOut, pDy = N.y/*ny*/);
           Pol pD=[0,0];
           pDx[] = bndDirichlet(0, Pol, tgv = 1.0);
 

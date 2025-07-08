@@ -1,0 +1,136 @@
+// Packages for advanced remeshing scheme
+load "Curvature"
+load "distance"
+load "isoline"
+load "gsl"
+
+// Manage command-line arguments
+include "getARGV.idp"
+
+include "../lib/meshes.edp"; // load the mesh generation functions
+
+bool debug = getARGV("-d", 0); // set to 1 to produce the plots.
+
+// Define variables to characterize tha shapes
+real Area0;
+real Xcm0;
+real Ycm0;
+mesh Th;
+
+NewMacro plotMesh(Th, plotLabel)
+cout << "  - "<< plotLabel << ": OK" << endl;
+
+Area0 = Th.measure; // Area of the domain
+Xcm0 = int2d(Th)(x)/Area0; // x-coord of the domain centroid
+Ycm0 = int2d(Th)(y)/Area0; // y-coord of the domain centroid
+
+if (debug) {
+  plot(
+    Th, value = true, fill = false, nbiso=64, wait=true, 
+    cmm = plotLabel+";  A0="+Area0+",  (Xcm, Ycm)=("+Xcm0+", "+Ycm0+")"
+  );
+}
+EndMacro
+
+// Construct the meshes
+cout << "Testing the meshes from lib/meshes.edp :" << endl;
+
+// Common params
+int bndDensity = 45;
+int ibd = 15;
+real symmAxis = pi/2;
+
+real r0 = 1;
+int labelBnd = 1;
+real bLayerThickness = 0.15;
+
+
+// triangleMesh params
+real[int] sideLengths = [2,5,5];
+real rRound = 0.1;
+
+// Test fourCurvesShape mesh
+real rUp = r0;
+real rDown = 0.5;
+real rLeft = 0.25;
+real rRight = 0.25;
+real d = 0.5;
+
+real[int] fourCurveShapeParameters = [rUp,rDown,rLeft,rRight,d,symmAxis];
+int[int] fourCurveShapeLabels = [labelBnd];
+
+Th = fourCurveShape(bndDensity, fourCurveShapeParameters, fourCurveShapeLabels);
+
+plotMesh(Th, "Dense fourCurvesShape mesh")
+
+// Test oneCutSmooth mesh
+real cut = 2*pi/3;
+real fracRarc = 0.1;
+
+real[int] oneCutSmoothParameters = [cut,r0,fracRarc,symmAxis];
+int[int] oneCutSmoothLabels = [labelBnd];
+
+Th = oneCutSmooth(bndDensity, oneCutSmoothParameters, oneCutSmoothLabels);
+
+plotMesh(Th, "Dense oneCutSmooth mesh")
+
+// Test sinePerturb mesh
+real Amp = 0.5;
+real q = 3;
+
+real[int] sinePerturbParameters = [r0,Amp,q,symmAxis];
+int[int] sinePerturbLabels = [labelBnd];
+
+Th = sinePerturb(bndDensity, sinePerturbParameters, sinePerturbLabels);
+
+plotMesh(Th, "Dense sinePerturb mesh")
+
+// Test twoCurvesTriangle mesh
+real rIn = 0.3;
+real rOut = 0.35;
+
+real[int] twoCurvesTriangleParameters = [r0,rIn,rOut,symmAxis];
+int[int] twoCurvesTriangleLabels = [labelBnd];
+
+Th = twoCurvesTriangle(bndDensity, twoCurvesTriangleParameters, twoCurvesTriangleLabels);
+
+plotMesh(Th, "Dense twoCurvesTriangle mesh")
+
+
+
+
+// mesh Th = roundedTriangle(obd,sideLengths,rRound,labelBnd);
+
+// real L0 = sqrt(Th.measure);
+
+// sideLengths /= L0; rRound /= L0;
+
+// Th = roundedTriangle(obd,sideLengths,rRound,labelBnd);
+
+// // Extract outer boundary
+// // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
+// // for k in (0,Th.nbe-1): 
+// //		bOut(0,k) == x coord kth vertex
+// //		bOut(1,k) == y coord ktha ( vertex
+// //		bOut(2,k) == arch length at the kth vertex
+// real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelBnd, bMesh);
+
+// real[int,int] frontRear(2,2);
+// cout << frontRear << endl;
+// int err = computeFrontRear(bMesh, bMesh.m-1, frontRear);
+// cout << frontRear << endl;
+
+// Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelBnd,.5,0,1); // Custom mesh adaptation
+
+// // Initial variables for shape characterization
+// real Area0 = Th.measure; // Inital Area of the Fluid Domain
+// real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
+// real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
+
+
+// plot(
+//   Th,value = true, fill = false, nbiso=64, wait=true, 
+//   cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
+// );
+
+// //---------------------------------------------------------------------------------------------------------------------

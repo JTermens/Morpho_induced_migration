@@ -1,13 +1,38 @@
-// Packages for advanced remeshing scheme
-// load "Curvature"
-// load "distance"
-// load "isoline"
-// load "gsl"
-
 func mesh fourCurveShape(
-  int obd, real rUp, real rDown, real rLeft,
-  real rRight, real d, real symmAxis, int labelBnd
+  int bndDensity, real[int] meshParameters , int[int] labels
 ){
+  /*
+  [mesh] fourCurveShape returns a mesh with a boundary defined by four 
+  tangetial circumference arches. The centers of the Up & Down arches are 
+  separrated by a distance d, while the Left & Right ones are tangent to those
+  and close the boundary.
+
+  Parameters:
+  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
+  - real[int] meshParameters: parameters that define the shape. By order:
+    - 0, rUp: radius of the upper arch.
+    - 1, rDown: radius of the lower arch.
+    - 2, rLeft: radius of the left arch. 
+    - 3, rRight: radius of the right arch.
+    - 4, d: distance between the center of the Up & Down arches.
+    - 5, symmAxis: orientation of the (not necessary symmetric) shape. Defines
+    the line between the centers of the Up & Down arches.
+  - int[int] labels: the first element is the boundary label, other ones will
+  be ignored 
+
+  * Return type: mesh
+  */
+
+  // Unpack mesh parameters
+  real rUp = meshParameters[0];
+  real rDown = meshParameters[1];
+  real rLeft = meshParameters[2];
+  real rRight = meshParameters[3];
+  real d = meshParameters[4];
+  real symmAxis = meshParameters[5];
+
+  // Set the closed-boundary label
+  int labelBnd = labels[0];
 
   mesh Th; // Final mesh
 
@@ -66,25 +91,48 @@ func mesh fourCurveShape(
   };
 
   Th = buildmesh(
-    rightArch(obd*rRight*thetaRight)
-    + upArch(obd*rUp*(thetaUpLeft+thetaUpRight))
-    + leftArch(obd*rLeft*thetaLeft)
-    + downArch(obd*rDown*(thetaDownLeft+thetaDownRight))
+    rightArch(bndDensity*rRight*thetaRight)
+    + upArch(bndDensity*rUp*(thetaUpLeft+thetaUpRight))
+    + leftArch(bndDensity*rLeft*thetaLeft)
+    + downArch(bndDensity*rDown*(thetaDownLeft+thetaDownRight))
   );
 
   return Th;
 }
 
 func mesh oneCutSmooth(
-  int obd, real cut,real r0, real rArch, real symmAxis, int labelBnd
+  int bndDensity, real[int] meshParameters , int[int] labels
 ){
-  // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
+  /*
+  [mesh] oneCutSmooth returns a mesh with a boundary defined by circle with a
+  strigth cut of angular length cut, perpendicular to a ray in the symmAxis 
+  direction. The vertices of the cut are smoothed by tangential arches of 
+  radius rArch.
+
+  Parameters:
+  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
+  - real[int] meshParameters: parameters that define the shape. By order:
+    - 0, cut: angluar length of the straight cut line.
+    - 1, r0: radius of the circumference (Front) arch.
+    - 2, rArch: radius of the tangential arches that smooth the cut vertices. 
+    - 3, symmAxis: orientation of the shape. Defines the mid-line of the cut.
+  - int[int] labels: the first element is the boundary label, other ones will
+  be ignored 
+
+  * Return type: mesh
+  */
+
+  // Unpack meshParameters
+  real cut = meshParameters[0];
+  real r0 = meshParameters[1];
+  real rArch = meshParameters[2];
+  real symmAxis = meshParameters[3];
+
+  // Set the closed-boundary label
+  int labelBnd = labels[0];
 
   real cutAxis = symmAxis+pi;
   real t1 = acos((cos(cut/2.)-(rArch/r0))/(1-(rArch/r0)));
-
-  // cout << "R0 = " << r0 << ", RArc = " << rArch << ", cut axis = " << cutAxis << endl;
-  // cout << "theta1 = " << t1 << endl;
 
   real OxRight = (r0-rArch)*cos(cutAxis+t1);
   real OyRight = (r0-rArch)*sin(cutAxis+t1);
@@ -92,118 +140,164 @@ func mesh oneCutSmooth(
   real OyLeft = (r0-rArch)*sin(cutAxis-t1);
   real lenCut = sqrt((OxRight-OxLeft)*(OxRight-OxLeft) + (OyRight-OyLeft)*(OyRight-OyLeft));
 
-  // cout << "O_right = (" << OxRight <<", "<< OyRight <<"); O_left = (" << OxLeft <<", "<< OyLeft <<"); lenCut = " << lenCut << endl;
-
-  border GammaArchLeft(t=0,1){
+  border ArchLeft(t=0,1){
     x = OxLeft+rArch*cos(cutAxis-t1*(1-t)); 
     y = OyLeft+rArch*sin(cutAxis-t1*(1-t)); 
     label = labelBnd;
   };
 
-  border GammaCut(t=0,1){
+  border Cut(t=0,1){
     x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t);
     y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t);
     label = labelBnd;
   };
 
-  border GammaArchRight(t=0,1){
+  border ArchRight(t=0,1){
     x = OxRight+rArch*cos(cutAxis+t1*t); 
     y = OyRight+rArch*sin(cutAxis+t1*t);
     label = labelBnd;
   };
 
-  border GammaArchFront(t=0,1){
+  border ArchFront(t=0,1){
     x = r0*cos(cutAxis+t1+2*(pi-t1)*t);
     y = r0*sin(cutAxis+t1+2*(pi-t1)*t);
     label = labelBnd;
   };
 
   mesh Th=buildmesh(
-    GammaArchLeft(obd*rArch*t1)
-    + GammaCut(obd*lenCut)
-    + GammaArchRight(obd*rArch*t1)
-    + GammaArchFront(obd*r0*2*(pi-t1))
+    ArchLeft(bndDensity*rArch*t1)
+    + Cut(bndDensity*lenCut)
+    + ArchRight(bndDensity*rArch*t1)
+    + ArchFront(bndDensity*r0*2*(pi-t1))
   );
 
   return Th;
 }
 
 func mesh sinePerturb(
-  int obd, real r0, real ampFrac, int q, real symmAxis, int labelBnd
+  int bndDensity, real[int] meshParameters , int[int] labels
 ){
-  // Sinusoidal perturbations of the circular domain with q lobes and a symmetry axis
+  /*
+  [mesh] sinePerturb returns a mesh with a boundary defined by the sinusoidal perturbations of a circle
 
-  border Gamma(t=0,1){
-    x = r0*(1 + ampFrac*cos(2*pi*q*t))*cos(2*pi*t+symmAxis);
-    y = r0*(1 + ampFrac*cos(2*pi*q*t))*sin(2*pi*t+symmAxis);
+  Parameters:
+  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
+  - real[int] meshParameters: parameters that define the shape. By order:
+    - 0, r0: radius of the base circumference.
+    - 1, Amp: Amplitude of the sinusoidal perturbations.
+    - 2, q: perturbation wave-number (number of lobes).
+    - 3, symmAxis: orientation of the shape. Defines the symmetry axis.
+  - int[int] labels: the first element is the boundary label, other ones will
+  be ignored 
+
+  * Return type: mesh
+  */
+
+  // Unpack meshParameters
+  real r0 = meshParameters[0];
+  real Amp = meshParameters[1];
+  int q = lrint(meshParameters[2]);
+  real symmAxis = meshParameters[3];
+
+  // Set the closed-boundary label
+  int labelBnd = labels[0];
+
+  border Boundary(t=0,1){
+    x = (r0 + Amp*cos(2*pi*q*t))*cos(2*pi*t+symmAxis);
+    y = (r0 + Amp*cos(2*pi*q*t))*sin(2*pi*t+symmAxis);
     label = labelBnd;
   }
 
-  mesh Th = buildmesh(Gamma(2*pi*obd));
+  mesh Th = buildmesh(Boundary(bndDensity*r0*2*pi));
 
   return Th;
 }
 
 func mesh twoCurvesTriangle(
-  int obd, real r0, real rIn, real rOut, real symmAxis, int labelBnd
+  int bndDensity, real[int] meshParameters, int[int] labels
 ){
+  /*
+  [mesh] twoCurvesTriangle returns a mesh with a boundary defined by an equilateral triangle of apothem r0 with cricumference arches of radius rVertex at its vertices and tangetial circumference arches of radius rSide at its sides.  
+
+  Parameters:
+  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
+  - real[int] meshParameters: parameters that define the shape. By order:
+    - 0, r0: radius of the base circumference.
+    - 1, rSide: Amplitude of the sinusoidal perturbations.
+    - 2, rVertex: perturbation wave-number (number of lobes).
+    - 3, symmAxis: orientation of the shape. Defines the symmetry axis.
+  - int[int] labels: the first element is the boundary label, other ones will
+  be ignored 
+
+  * Return type: mesh
+  */
+
+  // Unpack the meshParameters
+  real r0 = meshParameters[0];
+  real rSide = meshParameters[1];
+  real rVertex = meshParameters[2];
+  real symmAxis = meshParameters[3];
+
+  // Set the closed-boundary label
+  int labelBnd = labels[0];
+
   real alpha = (2*pi/3)/2; // a 6th of a circle arclegth
-  real rCentIn = r0-rIn;
-  // Compute rCentOut by the cosine law with alpha and solving for it
-  real rCentOut = rCentIn*cos(alpha)+sqrt(pow(rCentIn,2)*(pow(cos(alpha),2)-1)+pow(rOut+rIn,2));
+  real rCentSide = r0-rSide;
+  // Compute rCentVertex by the cosine law with alpha and solving for it
+  real rCentVertex = rCentSide*cos(alpha)+sqrt(pow(rCentSide,2)*(pow(cos(alpha),2)-1)+pow(rVertex+rSide,2));
 
-  // Compute thetaOut by the cosine law with rCentIn, rCentOut & rIn+rOut
-  real thetaOut = acos(
-    (pow(rOut+rIn,2)+pow(rCentOut,2)-pow(rCentIn,2))/(2*(rOut+rIn)*rCentOut)
+  // Compute thetaVertex by the cosine law with rCentSide, rCentVertex & rSide+rVertex
+  real thetaVertex = acos(
+    (pow(rVertex+rSide,2)+pow(rCentVertex,2)-pow(rCentSide,2))/(2*(rVertex+rSide)*rCentVertex)
   );
-  real thetaIn = alpha + thetaOut;
+  real thetaSide = alpha + thetaVertex;
 
-  real[int] xCentIn = [rCentIn*cos(symmAxis),rCentIn*cos(symmAxis+2*alpha),rCentIn*cos(symmAxis+4*alpha)];
-  real[int] yCentIn = [rCentIn*sin(symmAxis),rCentIn*sin(symmAxis+2*alpha),rCentIn*sin(symmAxis+4*alpha)];
+  real[int] xCentSide = [rCentSide*cos(symmAxis),rCentSide*cos(symmAxis+2*alpha),rCentSide*cos(symmAxis+4*alpha)];
+  real[int] yCentSide = [rCentSide*sin(symmAxis),rCentSide*sin(symmAxis+2*alpha),rCentSide*sin(symmAxis+4*alpha)];
 
-  real[int] xCentOut = [rCentOut*cos(symmAxis+alpha),rCentOut*cos(symmAxis+3*alpha),rCentOut*cos(symmAxis+5*alpha)];
-  real[int] yCentOut = [rCentOut*sin(symmAxis+alpha),rCentOut*sin(symmAxis+3*alpha),rCentOut*sin(symmAxis+5*alpha)];
+  real[int] xCentVertex = [rCentVertex*cos(symmAxis+alpha),rCentVertex*cos(symmAxis+3*alpha),rCentVertex*cos(symmAxis+5*alpha)];
+  real[int] yCentVertex = [rCentVertex*sin(symmAxis+alpha),rCentVertex*sin(symmAxis+3*alpha),rCentVertex*sin(symmAxis+5*alpha)];
 
-  border archIn0(t=0,1){
-    x = xCentIn[0] + rIn*cos((symmAxis-thetaIn)+2*thetaIn*t);
-    y = yCentIn[0] + rIn*sin((symmAxis-thetaIn)+2*thetaIn*t);
+  border archSide0(t=0,1){
+    x = xCentSide[0] + rSide*cos((symmAxis-thetaSide)+2*thetaSide*t);
+    y = yCentSide[0] + rSide*sin((symmAxis-thetaSide)+2*thetaSide*t);
     label = labelBnd;
   };
-  border archOut0(t=0,1){
-    x = xCentOut[0]+rOut*cos((-symmAxis+alpha+thetaOut)-2*thetaOut*t);
-    y = yCentOut[0]+rOut*sin((-symmAxis+alpha+thetaOut)-2*thetaOut*t);
-    label = labelBnd;
-  };
-
-  border archIn1(t=0,1){
-    x = xCentIn[1] + rIn*cos((symmAxis+2*alpha-thetaIn)+2*thetaIn*t);
-    y = yCentIn[1] + rIn*sin((symmAxis+2*alpha-thetaIn)+2*thetaIn*t);
-    label = labelBnd;
-  };
-  border archOut1(t=0,1){
-    x = xCentOut[1]+rOut*cos((-symmAxis+3*alpha+thetaOut)-2*thetaOut*t);
-    y = yCentOut[1]+rOut*sin((-symmAxis+3*alpha+thetaOut)-2*thetaOut*t);
+  border archVertex0(t=0,1){
+    x = xCentVertex[0]+rVertex*cos((-symmAxis+alpha+thetaVertex)-2*thetaVertex*t);
+    y = yCentVertex[0]+rVertex*sin((-symmAxis+alpha+thetaVertex)-2*thetaVertex*t);
     label = labelBnd;
   };
 
-  border archIn2(t=0,1){
-    x = xCentIn[2] + rIn*cos((symmAxis+4*alpha-thetaIn)+2*thetaIn*t);
-    y = yCentIn[2] + rIn*sin((symmAxis+4*alpha-thetaIn)+2*thetaIn*t);
+  border archSide1(t=0,1){
+    x = xCentSide[1] + rSide*cos((symmAxis+2*alpha-thetaSide)+2*thetaSide*t);
+    y = yCentSide[1] + rSide*sin((symmAxis+2*alpha-thetaSide)+2*thetaSide*t);
     label = labelBnd;
   };
-  border archOut2(t=0,1){
-    x = xCentOut[2]+rOut*cos((-symmAxis+5*alpha+thetaOut)-2*thetaOut*t);
-    y = yCentOut[2]+rOut*sin((-symmAxis+5*alpha+thetaOut)-2*thetaOut*t);
+  border archVertex1(t=0,1){
+    x = xCentVertex[1]+rVertex*cos((-symmAxis+3*alpha+thetaVertex)-2*thetaVertex*t);
+    y = yCentVertex[1]+rVertex*sin((-symmAxis+3*alpha+thetaVertex)-2*thetaVertex*t);
+    label = labelBnd;
+  };
+
+  border archSide2(t=0,1){
+    x = xCentSide[2] + rSide*cos((symmAxis+4*alpha-thetaSide)+2*thetaSide*t);
+    y = yCentSide[2] + rSide*sin((symmAxis+4*alpha-thetaSide)+2*thetaSide*t);
+    label = labelBnd;
+  };
+  border archVertex2(t=0,1){
+    x = xCentVertex[2]+rVertex*cos((-symmAxis+5*alpha+thetaVertex)-2*thetaVertex*t);
+    y = yCentVertex[2]+rVertex*sin((-symmAxis+5*alpha+thetaVertex)-2*thetaVertex*t);
     label = labelBnd;
   };
 
   mesh Th = buildmesh(
-    archIn0(2*thetaIn*rIn*obd)
-    + archIn1(2*thetaIn*rIn*obd)
-    + archIn2(2*thetaIn*rIn*obd)
-    + archOut0(2*thetaOut*rOut*obd)
-    + archOut1(2*thetaOut*rOut*obd)
-    + archOut2(2*thetaOut*rOut*obd)
+    archSide0(bndDensity*2*thetaSide*rSide)
+    + archSide1(bndDensity*2*thetaSide*rSide)
+    + archSide2(bndDensity*2*thetaSide*rSide)
+    + archVertex0(bndDensity*2*thetaVertex*rVertex)
+    + archVertex1(bndDensity*2*thetaVertex*rVertex)
+    + archVertex2(bndDensity*2*thetaVertex*rVertex)
   );
   
   return Th;
@@ -451,86 +545,3 @@ func mesh circle(
 
   return Th;
 }
-
-
-// // Construct the mesh -------------------------------------------------------------------------------------------------
-
-// // Common params
-// int obd = 45;
-// int ibd = 15;
-// real symmAxis = pi/2;
-
-// real r0 = 1;
-// int labelBnd = 1;
-// real bLayerThickness = 0.15;
-
-// // fourCurveShape params
-// real rUp = r0;
-// real rDown = 0.5;
-// real rLeft = 0.25;
-// real rRight = 0.25;
-// real d = 0.5;
-
-// oneCutSmooth params
-// real cut = 2*pi/3;
-// real fracRarc = 0.1;
-
-// // sinePerturb params
-// real ampFrac = 0.5;
-// int q = 3;
-
-// // twoCurvesTriangle params
-// real rIn = 0.3;
-// real rOut = 0.35;
-
-// // triangleMesh params
-// real[int] sideLengths = [2,5,5];
-// real rRound = 0.1;
-
-// mesh Th = fourCurveShape(obd,rUp,rDown,rLeft,rRight,d,symmAxis,labelBnd);
-// mesh Th = oneCutSmooth(obd,cut,r0,fracRarc,symmAxis,labelBnd);
-// mesh Th = sinePerturb(obd,r0,ampFrac,q,symmAxis,labelBnd);
-// mesh Th = twoCurvesTriangle(obd,r0,rInreal Area0 = Th.measure; // Inital Area of the Fluid Domain
-// real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
-// real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
-
-
-// plot(
-//   Th,value = true, fill = false, nbiso=64, wait=true, 
-//   cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
-// );,rOut,symmAxis,labelBnd);
-// mesh Th = roundedTriangle(obd,sideLengths,rRound,labelBnd);
-
-// real L0 = sqrt(Th.measure);
-
-// sideLengths /= L0; rRound /= L0;
-
-// Th = roundedTriangle(obd,sideLengths,rRound,labelBnd);
-
-// // Extract outer boundary
-// // extractborder gives bOut(3,Th.nbe+1) with 1st point == last point
-// // for k in (0,Th.nbe-1): 
-// //		bOut(0,k) == x coord kth vertex
-// //		bOut(1,k) == y coord ktha ( vertex
-// //		bOut(2,k) == arch length at the kth vertex
-// real[int,int] bMesh(3,1); real lMesh = extractborder(Th, labelBnd, bMesh);
-
-// real[int,int] frontRear(2,2);
-// cout << frontRear << endl;
-// int err = computeFrontRear(bMesh, bMesh.m-1, frontRear);
-// cout << frontRear << endl;
-
-// Th = closedRemesh(bMesh,lMesh,bMesh.m-1,bLayerThickness,obd,ibd,labelBnd,.5,0,1); // Custom mesh adaptation
-
-// // Initial variables for shape characterization
-// real Area0 = Th.measure; // Inital Area of the Fluid Domain
-// real Xcm0 = int2d(Th)(x)/Area0; //Initial x_cm
-// real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
-
-
-// plot(
-//   Th,value = true, fill = false, nbiso=64, wait=true, 
-//   cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
-// );
-
-// //---------------------------------------------------------------------------------------------------------------------

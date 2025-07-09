@@ -44,11 +44,6 @@ real r0 = 1;
 int labelBnd = 1;
 real bLayerThickness = 0.15;
 
-
-// triangleMesh params
-real[int] sideLengths = [2,5,5];
-real rRound = 0.1;
-
 // Test fourCurvesShape mesh
 real rUp = r0;
 real rDown = 0.5;
@@ -96,7 +91,16 @@ Th = twoCurvesTriangle(bndDensity, twoCurvesTriangleParameters, twoCurvesTriangl
 
 plotMesh(Th, "Dense twoCurvesTriangle mesh")
 
+// Test roundedTriangle mesh
+real[int] sideLengths = [2, 5, 5];
+real rRound = 0.1;
 
+real[int] roundedTriangleParameters = [sideLengths[0], sideLengths[1], sideLengths[2], rRound];
+int[int] roundedTriangleLabels = [labelBnd];
+
+Th = roundedTriangle(bndDensity, roundedTriangleParameters, roundedTriangleLabels);
+
+plotMesh(Th, "Dense roundedTriangle mesh")
 
 
 // mesh Th = roundedTriangle(obd,sideLengths,rRound,labelBnd);

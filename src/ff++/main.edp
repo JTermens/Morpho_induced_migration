@@ -1,0 +1,21 @@
+/*
+
+*/
+
+// Packages for the remeshing scheme
+load "Curvature"
+load "distance"
+load "isoline"
+load "gsl"
+
+// Include the modules containing the mes-generation and remeshing functions.
+include "modules/mesh-generation.edp";
+include "modules/remeshing.edp";
+
+// Include the macros that encapsulate the simulation code.
+
+include "macros/geometry-macros.edp"; // Mesh generation and remeshing.
+include "macros/io-macros.edp";       // Input parameters and output fields.
+include "macros/physics-macros.edp";  // Define the linear and bilinear forms.
+include "macros/setup-macros.edp";    // FEMspaces and operator macros.
+include "macros/solvers-macros.edp";  // Solvers for the equations.

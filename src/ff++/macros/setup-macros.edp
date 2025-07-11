@@ -1,0 +1,50 @@
+/*
+
+*/
+
+// macroDefineOperators documentation
+//
+NewMacro macroDefineOperators(PERIODIC, INCOMPRESSIBLE, DUROTAXIS)
+// Define the differential operators ------------------------------------------
+macro pD [pDx, pDy] //    // P2 extension for Dirichlet data.
+macro p [px, py] //       // Polarity vector field.
+macro q [qx, qy] //       // Polarity test functions.
+IF INCOMPRESSIBLE
+macro v [vx, vy, Pr] //   // Velocity vector field + pressure.
+macro u [ux, uy, phi] //  // Velocity + pressure test functions.
+ELSE
+macro v [vx, vy] //       // Velocity vector field.
+macro u [ux, uy] //       // Velocity test functions.
+ENDIF
+\\;
+IF PERIODIC
+macro normalPerio [nxPerio, nyPerio] // // Normal vectors on the perio space.
+ENDIF
+macro normal [nx, ny] //  // Normal vectors at the boundary (null at bulk).
+
+macro dp [dpxdx,dpxdy,dpydx,dpydy] //        // Gradient of the polarity field
+macro dq [dqxdx,dqxdy,dqydx,dqydy] //        // Gradient of the pol test func.
+macro dv [dvxdx,dvxdy,dvydx,dvydy] //        // Gradient of the velocity field.
+macro du [duxdx,duxdy,duydx,duydy] //        // Gradient of the vel test func.
+macro d2px [dpxdxx,dpxdxy,dpxdyx,dpxdyy] //  // Hessian of the x-polarity.
+macro d2py [dpydxx,dpydxy,dpydyx,dpydyy] //  // Hessian of the y-polarity.
+macro d2qx [dqxdxx,dqxdxy,dqxdyx,dqxdyy] //  // Hessian of the x-pol test func.
+macro d2qy [dqydxx,dqydxy,dqydyx,dqydyy] //  // Hessian of the y-pol test func.
+IF INCOMPRESSIBLE
+macro dPr [dPrdx, dPrdy] //                  // Pressure gradient.
+macro dphi [dphidx, dphidy] //               // Gradient pressure test func.
+ENDIF
+
+macro grad(s) [dx(s),dy(s)] //                      // Gradient of a sclar
+macro Grad(v) [dx(v#x),dy(v#x),dx(v#y),dy(v#y)] //  // Gradient of a vector
+macro GradT(v) [dx(v#x),dx(v#y),dy(v#x),dy(v#y)] // // Grad vector transpose
+macro Hessian(s) [dxx(s),dxy(s),dyx(s),dyy(s)] //   // Hessian of a scalar
+macro pp(p) [p#x*p#x,p#x*p#y,p#y*p#x,p#y*p#y] //    // Active stress tensor
+
+// Vector norm + offset to avoid 0-length vectors
+macro Norm(u) dist(u#x,u#y) + 1.e-12 //
+EndMacro
+
+// macroDefineFEMSpaces documentation
+newMacro macroDefineFEMSpaces(PERIODIC, INCOMPRESSIBLE, DUROTAXIS)
+

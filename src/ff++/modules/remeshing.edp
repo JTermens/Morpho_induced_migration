@@ -71,9 +71,11 @@ func int[int] retrieveIndices(real[int,int] b0, int n0, mesh Th0){
 // Remeshing functions --------------------------------------------------------
 
 func mesh closedRemesh(
-  mesh Th0, real bndLayerWidth, int obd, int ibd, int labelBnd,
-  real smoothCoef, bool keepPoints, bool bndLayer
+  mesh Th0, int obd, int ibd, int[int] labels, real bndLayerWidth
+  real smoothCoef, bool keepPoints
 ){
+
+  int labelBnd = labels[0];
 
   int[int] be(1); // To save begin and ends of the curve
   int minPoints = 20;
@@ -91,9 +93,10 @@ func mesh closedRemesh(
   // It is not convenient to define a border inside an If
   // So 1st define all borderd and the apply the If to the mesh generation
 
+  // Keeps the same points, useful to control the memory space in fast-spreading meshes.
   border OuterKeepPoints(t=0,1){ P=Curve(bnd,bnd(2,round(t*(nBnd)))/lBnd);label=labelBnd;}
   
-  // Remesh the outr boundary using an Akima spline
+  // Remesh the outer boundary using an Akima spline
   gslspline splineX(gslinterpakima, bnd(2,:), bnd(0,:));
   gslspline splineY(gslinterpakima, bnd(2,:), bnd(1,:));
 
@@ -108,12 +111,12 @@ func mesh closedRemesh(
     ThDense = buildmesh(OuterSpline(nOut));
   }
 
-  if (!bndLayer) {
+  if (bndLayerWidth < 1e12) { // No boundary layer
     return ThDense;
   }
 
   // FEM Spaces
-  fespace Dh(ThDense, P1); // For distance function (remeshing scheme) and data exports
+  fespace Dh(ThDense, P1); // For distance function (remeshing scheme)
 
   // Distance function (d is the minimal distance to the boundary)
   varf vong(B, d)= on(labelBnd,B=1);

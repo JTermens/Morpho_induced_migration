@@ -71,7 +71,7 @@ func int[int] retrieveIndices(real[int,int] b0, int n0, mesh Th0){
 // Remeshing functions --------------------------------------------------------
 
 func mesh closedRemesh(
-  mesh Th0, int obd, int ibd, int[int] labels, real bndLayerWidth
+  mesh Th0, int obd, int ibd, int[int] labels, real bndLayerWidth, 
   real smoothCoef, bool keepPoints
 ){
 
@@ -111,7 +111,7 @@ func mesh closedRemesh(
     ThDense = buildmesh(OuterSpline(nOut));
   }
 
-  if (bndLayerWidth < 1e12) { // No boundary layer
+  if (bndLayerWidth < 1e-12) { // No boundary layer
     return ThDense;
   }
 

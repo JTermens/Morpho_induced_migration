@@ -7,11 +7,11 @@ load "gsl"
 // Manage command-line arguments
 include "getARGV.idp"
 
-include "../lib/meshes.edp"; // Load the mesh generation functions
-// Load the remeshing functions, used to adapt the messhes with a boundary layer
-include "../lib/remeshing.edp";
+include "../src/ff++/modules/mesh-generation.edp"; // Load the mesh generation functions
+// Load the remeshing functions, used to adapt the meshes with a boundary layer
+include "../src/ff++/modules/remeshing.edp";
 
-bool debug = getARGV("-d", 0); // set to 1 to produce the plots.
+bool DEBUG = getARGV("-d", 0); // set to 1 to produce the plots.
 
 // Define variables to characterize tha shapes
 real Area0;
@@ -21,24 +21,26 @@ mesh Th;
 bool PERIODIC;
 
 NewMacro evaluateMesh(Th, plotLabel, PERIODIC)
-cout << "  - "<< plotLabel << ": OK";
+cout << "OK";
 
 if (PERIODIC){
   cout << endl;
 } else {
+  int[int] labels = [labelBnd];
   // Custom mesh adaptation, create a boundary layer with a higher triangle 
   // density and a bulk with a lower one
+  cout << " --Adaptive mesh: ";
   Th = closedRemesh(
-    Th,bndLayerWidth,outerBndDensity,innerBndDensity,labelBnd,.5,0,1
+    Th,outerBndDensity,innerBndDensity,labels,bndLayerWidth,.5,0
   );
-  cout << " --Bounday Layer: OK" << endl;
+  cout << "OK" << endl;
 }
 
 Area0 = Th.measure; // Area of the domain
 Xcm0 = int2d(Th)(x)/Area0; // x-coord of the domain centroid
 Ycm0 = int2d(Th)(y)/Area0; // y-coord of the domain centroid
 
-if (debug) {
+if (DEBUG) {
   plot(
     Th, value = true, fill = false, nbiso=64, wait=true, 
     cmm = plotLabel+";  A0="+Area0+",  (Xcm, Ycm)=("+Xcm0+", "+Ycm0+")"
@@ -47,7 +49,7 @@ if (debug) {
 EndMacro
 
 // Construct the meshes
-cout << "Testing the meshes from lib/meshes.edp :" << endl;
+cout << "Testing the meshes from modules/mesh-generation.edp :" << endl;
 
 // Common params
 int outerBndDensity = 45;
@@ -71,9 +73,10 @@ real d = 0.5;
 real[int] fourCurveShapeParameters = [rUp,rDown,rLeft,rRight,d,symmAxis];
 int[int] fourCurveShapeLabels = [labelBnd];
 
+cout << "  - fourCurveShape: ";
 Th = fourCurveShape(outerBndDensity, fourCurveShapeParameters, fourCurveShapeLabels);
 
-evaluateMesh(Th, "Dense fourCurvesShape mesh", PERIODIC)
+evaluateMesh(Th, "Adaptive fourCurvesShape mesh", PERIODIC)
 
 // Test oneCutSmooth mesh
 real cut = 2*pi/3;
@@ -82,9 +85,10 @@ real fracRarc = 0.1;
 real[int] oneCutSmoothParameters = [cut,r0,fracRarc,symmAxis];
 int[int] oneCutSmoothLabels = [labelBnd];
 
+cout << "  - oneCutSmooth: ";
 Th = oneCutSmooth(outerBndDensity, oneCutSmoothParameters, oneCutSmoothLabels);
 
-evaluateMesh(Th, "Dense oneCutSmooth mesh", PERIODIC)
+evaluateMesh(Th, "Adaptive oneCutSmooth mesh", PERIODIC)
 
 // Test sinePerturb mesh
 real Amp = 0.5;
@@ -93,9 +97,10 @@ real q = 3;
 real[int] sinePerturbParameters = [r0,Amp,q,symmAxis];
 int[int] sinePerturbLabels = [labelBnd];
 
+cout << "  - sinePerturb: ";
 Th = sinePerturb(outerBndDensity, sinePerturbParameters, sinePerturbLabels);
 
-evaluateMesh(Th, "Dense sinePerturb mesh", PERIODIC)
+evaluateMesh(Th, "Adaptive sinePerturb mesh", PERIODIC)
 
 // Test twoCurvesTriangle mesh
 real rIn = 0.3;
@@ -104,9 +109,10 @@ real rOut = 0.35;
 real[int] twoCurvesTriangleParameters = [r0,rIn,rOut,symmAxis];
 int[int] twoCurvesTriangleLabels = [labelBnd];
 
+cout << "  - twoCurvesTriangle: ";
 Th = twoCurvesTriangle(outerBndDensity, twoCurvesTriangleParameters, twoCurvesTriangleLabels);
 
-evaluateMesh(Th, "Dense twoCurvesTriangle mesh", PERIODIC)
+evaluateMesh(Th, "Adaptive twoCurvesTriangle mesh", PERIODIC)
 
 // Test roundedTriangle mesh
 real[int] sideLengths = [2, 5, 5];
@@ -115,9 +121,19 @@ real rRound = 0.1;
 real[int] roundedTriangleParameters = [sideLengths[0], sideLengths[1], sideLengths[2], rRound];
 int[int] roundedTriangleLabels = [labelBnd];
 
+cout << "  - roundedTriangle: ";
 Th = roundedTriangle(outerBndDensity, roundedTriangleParameters, roundedTriangleLabels);
 
-evaluateMesh(Th, "Dense roundedTriangle mesh", PERIODIC)
+evaluateMesh(Th, "Adaptive roundedTriangle mesh", PERIODIC)
+
+// Test circle mesh
+real[int] circleParameters = [r0];
+int[int] circleLabels = [labelBnd];
+
+cout << "  - circle: ";
+Th = circle(outerBndDensity, circleParameters, circleLabels);
+
+evaluateMesh(Th, "Adaptive circle mesh", PERIODIC)
 
 //-----------------------------------------------------------------------------
 
@@ -138,7 +154,8 @@ int labelFixed = 4;
 real[int] bufferSinusoidalSemiplaneParameters = [Lx, waveLength, Amp, buff];
 int[int] bufferSinusoidalSemiplaneLabels = [labelPerio1, labelPerio2, labelFree, labelFixed];
 
+cout << "  - bufferSinusoidalSemiplane: ";
 Th = bufferSinusoidalSemiplane(outerBndDensity, bufferSinusoidalSemiplaneParameters, bufferSinusoidalSemiplaneLabels);
 
-evaluateMesh(Th, "Dense bufferSinusoidalSemiplane mesh", PERIODIC)
+evaluateMesh(Th, "Adaptive bufferSinusoidalSemiplane mesh", PERIODIC)
 

@@ -1,0 +1,83 @@
+/*
+
+*/
+
+// Manage command-line arguments
+include "getARGV.idp"
+
+include "../src/ff++/modules/mesh-generation.edp"; // Load the mesh generation.
+include "../src/ff++/macros/solvers-macros.edp"; // Load the operator solvers.
+
+bool DEBUG = getARGV("-d", 0); // set to 1 to produce the plots.
+
+NewMacro plotField(field,plotLabel)
+  plot(field, value = true, fill = true, nbiso = 64, wait = true, cmm = plotLabel);
+EndMacro
+
+cout << "Testing the differential operators of solvers-macros.edp" << endl;
+
+// Generate a circular mesh ---------------------------------------------------
+cout << "Generating a mesh..." << endl;
+real[int] circleParameters = [1]; // Circle radius = 1.
+int[int] circleLabels = [1];
+int outerBndDensity = 20;
+
+mesh Th = circle(outerBndDensity, circleParameters, circleLabels);
+
+// Generate dummy fields ------------------------------------------------------
+cout << "Setting a pair of dummy fields..." << endl;
+// Scalar parabolic field u.
+func polarParabola = pow(dist(x,y),2);
+
+fespace Uh(Th,P2); // P2 scalar FEM space.
+Uh u, ut; // Define the scalar function & its test function.
+
+solve SetU(u, ut) = int2d(Th)(u*ut) - int2d(Th)(polarParabola(x,y)*ut);
+
+// Vectorial linear field v.
+macro v[vx, vy]//   // macro for the vectorial function.
+macro vt[vtx,vty]// // macro fot the vectorial test function.
+
+fespace Vh(Th,[P1b, P1b]); // [P1b,P1b] vectorial FEM space.
+Vh v, vt; // Define the vectorial function & its test function.
+
+solve SetV(v, vt) = int2d(Th)(v'*vt) - int2d(Th)([x, 0]'*vt);
+
+// Test the scalar operators --------------------------------------------------
+// Gradient of a scalar u.
+cout << "  - Gradient of a scalar field: ";
+fespace duSpace(Th,[P1b,P1b]);
+computeGrad(du,u,Th,duSpace)
+cout << "OK" << endl;
+
+// Hessian of a scalar u.
+cout << "  - Hessian of a scalar field: ";
+fespace d2uSpace(Th, [P1b, P1b, P1b, P1b]); // FEM space of Hessian(u).
+computHess(d2u,u,Th,d2uSpace)
+cout << "OK" << endl;
+
+// Test the vectorial operators -----------------------------------------------
+// Gradient of a vector
+cout << "  - Gradient of a vector field: ";
+fespace dvSpace(Th,[P1b, P1b, P1b, P1b]);
+computeGradVect(dv,v,Th,dvSpace)
+cout << "OK" << endl;
+
+
+// Plot the test results if DEBUG ---------------------------------------------
+if (DEBUG){
+  plotField(u,"Scalar prabolic field")
+
+  fespace plotSpace(Th, P1);
+  plotSpace duAbs = sqrt(dux(x,y)^2 + duy(x,y)^2);
+  plotField(duAbs,"Gradient module of the scalar prabolic field")
+
+  plotSpace d2uTrace = d2uxx(x,y) + d2uyy(x,y);
+  plotField(d2uTrace,"Hessian trace of the scalar prabolic field")
+
+  plotSpace vAbs = sqrt(vx(x,y)^2 + vy(x,y)^2);
+  plotField(vAbs,"Module of the vectorial linear field")
+
+  plotSpace dvTrace = dvxx(x,y) + dvyy(x,y);
+  plotField(dvTrace,"Gradient trace of the vectorial linear field")
+}

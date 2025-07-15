@@ -4,59 +4,65 @@
 
 // macroInputParameters documentation
 //
-NewMacro macroInputParameters(PERIODIC, INCOMPRESSIBLE, DUROTAXIS)
-// Problem physical Parameters ------------------------------------------------
-real Lc = $Lc;      // Nematic length, sqrt(K/a), [μm].
-real eta = $eta;    // Monolayer viscosity, [kPa·s].
-real xi = $xi;      // Friction coef, [kPa·s/μm²].
-real zeta = $zeta;  // -Contractility coef, [kPa]. < 0 for contractile stress.
+NewMacro macroInputParameters(a,b,c,d,dt,NiterTime,areaMinMaxRates,dsave,L0)
+// Initialize to 0 the problem adim. parameters.
+real a = 0; real b = 0; real c = 0; func d = 0;
 
-IF DUROTAXIS
-// Parameters for durotaxis
-real zi0 = $zi0;    // Offset traction coef, [kPa/μm]. Init traction at the CM.
-real gradZi = $gradZi; // Durotactic traction gradient, [kPa/μm²].
+// Initialize to 0 the numerical adim. parameters.
+real dt = 0; int NiterTime = 0; real[string] areaMinMaxRates; int dsave;
 
-// Linear durotaxis (simplified model).
-func zi = zi0+gradZi*L0*(y-Ycm0);
-ELSE
-\\;
-real zi0 = $zi;    // zi0 instead of zi eases the def. of La, tscale & d. 
-func zi = zi0;     // Traction, [kPa/μm].
-ENDIF
+{
+  // Problem physical Parameters ----------------------------------------------
+  real Lc = $Lc;      // Nematic length, sqrt(K/a), [μm].
+  real eta = $eta;    // Monolayer viscosity, [kPa·s].
+  real xi = $xi;      // Friction coef, [kPa·s/μm²].
+  real zeta = $zeta;  // -Contractility coef, [kPa]. < 0 for contractile stress.
 
-// Problem characteristic scales.
-real lambda = sqrt(eta/xi); // Hydrodynamic sceening length.
-real La = zeta/zi0; // Active length; <0 contractile (>0 extensile) stress.    
-real tscale = eta/(zi0*Lc); // Problem timescale.
-real vscale = R0/tscale;    // Problem velocity scale.
+  IF DUROTAXIS
+  // Parameters for durotaxis
+  real zi0 = $zi0;    // Offset traction coef, [kPa/μm]. Init traction at CM.
+  real gradZi = $gradZi; // Durotactic traction gradient, [kPa/μm²].
 
-// Problem adimensionalized parameters ----------------------------------------
-real a = La/Lc;            // Active and characteristic length ratio.
-real b = L0/lambda;        // Characteristic and hydrodynamic length ratio.
-real c = L0/Lc;            // Characteristic and nematic length ratio.
-func d = (zi*L0)/(zi0*Lc); // Modified c for durotaxis.
+  // Linear durotaxis (simplified model).
+  func zi = zi0+gradZi*L0*(y-Ycm0);
+  ELSE
+  \\;
+  real zi0 = $zi;    // zi0 instead of zi eases the def. of La, tscale & d.
+  func zi = zi0;     // Traction, [kPa/μm].
+  ENDIF
 
-// Numerical parameters for the simulations -----------------------------------
-DEFAULT (dt, "1e-3")
-DEFAULT (NiterTime, "2000")
-DEFAULT (rateMaxArea, "8")
-DEFAULT (rateMinArea, "1/8")
-DEFAULT (bsave, "0")
-DEFAULT (dsave, "20")
-\\
-real dt = $dt; // Adim. time step, real time step = dt * tscale.
+  // Problem characteristic scales.
+  real lambda = sqrt(eta/xi); // Hydrodynamic sceening length.
+  real La = zeta/zi0; // Active length; <0 contractile (>0 extensile) stress.    
+  // real tscale = eta/(zi0*Lc); // Problem timescale.
+  // real vscale = L0/tscale;    // Problem velocity scale.
 
-// Num. of iterations, Max time = NiteTime * dt * tscale.
-int NiterTime = $NiterTime;
+  // Problem adimensionalized parameters (global scope) -----------------------
+  a = La/Lc;            // Active and characteristic length ratio.
+  b = L0/lambda;        // Characteristic and hydrodynamic length ratio.
+  c = L0/Lc;            // Characteristic and nematic length ratio.
+  d = (zi*L0)/(zi0*Lc); // Modified c for durotaxis.
 
-// Stop the simulation when Area >= rateMaxArea * (Initial Area) or 
-// Area <= rateMinArea * (Initial Area)
-real rateMaxArea = $rateMaxArea;
-real rateMinArea = $rateMinArea;
+  // Numerical parameters for the simulations (global scope) ------------------
+  DEFAULT (dt, "1e-3")
+  DEFAULT (NiterTime, "2000")
+  DEFAULT (rateMaxArea, "8")
+  DEFAULT (rateMinArea, "1/8")
+  DEFAULT (dsave, "0")
+  \\
+  dt = $dt; // Adim. time step, real time step = dt * tscale.
 
-// Save parameters
-bool bsave = $save; // To save the solutions or not, handy for debugging.
-int dsave = $dsave; // Save frame gap. 
-// Usually we do not need that many solutions to represent an evolution and
-// also it will save memory and loading time.
+  // Num. of iterations, Max time = NiteTime * dt * tscale.
+  NiterTime = $NiterTime;
+
+  // Stop the simulation when Area >= rateMaxArea * (Initial Area) or 
+  // Area <= rateMinArea * (Initial Area)
+  areaMinMaxRates["Min"] = $rateMinArea;
+  areaMinMaxRates["Max"] = $rateMaxArea;
+
+  // Save frame gap. If set to 0, no solutions will be saved.
+  // Usually we do not need that many solutions to represent an evolution and
+  // also it will save memory and loading time. 
+  dsave = $dsave;
+}
 EndMacro

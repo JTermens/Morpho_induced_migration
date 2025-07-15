@@ -1,0 +1,185 @@
+/*
+
+*/
+
+// computeGrad documentation
+//
+NewMacro computeGrad(du,u,Th,vectorSpace)
+macro du [du#x,du#y] // // Result of Gradient(u).
+vectorSpace du = [0,0];
+{
+  macro grad(u) [dx(u),dy(u)] // // Gradient of a scalar u.
+  macro dut [dut#x,dut#y] //     // Test function to compute grad(u).
+
+  varf aGrad(du, dut) = int2d(Th)(du'*dut);
+  varf lGrad(du, dut) = int2d(Th)(grad(u)'*dut);
+
+  matrix AGrad = aGrad(vectorSpace, vectorSpace);	// LHS matrix.
+  real[int] bGrad = lGrad(0, vectorSpace);        // RHS vector.
+  real[int] solGrad(vectorSpace.ndof);
+  solGrad=AGrad^-1*bGrad;
+  du#x[]=solGrad(0:vectorSpace.ndof-1);
+}
+EndMacro
+
+// computeHess documentation
+//
+NewMacro computHess(d2u,u,Th,matrixSpace)
+macro d2u [d2u#xx,d2u#xy,d2u#yx,d2u#yy] // // Result of Hessian(u).
+matrixSpace d2u=[0,0,0,0];
+{
+  macro Hessian(u) [dxx(u),dxy(u),dyx(u),dyy(u)] //   // Hessian of a scalar u.
+  macro d2ut [d2utxx,d2utxy,d2utyx,d2utyy]// // Test function for Hessian(u).
+
+  varf aHess(d2u, d2ut) = int2d(Th)(d2u'*d2ut);
+  varf lHess(d2u, d2ut) = int2d(Th)(Hessian(u)'*d2ut);
+
+  matrix AHess = aHess(matrixSpace, matrixSpace);	// LHS matrix.
+  real[int] bHess = lHess(0, matrixSpace);        // RHS vector.
+
+  real[int] solHess(matrixSpace.ndof);
+  solHess=AHess^-1*bHess;
+  d2u#xx[]=solHess(0:matrixSpace.ndof-1);
+}
+EndMacro
+
+// computeGradVect documentation
+//
+NewMacro computeGradVect(dv,v,Th,matrixSpace)
+macro dv [dv#xx,dv#xy,dv#yx,dv#yy] // // Result of Grad(v).
+matrixSpace dv=[0,0,0,0];
+{
+  macro Grad(v) [dx(v#x),dy(v#x),dx(v#y),dy(v#y)] // // Gradient of a vector.
+  macro dvt [dvtxx,dvtxy,dvtyx,dvtyy]// // Test function to compute Grad(v).
+
+  varf aGrad(dv, dvt) = int2d(Th)(dv'*dvt);
+  varf lGrad(dv, dvt) = int2d(Th)(Grad(v)'*dvt);
+
+  matrix AGrad = aGrad(matrixSpace, matrixSpace);  // LHS matrix.
+  real[int] bGrad = lGrad(0, matrixSpace);         // RHS vector.
+
+  real[int] solGrad(matrixSpace.ndof);
+  solGrad=AGrad^-1*bGrad;
+
+  dv##xx[]=solGrad(0:matrixSpace.ndof-1);
+}
+EndMacro
+
+// computeLocalObservables documentation
+//
+NewMacro computeLocalObservables(
+  dv,dp,d2px,d2py,dPr,matrixSpace,vectorSpace,v,p,Th
+)
+// Create a FEM space for P1 2x2 tensors.
+fespace matrixSpace(Th,[P1,P1,P1,P1])
+
+// Velocity vector gradient.
+computeGradVect(dv,v,Th,matrixSpace)
+
+// Polarity vector gradient.
+computeGradVect(dp,p,Th,matrixSpace)
+
+// Hessian of the polarity x-component.
+computHess(d2px,p#x,Th,matrixSpace)
+
+// Hessian of the polarity y-component.
+computHess(d2py,p#y,Th,matrixSpace)
+\\
+IF INCOMPRESSIBLE
+// Create a FEM space for a P1 vector.
+fespace vectorSpace(Th,[P1,P1])
+
+// Pressure scalar gradient.
+computeGrad(dPr,v#Pr,Th,vectorSpace)
+ENDIF
+EndMacro
+
+// computeIntegratedObservables documentation
+//
+NewMacro computeIntegratedObservables(
+  intObs,v,p,dv,Th,b,d,dt,NiterTime,prevObs
+)
+real[string] intObs;
+{
+  IF PERIODIC
+  intObs["Time"] = dt*Niter; // Time (adim)
+  intObs["Area"] = Th.measure; // Current area
+  
+  // Average of the divergence of the velocity.
+  intObs["avgDivV"] = int2d(Th)(dvxdx+dvydy)/(Th.measure);
+  \\
+  ELSE
+  // Local scope variables.
+  real Areai = Th.measure;                      // Current area.
+  real Xcm = int2d(Th)(x)/Areai;                // Current Xcm.
+  real Ycm = int2d(Th)(y)/Areai;                // Current Ycm.
+  real avgDivV = int2d(Th)(dvxdx+dvydy)/Areai;  // Average div of the velocity.
+
+  // Time (adim)
+  intObs["Time"] = dt*Niter;
+
+  // Save them to intObs.
+  intObs["Area"] = Areai;
+  intObs["Xcm"] = Xcm;  intObs["Ycm"] = Ycm;
+  intObs["avgDivV"] = avgDivV;
+
+  // Center of mass velocity (backward).
+  intObs["Xcm"] = (Xcm-prevObs["Xcm-1"])/dt; 
+  intObs["Ycm"] = (Ycm-prevObs["Ycm-1"])/dt; 
+
+  // Current average velocity.
+  intObs["Vxavg"] = int2d(Th)(v#x)/Areai;
+  intObs["Vyavg"] = int2d(Th)(v#y)/Areai;
+
+  // Center of mass acceleration (2nd order backward).
+  intObs["Axcm"] = (Xcm-2.*prevObs["Xcm-1"]+prevObs["Xcm-2"])/pow(dt,2);
+  intObs["Aycm"] = (Ycm-2.*prevObs["Ycm-1"]+prevObs["Ycm-2"])/pow(dt,2);
+
+  // Average traction (adim).
+  intObs["Txcm"] = int2d(Th)(d*p#x)/Areai;
+  intObs["Tycm"] = int2d(Th)(d*p#y)/Areai;
+  
+  // Center of mass of the divergence of the velocity.
+  intObs["divXcm"] = int2d(Th)(x*(dv#xx+dv#yy))/Areai;
+  intObs["divYcm"] = int2d(Th)(y*(dv#xx+dv#yy))/Areai;
+
+  // Average divergence of the center of mass velocity.
+  intObs["divXavgcm"] = Xcm*avgDivV;
+  intObs["divYavgcm"] = Ycm*avgDivV;
+
+  // Divergence terms of the center of mass velocity (Spreading integral).
+  intObs["divTermsX"] = int2d(Th)((x-Xcm)*(dv#xx+dv#yy))/Areai;
+  intObs["divTermsY"] = int2d(Th)((y-Ycm)*(dv#xx+dv#yy))/Areai;
+
+  // Traction Dipole (adim & symmetric).
+  intObs["MxxT"] = int2d(Th)((x-Xcm)*d*p#x);
+  intObs["MxyT"] = int2d(Th)((x-Xcm)*d*p#y);
+  intObs["MyyT"] = int2d(Th)((y-Ycm)*d*p#y);
+
+  // Friction Dipole (adim & symmetric).
+  intObs["MxxF"] = int2d(Th)((x-Xcm)*pow(b,2)*v#x);
+  intObs["MxyF"] = int2d(Th)((x-Xcm)*pow(b,2)*v#y);
+  intObs["MyyF"] = int2d(Th)((y-Ycm)*pow(b,2)*v#y);
+
+  // Traction Quadrupole (adim & symmetric).
+  intObs["MxxxT"] = int2d(Th)(pow((x-Xcm),2)*d*p#x);
+  intObs["MxxyT"] = int2d(Th)(pow((x-Xcm),2)*d*p#y);
+  intObs["MxyxT"] = int2d(Th)((x-Xcm)*(y-Ycm)*d*p#x);
+  intObs["MxyyT"] = int2d(Th)((x-Xcm)*(y-Ycm)*d*p#y);
+  intObs["MyyxT"] = int2d(Th)(pow((y-Ycm),2)*d*p#x);
+  intObs["MyyyT"] = int2d(Th)(pow((y-Ycm),2)*d*p#y);
+
+  // Friction Quadrupole (adim & symmetric).
+  intObs["MxxxF"] = int2d(Th)(pow((x-Xcm),2)*pow(b,2)*v#x);
+  intObs["MxxyF"] = int2d(Th)(pow((x-Xcm),2)*pow(b,2)*v#y);
+  intObs["MxyxF"] = int2d(Th)((x-Xcm)*(y-Ycm)*pow(b,2)*v#x);
+  intObs["MxyyF"] = int2d(Th)((x-Xcm)*(y-Ycm)*pow(b,2)*v#y);
+  intObs["MyyxF"] = int2d(Th)(pow((y-Ycm),2)*pow(b,2)*v#x);
+  intObs["MyyyF"] = int2d(Th)(pow((y-Ycm),2)*pow(b,2)*v#y);
+
+  // Moments of inertia with respect to the x & y axes at the CM
+  intObs["Ix"] = int2d(Th)(pow(y-Ycm,2));
+  intObs["Iy"] = int2d(Th)(pow(x-Xcm,2));
+  ENDIF
+}
+EndMacro

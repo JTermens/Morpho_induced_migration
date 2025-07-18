@@ -4,7 +4,7 @@
 
 // computeGrad documentation
 //
-NewMacro computeGrad(du,u,Th,vectorSpace)
+NewMacro computeGrad(du,/**/u,Th,vectorSpace)
 macro du [du#x,du#y] // // Result of Gradient(u).
 vectorSpace du = [0,0];
 {
@@ -24,7 +24,7 @@ EndMacro
 
 // computeHess documentation
 //
-NewMacro computHess(d2u,u,Th,matrixSpace)
+NewMacro computHess(d2u,/**/u,Th,matrixSpace)
 macro d2u [d2u#xx,d2u#xy,d2u#yx,d2u#yy] // // Result of Hessian(u).
 matrixSpace d2u=[0,0,0,0];
 {
@@ -45,7 +45,7 @@ EndMacro
 
 // computeGradVect documentation
 //
-NewMacro computeGradVect(dv,v,Th,matrixSpace)
+NewMacro computeGradVect(dv,/**/v,Th,matrixSpace)
 macro dv [dv#xx,dv#xy,dv#yx,dv#yy] // // Result of Grad(v).
 matrixSpace dv=[0,0,0,0];
 {
@@ -68,10 +68,14 @@ EndMacro
 // computeLocalObservables documentation
 //
 NewMacro computeLocalObservables(
-  dv,dp,d2px,d2py,dPr,matrixSpace,vectorSpace,v,p,Th
+  dv,dp,d2px,d2py,dPr,matrixSpace,vectorSpace,/**/v,p,Th,perio
 )
 // Create a FEM space for P1 2x2 tensors.
-fespace matrixSpace(Th,[P1,P1,P1,P1])
+IF PERIODIC
+fespace matrixSpace(Th,[P1,P1,P1,P1],periodic=perio);
+ELSE
+fespace matrixSpace(Th,[P1,P1,P1,P1]);
+ENDIF
 
 // Velocity vector gradient.
 computeGradVect(dv,v,Th,matrixSpace)
@@ -87,7 +91,11 @@ computHess(d2py,p#y,Th,matrixSpace)
 \\
 IF INCOMPRESSIBLE
 // Create a FEM space for a P1 vector.
-fespace vectorSpace(Th,[P1,P1])
+IF PERIODIC
+fespace vectorSpace(Th,[P1,P1],periodic=perio);
+ELSE
+fespace vectorSpace(Th,[P1,P1]);
+ENDIF
 
 // Pressure scalar gradient.
 computeGrad(dPr,v#Pr,Th,vectorSpace)
@@ -97,7 +105,7 @@ EndMacro
 // computeIntegratedObservables documentation
 //
 NewMacro computeIntegratedObservables(
-  intObs,v,p,dv,Th,b,d,dt,NiterTime,prevObs
+  intObs,/**/v,p,dv,Th,b,d,dt,NiterTime,prevObs
 )
 real[string] intObs;
 {

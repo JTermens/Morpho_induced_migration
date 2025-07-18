@@ -1,0 +1,21 @@
+// Manage command-line arguments
+include "getARGV.idp"
+
+include "../src/ff++/modules/mesh-generation.edp"; // Load the mesh generation.
+include "../src/ff++/macros/observables-macros.edp"; // Load the operator solvers.
+
+bool DEBUG = getARGV("-d", 0); // set to 1 to produce the plots.
+
+NewMacro plotField(field,plotLabel)
+  plot(field, value = true, fill = true, nbiso = 64, wait = true, cmm = plotLabel);
+EndMacro
+
+cout << "Testing the macros of physics-macros.edp" << endl;
+
+// Generate a circular mesh ---------------------------------------------------
+cout << "Generating a mesh..." << endl;
+real[int] circleParameters = [1]; // Circle radius = 1.
+int[int] circleLabels = [1];
+int outerBndDensity = 20;
+
+mesh Th = circle(outerBndDensity, circleParameters, circleLabels);

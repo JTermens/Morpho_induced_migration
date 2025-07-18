@@ -1,0 +1,279 @@
+/*
+
+*/
+
+// FEM Spaces -----------------------------------------------------------------
+
+// setFEMSpaces documentation
+// 
+NewMacro setFEMSpaces(PolSpace,VelSpace,NormalSpace,/**/Th,perio)
+IF PERIODIC
+// Polarity vector space. P2 ensures that div(pp) is smooth.
+fespace PolSpace(Th, [P2, P2],periodic=perio);
+// Corrected normal vector at the boundary & periodic geometry
+fespace NormalSpace(Th,[P1,P1],periodic=perio);
+\\
+IF INCOMPRESSIBLE
+// Velocity [P1b,P1b] and pressure P1 vector space & periodic geometry.
+fespace VelSpace(Th,[P1b,P1b,P1],periodic=perio);
+ELSE
+// Velocity [P1b,P1b] vector space & periodic geometry.
+fespace VelSpace(Th,[P1b,P1b],periodic=perio);
+ENDIF
+ELSE
+// Polarity vector space. P2 ensures that div(pp) is smooth.
+fespace PolSpace(Th, [P2, P2]);
+// Ccorrected normal vector at the boundary
+fespace NormalSpace(Th,[P1,P1]);
+\\
+IF INCOMPRESSSIBLE
+// Velocity [P1b,P1b] and pressure P1 space.
+fespace VelSpace(Th,[P1b,P1b,P1]);
+ELSE
+// Velocity [P1b,P1b] vector space.
+fespace VelSpace(Th,[P1b,P1b]);
+ENDIF
+ENDIF
+EndMacro
+
+// ----------------------------------------------------------------------------
+
+
+
+// Polarity Equation ----------------------------------------------------------
+
+// setPolarityProblem documentation.
+//
+NewMacro setPolarityProblem(p,q,PolBC,bilinearP,grad/**/c,Th,labels)
+macro p [p#x, p#y]// // Polarity vector function.
+macro q [q#x, q#y]// // Polarity test function.
+  
+// Set the boundary conditions.
+varf PolBC(p,q) = 
+  on(labels["Free"], p#x = 0.0) + on(labels["Free"], p#y = 0.0)
+  IF PERIODIC
+  IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
+  + on(labels["Fixed"], p#x = 0.0) + on(labels["Fixed"], p#y = 0.0)
+  ENDIF
+  ENDIF
+  \\;
+
+// Macros of differential operators
+macro grad(u) [dx(u),dy(u)] // // Gradient of a sclar field (vect. component).
+
+// Bilinear variational forms of P.
+// Modified Homogeneous Dirirchlet problem for p-pBnd.
+varf bilinearP(p, q) = int2d(Th)(
+    (grad(p#x)'*grad(q#x) + grad(p#y)'*grad(q#y))
+    + c*c*(p'*q)
+  ) + PolBC(p,q);
+EndMacro
+
+// AssemblyPolarityProblem documentation.
+//
+NewMacro assemblyPolarityProblem(
+  matrixP,vectorP,/**/p,q,pBnd,PolSpace,c,Th,PolBC,bilinearP,grad
+)
+// Define the sparse matrix & vector of the problem's forms.
+matrix matrixP;
+real[int] vectorP(PolSpace.ndof);
+{
+  // Linear variational form of P.
+  // Modified Homogeneous Dirirchlet problem for p-pBnd.
+  varf linearP(p, q) = int2d(Th)(
+    - (grad(pBnd#x)'*grad(q#x) + grad(pBnd#y)'*grad(q#y)) 
+    - c*c*(pBnd'*q)
+  )
+    + PolBC(p,q);
+
+  // Assembly the polarity problem.
+  matrixP = bilinearP(PolSpace, PolSpace, tgv = -2); // LHS matrix.
+  vectorP = linearP(0, PolSpace);                    // RHS vector.
+}
+EndMacro
+
+// setBoundaryPolarity documentation.
+//
+NewMacro setBoundaryPolarity(pBnd,/**/normals,PolSpace,labels)
+macro pBnd [pBnd#x,pBnd#y]// // Polarity inhomogeneous B.C.
+PolSpace pBnd = [0,0];
+{
+  macro q [q#x,q#y]// // Polarity test function.
+
+  // P2 extension of polarity Dirichlet data
+  varf bndDirichletP(pBnd,q) = 
+    on(labels["Free"], pBnd#x = normals#x) 
+    + on(labels["Free"], pBnd#y = normals#y);
+  
+  pBnd#x[] = bndDirichletP(0, PolSpace, tgv = 1.0);
+}
+EndMacro
+
+// solvePolarity documentation.
+//
+NewMacro solvePolarity(p,/**/pBnd,PolSpace,matrixP,vectorP)
+PolSpace p=[0,0]; // Initialize the polarity vector to 0.
+{
+  // P solution with vanishing Dirichlet data
+  real[int] solutionP(PolSpace.ndof);
+  //set(matrixP,solver=sparsesolver);
+  solutionP=matrixP^-1*vectorP;
+  p#x[]=solutionP(0:PolSpace.ndof-1);
+
+  // P solution
+  p = p + pBnd;
+}
+EndMacro
+
+// ----------------------------------------------------------------------------
+
+
+
+// Velocity Equation ----------------------------------------------------------
+
+// setVelocityProblem documentation.
+//
+NewMacro setVelocityProblem(v,u,bilinearV,Grad,GradT,/**/b,Th,labels)
+macro v [v#x, v#y]// // Velocity vector function.
+macro u [u#x, u#y]// // Velocity test function.
+
+// Macros of differential operators
+macro Grad(v) [dx(v#x),dy(v#x),dx(v#y),dy(v#y)] // // Gradient of a vector v.
+macro GradT(v) [dx(v#x),dx(v#y),dy(v#x),dy(v#y)] // // Grad vector transpose.
+
+// Bilinear variational forms of V.
+varf bilinearV(v, u) = int2d(Th)(
+    ((Grad(v)+GradT(v))'*Grad(u)) // -viscosity
+    + pow(b,2)*(v'*u) // -friction
+  )
+  IF PERIODIC
+  IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
+  + on(labels["Fixed"], v#x = 0.0) + on(labels["Fixed"], v#y = 0.0);
+  ENDIF
+  ENDIF
+  \\;
+EndMacro
+
+// assemblyVelocityProblem documentation.
+//
+NewMacro assemblyVelocityProblem(
+  matrixV,vectorV/**/v,u,p,VelSpace,a,d,Th,labels,bilinearV,Grad
+)
+// Define the sparse matrix & vector of the problem's forms.
+matrix matrixV;
+real[int] vectorV(VelSpace.ndof);
+{
+  // Outer product of p by itself.
+  macro pp(p) [p#x*p#x,p#x*p#y,p#y*p#x,p#y*p#y] // //EOM
+
+  // Linear variational form of V.
+  varf linearV(v, u) = int2d(Th)(
+    + a*(pp(p)'*Grad(u)) //contractilit
+    + d*(p'*u) // +active traction
+  )
+  IF PERIODIC
+  IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
+  + on(labels["Fixed"], v#x = 0.0) + on(labels["Fixed"], v#y = 0.0)
+  ENDIF
+  ENDIF
+  \\;
+
+  // Assembly the velocity problem.
+  matrixV = bilinearV(VelSpace, VelSpace); // LHS matrix.
+  vectorV = linearV(0, VelSpace);          // RHS vector.
+}
+EndMacro
+
+// solveVelocity documentation.
+//
+NewMacro solveVelocity(v,/**/VelSpace,matrixV,vectorV)
+VelSpace v = [0,0]; // Initialize the velocity vector to 0.
+{
+  // V solution with stress-free boundary conditions
+  real[int] solutionV(VelSpace.ndof);
+  //set(matrixV,solver=sparsesolver);
+  solutionV=matrixV^-1*vectorV;
+  v#x[]=solutionV(0:VelSpace.ndof-1);
+}
+EndMacro
+
+// ----------------------------------------------------------------------------
+
+
+
+// Velocity-Pressure equation (incompressible) --------------------------------
+
+// setVelocityPressureProblem documentation.
+//
+NewMacro setVelocityPressureProblem(
+  v,u,bilinearV,Grad,GradT,div,/**/b,Th,labels
+)
+macro v [v#x, v#y, v#Pr]// // Velocity-pressure vector function.
+macro u [u#x, u#y, u#Pr]// // Velocity-pressure test function.
+
+// Macros of differential operators
+macro Grad(v) [dx(v#x),dy(v#x),dx(v#y),dy(v#y)] // // Gradient of a vector v.
+macro GradT(v) [dx(v#x),dx(v#y),dy(v#x),dy(v#y)] // // Grad vector transpose.
+macro div(v) (dx(v#x) + dy(v#y)) // // Divergence of a vector v.
+
+
+// Bilinear variational forms of V.
+varf bilinearV(v, u) = int2d(Th)(
+    ((Grad(v)+GradT(v))'*Grad(u)) // -viscosity
+    // Take care to not include the pressure into the product
+    + pow(b,2)**([v#x,v#y]'*[u#x,u#y]) // -friction
+    - div(v)*u#Pr // u#PR is the pressure component of the test function u.
+    - v#Pr*div(u) // pressure term, ensures the incompressibility
+  ) 
+  IF PERIODIC
+  IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
+  + on(labels["Fixed"], v#x = 0.0) + on(labels["Fixed"], v#y = 0.0);
+  ENDIF
+  ENDIF
+  \\;
+EndMacro
+
+// assemblyVelocityPressureProblem documentation.
+//
+NewMacro assemblyVelocityPressureProblem(
+  matrixV,vectorV/**/v,u,p,VelSpace,a,d,Th,labels,bilinearV,Grad
+)
+// Define the sparse matrix & vector of the problem's forms.
+matrix matrixV;
+real[int] vectorV(VelSpace.ndof);
+{
+  // Outer product of p by itself.
+  macro pp(p) [p#x*p#x,p#x*p#y,p#y*p#x,p#y*p#y] // //EOM
+
+  // Linear variational form of V.
+  varf linearV(v, u) = int2d(Th)(
+    + a*(pp(p)'*Grad(u)) //contractilit
+    + d*(p'*[u#x,u#y])   // +active traction
+  )
+  IF PERIODIC
+  IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
+  + on(labels["Fixed"], v#x = 0.0) + on(labels["Fixed"], v#y = 0.0)
+  ENDIF
+  ENDIF
+  \\;
+
+  // Assembly the velocity problem.
+  matrixV = bilinearV(VelSpace, VelSpace); // LHS matrix.
+  vectorV = linearV(0, VelSpace);          // RHS vector.
+}
+EndMacro
+
+// solveVelocityPressure documentation.
+//
+NewMacro solveVelocityPressure(v,/**/VelSpace,matrixV,vectorV)
+VelSpace v = [0,0,0]; // Initialize the velocity-pressure vector to 0.
+{
+  // V solution with stress-free boundary conditions
+  real[int] solutionV(VelSpace.ndof);
+  //set(matrixV,solver=sparsesolver);
+  solutionV=matrixV^-1*vectorV;
+  v#x[]=solutionV(0:VelSpace.ndof-1);
+}
+EndMacro
+
+// ----------------------------------------------------------------------------

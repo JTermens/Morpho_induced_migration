@@ -71,7 +71,7 @@ NewMacro computeLocalObservables(
   dv,dp,d2px,d2py,dPr,matrixSpace,vectorSpace,/**/v,p,Th,perio
 )
 // Create a FEM space for P1 2x2 tensors.
-IF PERIODIC
+IF periodic
 fespace matrixSpace(Th,[P1,P1,P1,P1],periodic=perio);
 ELSE
 fespace matrixSpace(Th,[P1,P1,P1,P1]);
@@ -91,7 +91,7 @@ computHess(d2py,p#y,Th,matrixSpace)
 \\
 IF INCOMPRESSIBLE
 // Create a FEM space for a P1 vector.
-IF PERIODIC
+IF periodic
 fespace vectorSpace(Th,[P1,P1],periodic=perio);
 ELSE
 fespace vectorSpace(Th,[P1,P1]);
@@ -109,7 +109,7 @@ NewMacro computeIntegratedObservables(
 )
 real[string] intObs;
 {
-  IF PERIODIC
+  IF periodic
   intObs["Time"] = dt*Niter; // Time (adim)
   intObs["Area"] = Th.measure; // Current area
   

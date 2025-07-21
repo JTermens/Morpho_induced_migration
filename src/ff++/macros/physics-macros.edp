@@ -7,7 +7,7 @@
 // setFEMSpaces documentation
 // 
 NewMacro setFEMSpaces(PolSpace,VelSpace,NormalSpace,/**/Th,perio)
-IF PERIODIC
+IF periodic
 // Polarity vector space. P2 ensures that div(pp) is smooth.
 fespace PolSpace(Th, [P2, P2],periodic=perio);
 // Corrected normal vector at the boundary & periodic geometry
@@ -51,7 +51,7 @@ macro q [q#x, q#y]// // Polarity test function.
 // Set the boundary conditions.
 varf PolBC(p,q) = 
   on(labels["Free"], p#x = 0.0) + on(labels["Free"], p#y = 0.0)
-  IF PERIODIC
+  IF periodic
   IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
   + on(labels["Fixed"], p#x = 0.0) + on(labels["Fixed"], p#y = 0.0)
   ENDIF
@@ -146,7 +146,7 @@ varf bilinearV(v, u) = int2d(Th)(
     ((Grad(v)+GradT(v))'*Grad(u)) // -viscosity
     + pow(b,2)*(v'*u) // -friction
   )
-  IF PERIODIC
+  IF periodic
   IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
   + on(labels["Fixed"], v#x = 0.0) + on(labels["Fixed"], v#y = 0.0);
   ENDIF
@@ -171,7 +171,7 @@ real[int] vectorV(VelSpace.ndof);
     + a*(pp(p)'*Grad(u)) //contractilit
     + d*(p'*u) // +active traction
   )
-  IF PERIODIC
+  IF periodic
   IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
   + on(labels["Fixed"], v#x = 0.0) + on(labels["Fixed"], v#y = 0.0)
   ENDIF
@@ -225,7 +225,7 @@ varf bilinearV(v, u) = int2d(Th)(
     - div(v)*u#Pr // u#PR is the pressure component of the test function u.
     - v#Pr*div(u) // pressure term, ensures the incompressibility
   ) 
-  IF PERIODIC
+  IF periodic
   IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
   + on(labels["Fixed"], v#x = 0.0) + on(labels["Fixed"], v#y = 0.0);
   ENDIF
@@ -250,7 +250,7 @@ real[int] vectorV(VelSpace.ndof);
     + a*(pp(p)'*Grad(u)) //contractilit
     + d*(p'*[u#x,u#y])   // +active traction
   )
-  IF PERIODIC
+  IF periodic
   IF fixed //** Even if the mesh is periodic, it may have two free boundaries.
   + on(labels["Fixed"], v#x = 0.0) + on(labels["Fixed"], v#y = 0.0)
   ENDIF

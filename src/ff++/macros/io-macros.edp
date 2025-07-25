@@ -1,15 +1,90 @@
 /*
 
 */
+// macroInputMeshParameters documentation
+// Separate the input of the mesh parameters and the densities, boundary width
+// and labels, as the mesh parameters could be defined in a local scope,
+// whereas the other variables, are needed for the remeshing macros.
+NewMacro macroInputMeshParameters(
+  meshParameters
+)
+// Dynamic map with the mesh parameters. May vary with the mesh generator.
+real[string] meshParameters;
+
+{ // Load the parameters as a dynamic map (dictionary) for an easy handling and robustness.
+  string[int] meshKeys = $meshKeys;
+  real[int] meshValues = $meshValues;
+  for [i, iKey : meshKeys]{
+    meshParameters[iKey] = meshValues[i];
+  }
+}
+EndMacro
+
+// macroInputLabels documentation
+//
+NewMacro macroInputLabels(free, fixed, periodic)
+IF free //** Unpack the free labels.
+int[int] free = $free;
+ELSE
+int[int] free = -1; // No free boundary.
+ENDIF
+\\
+IF fixed //** Unpack the fixed labels.
+int[int] fixed = $fixed;
+ELSE
+int[int] fixed = -1; // No fixed boundary.
+ENDIF
+\\
+IF periodic //** Unpack the periodic labels
+int[int] periodic = $periodic;
+func perio=[[periodic[0],x],[periodic[1],x]]; // Periodicity.
+ELSE
+int[int] periodic = -1; // No periodic boundary.
+bool perio = 0;    // No periodicity defined.
+ENDIF
+\\
+EndMacro
+
+// macro
+//
+NewMacro macroInputNumerics(outerBndDensity,innerBndDensity,bndLayerWidth,dt,NiterTime,areaMinMaxRates,dsave)
+// Numerical parameters for the simulations (global scope) ------------------
+DEFAULT (bndLayerWidth, "50")
+DEFAULT (outerBndDensity, "45")
+DEFAULT (innerBndDensity, "15")
+DEFAULT (dt, "1e-3")
+DEFAULT (NiterTime, "2000")
+DEFAULT (rateMaxArea, "8")
+DEFAULT (rateMinArea, "1/8")
+DEFAULT (dsave, "0")
+\\
+real bndLayerWidth = $bndLayerWidth;    // Width of the boundary layer [μm].
+int outerBndDensity = $outerBndDensity; // num outer bnd nodes per unit length.
+int innerBndDensity = $innerBndDensity; // num inner bnd nodes per unit length.
+
+real dt = $dt; // Adim. time step, real time step = dt * tscale.
+
+// Num. of iterations, Max time = NiteTime * dt * tscale.
+int NiterTime = $NiterTime;
+
+// Stop the simulation when Area >= rateMaxArea * (Initial Area) or 
+// Area <= rateMinArea * (Initial Area)
+real[string] areaMinMaxRates;
+areaMinMaxRates["Min"] = $rateMinArea;
+areaMinMaxRates["Max"] = $rateMaxArea;
+
+// Save frame gap. If set to 0, no solutions will be saved.
+// Usually we do not need that many solutions to represent an evolution and
+// also it will save memory and loading time. 
+int dsave = $dsave;
+EndMacro
+
 
 // macroInputParameters documentation
 //
-NewMacro macroInputParameters(a,b,c,d,dt,NiterTime,areaMinMaxRates,dsave/**/,lengthScale)
+NewMacro macroInputParameters(a,b,c,d/**/,lengthScale)
 // Initialize to 0 the problem adim. parameters.
 real a = 0; real b = 0; real c = 0; func d = 0;
-
-// Initialize to 0 the numerical adim. parameters.
-real dt = 0; int NiterTime = 0; real[string] areaMinMaxRates; int dsave;
 
 {
   // Problem physical Parameters ----------------------------------------------
@@ -42,27 +117,5 @@ real dt = 0; int NiterTime = 0; real[string] areaMinMaxRates; int dsave;
   b = lengthScale/lambda;        // Characteristic and hydrodynamic length ratio.
   c = lengthScale/Lc;            // Characteristic and nematic length ratio.
   d = (zi*lengthScale)/(zi0*Lc); // Modified c for durotaxis.
-
-  // Numerical parameters for the simulations (global scope) ------------------
-  DEFAULT (dt, "1e-3")
-  DEFAULT (NiterTime, "2000")
-  DEFAULT (rateMaxArea, "8")
-  DEFAULT (rateMinArea, "1/8")
-  DEFAULT (dsave, "0")
-  \\
-  dt = $dt; // Adim. time step, real time step = dt * tscale.
-
-  // Num. of iterations, Max time = NiteTime * dt * tscale.
-  NiterTime = $NiterTime;
-
-  // Stop the simulation when Area >= rateMaxArea * (Initial Area) or 
-  // Area <= rateMinArea * (Initial Area)
-  areaMinMaxRates["Min"] = $rateMinArea;
-  areaMinMaxRates["Max"] = $rateMaxArea;
-
-  // Save frame gap. If set to 0, no solutions will be saved.
-  // Usually we do not need that many solutions to represent an evolution and
-  // also it will save memory and loading time. 
-  dsave = $dsave;
 }
 EndMacro

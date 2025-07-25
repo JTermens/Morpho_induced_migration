@@ -1,5 +1,8 @@
 /* meshes.edp
-Catalog of FreeFem++ meshes for the Ephithelial-tissues-FEM project. It includes the following mesh generation functions:
+Author: Joan Térmens (https://github.com/JTermens)
+
+Catalog of FreeFem++ meshes for the Ephithelial-tissues-FEM project. 
+It includes the following mesh generation functions:
 
 Closed meshes:
 - fourCurveShape
@@ -13,13 +16,24 @@ Semi-periodic meshes
 - 
 
 All the meshes share the same arguments:
-- int bndDensity: boundary density, num. of points per unit lenght at the boundary.
-- real[int] meshParameters: array with the parameters that define the shape.
-- int[int] labels: labels of the mesh boundaries.
+- real bndDensity: boundary density, num. of points per unit lenght at the 
+  boundary.
+- real[string]& meshParameters: dictionary with the parameters that define the
+  shape. The & ensures passing it by reference to avoid copy value problems.
+- int[int] free: labels of the free boundaries that will be remeshed with 
+  splines.
+- int[int] fixed: labels of the fixed boundaries (will impose v = 0 on those).
+- int[int] periodic: labels of the periodic boundaries. Always in pairs will be
+  remesh by linear interpolation.
+- real lengthScale: lengthScale to adimesnionalize the domain, 
+  {x', y'} = {x, y}/lengthScale.
+- real Nmin: Minimum number of points per border. If the mesh is very big, set 
+  bndDensity to a low value and control the number of bnd nodes with Nmin.
 */
 
 func mesh fourCurveShape(
-  int bndDensity, real[int] meshParameters , int[int] labels, real lengthScale
+  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
+  int[int] periodic, real lengthScale, real Nmin
 ){
   /*
   [mesh] fourCurveShape returns a mesh with a boundary defined by four 
@@ -28,38 +42,41 @@ func mesh fourCurveShape(
   and close the boundary.
 
   Parameters:
-  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
-  - real[int] meshParameters: parameters that define the shape. By order:
-    - 0, rUp: radius of the upper arch.
-    - 1, rDown: radius of the lower arch.
-    - 2, rLeft: radius of the left arch. 
-    - 3, rRight: radius of the right arch.
-    - 4, d: distance between the center of the Up & Down arches.
-    - 5, symmAxis: orientation of the (not necessary symmetric) shape. Defines
+  - real bndDensity: boundary density, num. of points per unit lenght at the 
+    boundary.
+  - real[string]& meshParameters: parameters that define the shape:
+    - "rUp": radius of the upper arch.
+    - "rDown": radius of the lower arch.
+    - "rLeft": radius of the left arch. 
+    - "rRight": radius of the right arch.
+    - "d": distance between the center of the Up & Down arches.
+    - "symmAxis": orientation of the (not necessary symmetric) shape. Defines
     the line between the centers of the Up & Down arches.
-  - int[int] labels: the first element is the boundary label, other ones will
-  be ignored.
-  - real lengthScale: length scale used to adimensionalize the mesh (x, y /= L).
+  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
+    will be ignored.
+  - real lengthScale: length scale used to adimensionalize the mesh (x,y /= L).
+  - real Nmin: Minimum number of points per border.
 
   * Return type: mesh
   */
 
   // Unpack mesh parameters
-  real rUp = meshParameters[0];
-  real rDown = meshParameters[1];
-  real rLeft = meshParameters[2];
-  real rRight = meshParameters[3];
-  real d = meshParameters[4];
-  real symmAxis = meshParameters[5];
+  real rUp = meshParameters["rUp"];
+  real rDown = meshParameters["rDown"];
+  real rLeft = meshParameters["rLeft"];
+  real rRight = meshParameters["rRight"];
+  real d = meshParameters["d"];
+  real symmAxis = meshParameters["symmAxis"];
 
   // Set the closed-boundary label
-  int labelBnd = labels[0];
+  int labelBnd = free[0];
 
   mesh Th; // Final mesh
 
-  if (((d+rUp-rDown-2*rRight) <= 0) || ((d+rUp-rDown-2*rLeft) <= 0)) {
+  try{
+    1/(((d+rUp-rDown-2*rRight) > 0) && ((d+rUp-rDown-2*rLeft) > 0));
+  } catch (...) {
     cout << "ERROR: d + rUp - rDown - 2*(rRight and rLeft) > 0" << endl;
-    return Th;
   }
 
   real thetaDownRight = acos(
@@ -112,17 +129,18 @@ func mesh fourCurveShape(
   };
 
   Th = buildmesh(
-    rightArch(bndDensity*rRight*thetaRight/lengthScale)
-    + upArch(bndDensity*rUp*(thetaUpLeft+thetaUpRight)/lengthScale)
-    + leftArch(bndDensity*rLeft*thetaLeft/lengthScale)
-    + downArch(bndDensity*rDown*(thetaDownLeft+thetaDownRight)/lengthScale)
+    rightArch(max(Nmin, bndDensity*rRight*thetaRight/lengthScale))
+    + upArch(max(Nmin, bndDensity*rUp*(thetaUpLeft+thetaUpRight)/lengthScale))
+    + leftArch(max(Nmin, bndDensity*rLeft*thetaLeft/lengthScale))
+    + downArch(max(Nmin, bndDensity*rDown*(thetaDownLeft+thetaDownRight)/lengthScale))
   );
 
   return Th;
 }
 
 func mesh oneCutSmooth(
-  int bndDensity, real[int] meshParameters , int[int] labels, real lengthScale
+  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed, 
+  int[int] periodic, real lengthScale, real Nmin
 ){
   /*
   [mesh] oneCutSmooth returns a mesh with a boundary defined by circle with a
@@ -131,27 +149,29 @@ func mesh oneCutSmooth(
   radius rArch.
 
   Parameters:
-  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
-  - real[int] meshParameters: parameters that define the shape. By order:
-    - 0, cut: angluar length of the straight cut line.
-    - 1, r0: radius of the circumference (Front) arch.
-    - 2, rArch: radius of the tangential arches that smooth the cut vertices. 
-    - 3, symmAxis: orientation of the shape. Defines the mid-line of the cut.
-  - int[int] labels: the first element is the boundary label, other ones will
-  be ignored.
-  - real lengthScale: length scale used to adimensionalize the mesh (x, y /= L).
+  - real bndDensity: boundary density, num. of points per unit lenght at the 
+    boundary.
+  - real[string]& meshParameters: parameters that define the shape:
+    - "cut": angluar length of the straight cut line.
+    - "r0": radius of the circumference (Front) arch.
+    - "rArch": radius of the tangential arches that smooth the cut vertices. 
+    - "symmAxis": orientation of the shape. Defines the mid-line of the cut.
+  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
+    will be ignored.
+  - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
+  - real Nmin: Minimum number of points per border.
 
   * Return type: mesh
   */
 
   // Unpack meshParameters
-  real cut = meshParameters[0];
-  real r0 = meshParameters[1];
-  real rArch = meshParameters[2];
-  real symmAxis = meshParameters[3];
+  real cut = meshParameters["cut"];
+  real r0 = meshParameters["r0"];
+  real rArch = r0*meshParameters["fracRarc"];
+  real symmAxis = meshParameters["symmAxis"];
 
   // Set the closed-boundary label
-  int labelBnd = labels[0];
+  int labelBnd = free[0];
 
   real cutAxis = symmAxis+pi;
   real t1 = acos((cos(cut/2.)-(rArch/r0))/(1-(rArch/r0)));
@@ -163,107 +183,117 @@ func mesh oneCutSmooth(
   real lenCut = sqrt((OxRight-OxLeft)*(OxRight-OxLeft) + (OyRight-OyLeft)*(OyRight-OyLeft));
 
   border ArchLeft(t=0,1){
-    x = (OxLeft+rArch*cos(cutAxis-t1*(1-t)))/lengthScale; 
-    y = (OyLeft+rArch*sin(cutAxis-t1*(1-t)))/lengthScale; 
+    x = (OxLeft+rArch*cos(cutAxis-t1*(1-t))); 
+    y = (OyLeft+rArch*sin(cutAxis-t1*(1-t))); 
     label = labelBnd;
   };
 
   border Cut(t=0,1){
-    x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t)/lengthScale;
-    y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t)/lengthScale;
+    x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t);
+    y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t);
     label = labelBnd;
   };
 
   border ArchRight(t=0,1){
-    x = (OxRight+rArch*cos(cutAxis+t1*t))/lengthScale; 
-    y = (OyRight+rArch*sin(cutAxis+t1*t))/lengthScale;
+    x = (OxRight+rArch*cos(cutAxis+t1*t)); 
+    y = (OyRight+rArch*sin(cutAxis+t1*t));
     label = labelBnd;
   };
 
   border ArchFront(t=0,1){
-    x = (r0*cos(cutAxis+t1+2*(pi-t1)*t))/lengthScale;
-    y = (r0*sin(cutAxis+t1+2*(pi-t1)*t))/lengthScale;
+    x = (r0*cos(cutAxis+t1+2*(pi-t1)*t));
+    y = (r0*sin(cutAxis+t1+2*(pi-t1)*t));
     label = labelBnd;
   };
 
   mesh Th=buildmesh(
-    ArchLeft(bndDensity*rArch*t1/lengthScale)
-    + Cut(bndDensity*lenCut/lengthScale)
-    + ArchRight(bndDensity*rArch*t1/lengthScale)
-    + ArchFront(bndDensity*r0*2*(pi-t1)/lengthScale)
+    ArchLeft(max(Nmin, bndDensity*rArch*t1))
+    + Cut(max(Nmin, bndDensity*lenCut))
+    + ArchRight(max(Nmin, bndDensity*rArch*t1))
+    + ArchFront(max(Nmin, bndDensity*r0*2*(pi-t1)))
   );
 
   return Th;
 }
 
 func mesh sinePerturb(
-  int bndDensity, real[int] meshParameters , int[int] labels, real lengthScale
+  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
+  int[int] periodic, real lengthScale, real Nmin
 ){
   /*
-  [mesh] sinePerturb returns a mesh with a boundary defined by the sinusoidal perturbations of a circle
+  [mesh] sinePerturb returns a mesh with a boundary defined by the sinusoidal 
+  perturbations of a circle.
 
   Parameters:
-  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
-  - real[int] meshParameters: parameters that define the shape. By order:
-    - 0, r0: radius of the base circumference.
-    - 1, Amp: Amplitude of the sinusoidal perturbations.
-    - 2, q: perturbation wave-number (number of lobes).
-    - 3, symmAxis: orientation of the shape. Defines the symmetry axis.
-  - int[int] labels: the first element is the boundary label, other ones will
-  be ignored.
-  - real lengthScale: length scale used to adimensionalize the mesh (x, y /= L).
+  - real bndDensity: boundary density, num. of points per unit lenght at the 
+    boundary.
+  - real[string]& meshParameters: parameters that define the shape:
+    - "r0": radius of the base circumference.
+    - "amp": Amplitude of the sinusoidal perturbations.
+    - "q": perturbation wave-number (number of lobes).
+    - "symmAxis": orientation of the shape. Defines the symmetry axis.
+  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
+    will be ignored.
+  - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
+  - real Nmin: Minimum number of points per border.
 
   * Return type: mesh
   */
 
   // Unpack meshParameters
-  real r0 = meshParameters[0];
-  real Amp = meshParameters[1];
-  int q = lrint(meshParameters[2]);
-  real symmAxis = meshParameters[3];
+  real r0 = meshParameters["r0"];
+  real amp = meshParameters["amp"];
+  int q = meshParameters["q"];
+  real symmAxis = meshParameters["symmAxis"];
 
   // Set the closed-boundary label
-  int labelBnd = labels[0];
+  int labelBnd = free[0];
 
   border Boundary(t=0,1){
-    x = (r0 + Amp*cos(2*pi*q*t))*cos(2*pi*t+symmAxis)/lengthScale;
-    y = (r0 + Amp*cos(2*pi*q*t))*sin(2*pi*t+symmAxis)/lengthScale;
+    x = (r0 + amp*cos(2*pi*q*t))*cos(2*pi*t+symmAxis)/lengthScale;
+    y = (r0 + amp*cos(2*pi*q*t))*sin(2*pi*t+symmAxis)/lengthScale;
     label = labelBnd;
   }
 
-  mesh Th = buildmesh(Boundary(bndDensity*r0*2*pi/lengthScale));
+  mesh Th = buildmesh(Boundary(max(Nmin, bndDensity*r0*2*pi/lengthScale)));
 
   return Th;
 }
 
 func mesh twoCurvesTriangle(
-  int bndDensity, real[int] meshParameters, int[int] labels, real lengthScale
+  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
+  int[int] periodic, real lengthScale, real Nmin
 ){
   /*
-  [mesh] twoCurvesTriangle returns a mesh with a boundary defined by an equilateral triangle of apothem r0 with cricumference arches of radius rVertex at its vertices and tangetial circumference arches of radius rSide at its sides.  
+  [mesh] twoCurvesTriangle returns a mesh with a boundary defined by an 
+  equilateral triangle of apothem r0 with cricumference arches of radius 
+  rVertex at its vertices and tangetial circumference arches of radius rSide
+  at its sides.  
 
   Parameters:
-  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
-  - real[int] meshParameters: parameters that define the shape. By order:
-    - 0, r0: radius of the base circumference.
-    - 1, rSide: radius of the arches at the sides.
-    - 2, rVertex: radius of the arches at the vertices.
-    - 3, symmAxis: orientation of the upper vertex. Defines the symmetry axis.
-  - int[int] labels: the first element is the boundary label, other ones will
-  be ignored.
-  - real lengthScale: length scale used to adimensionalize the mesh (x, y /= L).
+  - real bndDensity: boundary density, num. of points per unit lenght at the
+    boundary.
+  - real[string]& meshParameters: parameters that define the shape:
+    - "r0": radius of the base circumference.
+    - "rSide": radius of the arches at the sides.
+    - "rVertex": radius of the arches at the vertices.
+    - "symmAxis": orientation of the upper vertex. Defines the symmetry axis.
+  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
+    will be ignored.
+  - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
+  - real Nmin: Minimum number of points per border.
 
   * Return type: mesh
   */
 
   // Unpack the meshParameters
-  real r0 = meshParameters[0];
-  real rSide = meshParameters[1];
-  real rVertex = meshParameters[2];
-  real symmAxis = meshParameters[3];
+  real r0 = meshParameters["r0"];
+  real rSide = meshParameters["rSide"];
+  real rVertex = meshParameters["rVertex"];
+  real symmAxis = meshParameters["symmAxis"];
 
   // Set the closed-boundary label
-  int labelBnd = labels[0];
+  int labelBnd = free[0];
 
   real alpha = (2*pi/3)/2; // a 6th of a circle arclegth
   real rCentSide = r0-rSide;
@@ -316,53 +346,57 @@ func mesh twoCurvesTriangle(
   };
 
   mesh Th = buildmesh(
-    Side0(bndDensity*2*thetaSide*rSide/lengthScale)
-    + Side1(bndDensity*2*thetaSide*rSide/lengthScale)
-    + Side2(bndDensity*2*thetaSide*rSide/lengthScale)
-    + Vertex0(bndDensity*2*thetaVertex*rVertex/lengthScale)
-    + Vertex1(bndDensity*2*thetaVertex*rVertex/lengthScale)
-    + Vertex2(bndDensity*2*thetaVertex*rVertex/lengthScale)
+    Side0(max(Nmin, bndDensity*2*thetaSide*rSide/lengthScale))
+    + Side1(max(Nmin, bndDensity*2*thetaSide*rSide/lengthScale))
+    + Side2(max(Nmin, bndDensity*2*thetaSide*rSide/lengthScale))
+    + Vertex0(max(Nmin, bndDensity*2*thetaVertex*rVertex/lengthScale))
+    + Vertex1(max(Nmin, bndDensity*2*thetaVertex*rVertex/lengthScale))
+    + Vertex2(max(Nmin, bndDensity*2*thetaVertex*rVertex/lengthScale))
   );
   
   return Th;
 }
 
 func mesh roundedTriangle(
-  int bndDensity, real[int] meshParameters, int[int] labels, real lengthScale
+  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
+  int[int] periodic, real lengthScale, real Nmin
 ){
   /*
   [mesh] roundedTriangle returns a mesh with a boundary defined by a triangle of the given sides and rounded vertices with a radius of rRound.
 
   Parameters:
-  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
-  - real[int] meshParameters: parameters that define the shape. By order:
-    - 0:2, sideLengths: lengths of the traingle sides.
-    - 3, rRound: radius of the rounded vertices.
-  - int[int] labels: the first element is the boundary label, other ones will
-  be ignored.
-  - real lengthScale: length scale used to adimensionalize the mesh (x, y /= L).
+  - real bndDensity: boundary density, num. of points per unit lenght at the boundary.
+  - real[string]& meshParameters: parameters that define the shape:
+    - "sideLength1:3": lengths of the traingle sides.
+    - "rRound": radius of the rounded vertices.
+  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
+    will be ignored.
+  - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
+  - real Nmin: Minimum number of points per border.
 
   * Return type: mesh
   */
   
   // Unpack meshParameters
-  real[int] sideLengths = [meshParameters[0], meshParameters[1], meshParameters[2]];
-  real rRound = meshParameters[3];
+  real[int] sideLengths = [meshParameters["sideLength1"], meshParameters["sideLength2"], meshParameters["sideLength3"]];
+  real rRound = meshParameters["rRound"];
 
   // Set the closed-boundary label
-  int labelBnd = labels[0];
+  int labelBnd = free[0];
   
   // It is only possible to build a triangle if the sum of each pair of
   // sides is larger than the third one.
   bool err = 0;
 
-  if(
-    sideLengths[0]+sideLengths[1] <= sideLengths[2] || 
-    sideLengths[1]+sideLengths[2] <= sideLengths[0] || 
-    sideLengths[2]+sideLengths[0] <= sideLengths[1]
-  ){
+  try {
+    1/(
+      sideLengths[0] + sideLengths[1] >= sideLengths[2] && 
+      sideLengths[1] + sideLengths[2] >= sideLengths[0] && 
+      sideLengths[2] + sideLengths[0] >= sideLengths[1]
+    );
+  } catch (...){
     cout << "ERROR: Unable to buid a triangle with side lengths "
-            +sideLengths[0]+", "+sideLengths[1]+" & "+sideLengths[2] << endl;
+    +sideLengths[0]+", "+sideLengths[1]+" & "+sideLengths[2] << endl;
   }
   
   // Consider P2 = (0,0), P1 = (a, sideLengths[0],0) and compute the position
@@ -436,14 +470,14 @@ func mesh roundedTriangle(
   }
 
   int[int] nBndSide = [
-    lrint(dist((sides(0,1)-sides(0,0)),(sides(1,1)-sides(1,0)))*bndDensity/lengthScale),
-    lrint(dist((sides(0,3)-sides(0,2)),(sides(1,3)-sides(1,2)))*bndDensity/lengthScale),
-    lrint(dist((sides(0,5)-sides(0,4)),(sides(1,5)-sides(1,4)))*bndDensity/lengthScale)
+    max(Nmin, dist((sides(0,1)-sides(0,0)),(sides(1,1)-sides(1,0)))*bndDensity/lengthScale),
+    max(Nmin, dist((sides(0,3)-sides(0,2)),(sides(1,3)-sides(1,2)))*bndDensity/lengthScale),
+    max(Nmin, dist((sides(0,5)-sides(0,4)),(sides(1,5)-sides(1,4)))*bndDensity/lengthScale)
   ];
   int[int] nBndRound = [
-    lrint(dtheta(0)*rRound*bndDensity/lengthScale), 
-    lrint(dtheta(1)*rRound*bndDensity/lengthScale), 
-    lrint(dtheta(2)*rRound*bndDensity/lengthScale)
+    max(Nmin, dtheta(0)*rRound*bndDensity/lengthScale), 
+    max(Nmin, dtheta(1)*rRound*bndDensity/lengthScale), 
+    max(Nmin, dtheta(2)*rRound*bndDensity/lengthScale)
   ];
 
   // plot(rounding(nBndRound)+side(nBndSide), wait=1);
@@ -454,27 +488,29 @@ func mesh roundedTriangle(
 }
 
 func mesh circle(
-  int bndDensity, real[int] meshParameters, int[int] labels, real lengthScale
+  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
+  int[int] periodic, real lengthScale, real Nmin
 ){
   /*
   [mesh] circle returns a circular mesh with radius r0.
 
   Parameters:
-  - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
-  - real[int] meshParameters: parameters that define the shape. By order:
-    - 0, r0: circle radius.
-  - int[int] labels: the first element is the boundary label, other ones will
-  be ignored.
-  - real lengthScale: length scale used to adimensionalize the mesh (x, y /= L).
+  - real bndDensity: boundary density, num. of points per unit lenght at the boundary.
+  - real[string]& meshParameters: parameters that define the shape:
+    - "r0": circle radius.
+  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
+    will be ignored.
+  - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
+  - real Nmin: Minimum number of points per border.
 
   * Return type: mesh
   */
 
   // Unpack meshParameters
-  real r0 = meshParameters[0];
+  real r0 = meshParameters["r0"];
 
   // Set the closed-boundary label
-  int labelBnd = labels[0];
+  int labelBnd = free[0];
 
   // Outer border of a circle
   border arch(t=0,1){
@@ -483,7 +519,7 @@ func mesh circle(
     label = labelBnd;
   };
   mesh Th = buildmesh(
-    arch(bndDensity*r0*2*pi/lengthScale)
+    arch(max(Nmin, bndDensity*r0*2*pi/lengthScale))
   );
 
   return Th;
@@ -491,7 +527,7 @@ func mesh circle(
 
 // Needs an update
 func mesh sinusoidalSemiplane(
-  int obd, int ibd, real bLayerThickness, real Lx, real Ly, real Amp, real q, int[int] labels 
+  int obd, int ibd, real bLayerThickness, real Lx, real Ly, real amp, real q, int[int] labels 
 ){
 
   int labelBottom = labels[0];  // 1st periodic boundary (Bottom)
@@ -499,7 +535,7 @@ func mesh sinusoidalSemiplane(
   int labelRight = labels[2];   // Free boundary (right)
   int labelLeft = labels[3];    // Fixed boundary, opposed to the free one (left)
 
-  real xMaxBnd = Amp*cos(q*Ly);
+  real xMaxBnd = amp*cos(q*Ly);
 
   // Define the borders for both the bulk and the layer meshes
   border Bottom(t=0, 1){
@@ -532,12 +568,12 @@ func mesh sinusoidalSemiplane(
 
   // change for a perturbed front, if needed. Mantain extreme points at x=0
   border Right(t=0,1){
-    x = 0+Amp*cos(q*Ly*(2*t-1));
+    x = 0+amp*cos(q*Ly*(2*t-1));
     y = Ly*(2*t-1);
     label = labelRight;
   }
   // border Inner(t=0,1){
-  //   x = -bLayerThickness+Amp*cos(q*Ly*(2*t-1));
+  //   x = -bLayerThickness+amp*cos(q*Ly*(2*t-1));
   //   y = Ly*(2*t-1);
   // }
 
@@ -557,90 +593,98 @@ func mesh sinusoidalSemiplane(
 }
 
 func mesh bufferSinusoidalSemiplane(
-  int bndDensity, real[int] meshParameters, int[int] labels, real lengthScale
+  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
+  int[int] periodic, real lengthScale, real Nmin
 ){
   /*
   [mesh] meshSemiplaneBufferSinusoidal returns a rectangular mesh with a 
   centered single sinusoidal finger on its left side.
 
   Parameters:
-    - int bndDensity: boundary density, num. of points per unit lenght at the boundary.
-    - real[int] meshParameters: parameters that define the shape. By order:
-      - 0, real Lx: width of the rectangle (x-axis). The total x-length is 
-      Lx+2*Amp.
-      - 1, real waveLength: wavelength of the sinusoidal finger.
-      - 2, real Amp: amplitude of the sinusoidal finger. Take into account 
-      that the finger overtakes the base rectangle by 2*Amp, as it runs for 
-      a full wavelength. 
-      - 3, real buff: finger buffer length. The sinusoidal finger is buffered
-      both top and bottom by straigth lines of length wavelength*buff/2.
-  - int[int] labels: labels of the different sides. labels[0] maks the bottom
-  [1] marks the top, both periodic boundaries, [2] marks the right free 
-  boundary and [3], the left fixed one.
-  - real lengthScale: length scale used to adimensionalize the mesh (x, y /= L).
+    - real bndDensity: boundary density, num. of points per unit lenght at the
+      boundary.
+    - real[string]& meshParameters: parameters that define the shape:
+      - "lx": width of the rectangle (x-axis). The total x-length is lx+2*amp.
+      - "waveLength": wavelength of the sinusoidal finger.
+      - "amp": amplitude of the sinusoidal finger. Take into account 
+        that the finger overtakes the base rectangle by 2*amp, as it runs for 
+        a full wavelength. 
+      - "lFree": width of the rectangle (y-axis). The sinusoidal finger is 
+        buffered both top and bottom by straigth lines of length 
+        (lFree-wavelength)/2.
+  - int[int] free, fixed, periodic: free is the label of the free boundary 
+    (right); fixed for the fixed one (left) & periodic for the top and bottom.
+  - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
+  - real Nmin: Minimum number of points per border.
 
   * Return type: mesh
   */
 
-  // Unpack mesh parameters
-  real Lx = meshParameters[0];
-  real waveLength = meshParameters[1];
-  real Amp = meshParameters[2];
-  real buff = meshParameters[3];
+  // Unpack mesh parameters.
+  real lx = meshParameters["lx"];
+  real waveLength = meshParameters["waveLength"];
+  real amp = meshParameters["amp"];
+  real lFree = meshParameters["lFree"];
 
-  // Unpack labels 
-  int labelBottom = labels[0];  // 1st periodic boundary (Bottom)
-  int labelTop = labels[1];     // 2nd periodic boundary (Top)
-  int labelRight = labels[2];   // Free boundary (right)
-  int labelLeft = labels[3];    // Fixed boundary, opposed to the free one (left)
+  // Unpack labels.
+  int labelBottom = periodic[0]; // 1st periodic boundary (Bottom).
+  int labelTop = periodic[1];    // 2nd periodic boundary (Top).
+  int labelRight = free[0];      // Free boundary (Right).
+  int labelLeft = fixed[0];      // Fixed boundary, opposed to free one (Left).
 
-  // Defien the borders for both the bulk and the layer meshes
+  // To buffer the finger, lFree >= wavelength.
+  try{
+    1/(lFree >= waveLength);
+  } catch (...) {
+    cout << "To buffer the finger, lFree >= waveLength." << endl;
+  }
+
+  // Defien the borders for both the bulk and the layer meshes.
   border Bottom(t=0, 1){
-    x = (Lx*(t-1))/lengthScale; 
-    y = (-(waveLength*(1+buff)/2))/lengthScale;
+    x = (lx*(t-1))/lengthScale; 
+    y = (-lFree/2)/lengthScale;
     label = labelBottom;
   }
 
   border Top(t=0, 1){
-    x = (0-Lx*t)/lengthScale; 
-    y = ((waveLength*(1+buff)/2))/lengthScale; 
+    x = (0-lx*t)/lengthScale; 
+    y = (lFree/2)/lengthScale; 
     label = labelTop;
   }
 
   border Left(t=0,1){
-    x = (-Lx)/lengthScale;
-    y = ((waveLength*(1+buff)/2)*(1-2*t))/lengthScale;
+    x = (-lx)/lengthScale;
+    y = ((lFree/2)*(1-2*t))/lengthScale;
     label = labelLeft;
   }
 
   // change for a perturbed front, if needed. Mantain extreme points at x=0
-
   border RightBuffBottom(t=0,1){
     x = (0)/lengthScale;
-    y = ((waveLength/2.)*(buff*(t-1)-1))/lengthScale;
+    y = ((lFree/2.)*(t-1)-(waveLength/2.)*t)/lengthScale;
     label = labelRight;
   }
 
   border RightBuffTop(t=0,1){
     x = (0)/lengthScale;
-    y = ((waveLength/2.)*(1+buff*t))/lengthScale;
+    y = ((waveLength + (lFree-waveLength)*t)/2.)/lengthScale;
     label = labelRight;
   }
-)/lengthScale
+
   border RightFinger(t=0,1){
-    x = (Amp*(cos(pi*(2*t-1))+1))/lengthScale;
+    x = (amp*(cos(pi*(2*t-1))+1))/lengthScale;
     y = (waveLength*(t-1/2.))/lengthScale;
     label = labelRight;
 
   }
   
   mesh Th = buildmesh(
-   Bottom(bndDensity*Lx)
-    + RightBuffBottom(bndDensity*waveLength*(buff/2.)/lengthScale)
-    + RightFinger(bndDensity*waveLength/lengthScale)
-    + RightBuffTop(bndDensity*waveLength*(buff/2.)/lengthScale)
-    + Top(bndDensity*Lx/lengthScale)
-    + Left(bndDensity*waveLength*(1+buff)/lengthScale)
+   Bottom(max(Nmin, bndDensity*lx/lengthScale))
+    + RightBuffBottom(max(Nmin, bndDensity*((lFree-waveLength)/2.)/lengthScale))
+    + RightFinger(max(Nmin, bndDensity*waveLength/lengthScale))
+    + RightBuffTop(max(Nmin, bndDensity*((lFree-waveLength)/2.)/lengthScale))
+    + Top(max(Nmin, bndDensity*lx/lengthScale))
+    + Left(max(Nmin, bndDensity*lFree/lengthScale))
   );
 
   return Th;

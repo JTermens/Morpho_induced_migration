@@ -18,11 +18,17 @@ cout << "Testing the differential operators of observables-macros.edp" << endl;
 
 // Generate a circular mesh ---------------------------------------------------
 cout << "Generating a mesh..." << endl;
-real[int] circleParameters = [1]; // Circle radius = 1.
-int[int] circleLabels = [1];
+
+real[string] meshParameters;
+meshParameters["r0"] = 1.; // Circle radius = 1.
+
+int[int] free = [1];
+int[int] fixed = [-1];
+int[int] periodic = [-1,-1];
+
 int outerBndDensity = 20;
 
-mesh Th = circle(outerBndDensity, circleParameters, circleLabels);
+mesh Th = circle(outerBndDensity, meshParameters, free, fixed, periodic, 1, 1e-12);
 
 // Generate dummy fields ------------------------------------------------------
 cout << "Setting a pair of dummy fields..." << endl;

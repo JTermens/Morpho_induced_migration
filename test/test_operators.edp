@@ -28,7 +28,7 @@ int[int] periodic = [-1,-1];
 
 int outerBndDensity = 20;
 
-mesh Th = circle(outerBndDensity, meshParameters, free, fixed, periodic, 1, 1e-12);
+mesh Th = circle(outerBndDensity, meshParameters, free, fixed, periodic, 1, 1e12);
 
 // Generate dummy fields ------------------------------------------------------
 cout << "Setting a pair of dummy fields..." << endl;

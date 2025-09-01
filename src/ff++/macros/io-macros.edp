@@ -5,9 +5,7 @@
 // Separate the input of the mesh parameters and the densities, boundary width
 // and labels, as the mesh parameters could be defined in a local scope,
 // whereas the other variables, are needed for the remeshing macros.
-NewMacro macroInputMeshParameters(
-  meshParameters
-)
+NewMacro macroInputMeshParameters(meshParameters)
 // Dynamic map with the mesh parameters. May vary with the mesh generator.
 real[string] meshParameters;
 
@@ -22,24 +20,24 @@ EndMacro
 
 // macroInputLabels documentation
 //
-NewMacro macroInputLabels(free, fixed, periodic)
+NewMacro macroInputLabels(free, fixed, periodic, perio)
 IF free //** Unpack the free labels.
 int[int] free = $free;
 ELSE
-int[int] free = -1; // No free boundary.
+int[int] free = [-1]; // No free boundary.
 ENDIF
 \\
 IF fixed //** Unpack the fixed labels.
 int[int] fixed = $fixed;
 ELSE
-int[int] fixed = -1; // No fixed boundary.
+int[int] fixed = [-1]; // No fixed boundary.
 ENDIF
 \\
 IF periodic //** Unpack the periodic labels
 int[int] periodic = $periodic;
 func perio=[[periodic[0],x],[periodic[1],x]]; // Periodicity.
 ELSE
-int[int] periodic = -1; // No periodic boundary.
+int[int] periodic = [-1]; // No periodic boundary.
 bool perio = 0;    // No periodicity defined.
 ENDIF
 \\
@@ -47,16 +45,21 @@ EndMacro
 
 // macro
 //
-NewMacro macroInputNumerics(outerBndDensity,innerBndDensity,bndLayerWidth,dt,NiterTime,areaMinMaxRates,dsave)
+NewMacro macroInputNumerics(
+  outerBndDensity, innerBndDensity, bndLayerWidth, dt, NiterTime, 
+  areaMinMaxRates, dsave, smoothCoef, keepPoints
+  )
 // Numerical parameters for the simulations (global scope) ------------------
 DEFAULT (bndLayerWidth, "50")
 DEFAULT (outerBndDensity, "45")
 DEFAULT (innerBndDensity, "15")
-DEFAULT (dt, "1e-3")
+DEFAULT (dt, "5e-4")
 DEFAULT (NiterTime, "2000")
 DEFAULT (rateMaxArea, "8")
 DEFAULT (rateMinArea, "1/8")
 DEFAULT (dsave, "0")
+DEFAULT (smoothCoef, "0.5")
+DEFAULT (keepPoints, "0")
 \\
 real bndLayerWidth = $bndLayerWidth;    // Width of the boundary layer [μm].
 int outerBndDensity = $outerBndDensity; // num outer bnd nodes per unit length.
@@ -77,12 +80,19 @@ areaMinMaxRates["Max"] = $rateMaxArea;
 // Usually we do not need that many solutions to represent an evolution and
 // also it will save memory and loading time. 
 int dsave = $dsave;
+
+// smoothing of the inner boundary in adaptive meshes 
+// = bLayerThickness*smoothCoef.
+real smoothCoef = $smoothCoef;
+
+// Keep the same number of point upon remeshing.
+bool keepPoints = $keepPoints;
 EndMacro
 
 
 // macroInputParameters documentation
 //
-NewMacro macroInputParameters(a,b,c,d/**/,lengthScale)
+NewMacro macroInputParameters(a, b, c, d,/**/ lengthScale)
 // Initialize to 0 the problem adim. parameters.
 real a = 0; real b = 0; real c = 0; func d = 0;
 

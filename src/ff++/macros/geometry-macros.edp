@@ -1,0 +1,90 @@
+/*
+
+
+*/
+
+
+// macroComputeLegthScale documentation
+// 
+NewMacro macroComputeLegthScale(
+  lengthScale,/**/meshParameters, free, fixed, periodic, outerBndDensity
+)
+real lengthScale;
+{
+  IF periodic
+  lengthScale = meshParameters["lFree"];
+  ELSE
+  real Nmax = 100; // Avoid very big meshes.
+  mesh Th = ${meshName}(
+    outerBndDensity, meshParameters, free, 1, Nmax
+  );
+  lengthScale = sqrt(Th.measure/pi);
+  ENDIF
+}
+EndMacro
+
+// macroGenerateMesh documentation
+// 
+NewMacro macroGenerateMesh(
+  Th,lengthScale,bndLayerWidth,/**/outerBndDensity, innerBndDensity, free, 
+  fixed, periodic, smoothCoef, keepPoints
+)
+mesh Th; // Initial mesh of the simulation.
+
+// length scale used to adimensionalize the system. 
+//lengthScale = sqrt(Area/pi).
+real lengthScale; 
+// bndLayerWidth is modified (adimensionalized inside the macro).
+{
+// First load the mesh parameters into the local scope.
+macroInputMeshParameters(meshParameters) // -> real[string] meshParameters.
+
+// Compute the lengthScale
+macroComputeLegthScale(
+  lengthScale,/**/meshParameters, free, fixed, periodic, outerBndDensity
+) // -> real lengthScale.
+
+// Generate the mesh.
+real Nmax = 1e5; // Safety value, avoid triggering the Nmax mechanism.
+IF periodic
+Th = ${meshName}(
+   outerBndDensity, meshParameters, free, fixed, periodic, lengthScale, Nmax
+);
+ELSE
+Th = ${meshName}(
+   outerBndDensity, meshParameters, free, lengthScale, Nmax
+);
+ENDIF
+
+// Adimensionalize the bndLayerWidth.
+bndLayerWidth  /= lengthScale;
+
+// Create an adaptive mesh
+macroRemesh(
+  Th,/**/bndLayerWidth,outerBndDensity, innerBndDensity, free, fixed, 
+  periodic, smoothCoef, keepPoints
+  ) // -> mesh Th (adaptive).
+}
+EndMacro
+
+// macroRemesh documentation
+// 
+NewMacro macroRemesh(
+  Th,/**/bndLayerWidth,outerBndDensity, innerBndDensity, free, fixed, 
+  periodic, smoothCoef, keepPoints
+)
+{
+  IF periodic
+  Th = periodicRemesh1FreeBnd(
+    Th, outerBndDensity, innerBndDensity, bndLayerWidth, free, fixed,
+    periodic, smoothCoef
+  );
+  ELSE
+  Th = closedRemesh(
+    Th0, outerBndDensity, innerBndDensity, bndLayerWidth, free,
+    smoothCoef, keepPoints
+  );
+}
+EndMacro
+
+

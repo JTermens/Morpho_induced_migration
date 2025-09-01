@@ -71,11 +71,12 @@ func int[int] retrieveIndices(real[int,int] b0, int n0, mesh Th0){
 // Remeshing functions --------------------------------------------------------
 
 func mesh closedRemesh(
-  mesh Th0, int obd, int ibd, int[int] labels, real bndLayerWidth, 
+  mesh Th0, real obd, real ibd, real bndLayerWidth, int[int] free, 
   real smoothCoef, bool keepPoints
 ){
 
-  int labelBnd = labels[0];
+  // Set the closed-boundary label
+  int labelBnd = free[0];
 
   int[int] be(1); // To save begin and ends of the curve
   int minPoints = 20;
@@ -166,12 +167,13 @@ func mesh closedRemesh(
 
 
 func mesh periodicRemesh1FreeBnd(
-  mesh Th0, int obd, int ibd, real bLayerThickness, real smoothCoef, int[int] labels
+  mesh Th0, real obd, real ibd, real bndLayerWidth, int[int] free,
+  int[int] fixed, int[int] periodic, real smoothCoef
 ){
 
-  int[int] labelPerio = [labels[0],labels[1]]; // Periodic boundaries
-  int labelFree = labels[2];   // Free boundary
-  int labelFixed = labels[3];  // Fixed boundary, opposed to the free one
+  int[int] labelPerio =  periodic; // Periodic boundaries
+  int labelFree = free;   // Free boundary
+  int labelFixed = fixed;  // Fixed boundary, opposed to the free one
 
   int[int] be(1); // To save begin and ends of the layer curve
   int minPoints = 5;
@@ -201,9 +203,12 @@ func mesh periodicRemesh1FreeBnd(
   distance(Th,B,d[]);
   // plot(Th, d wait=1);
 
-  // Get the new inner boundary vertices (bLayer is the contour d==bLayerThickness)
+  // Get the new inner boundary vertices (bLayer is the contour d==bndLayerWidth)
   real[int,int] bLayer(3,1); 
-  int nLayer=isoline(Th,d,iso=bLayerThickness,close=0,bLayer,beginend=be,smoothing=bLayerThickness*smoothCoef,ratio=1.e-0);
+  int nLayer=isoline(
+    Th,d,iso=bndLayerWidth,close=0,bLayer,beginend=be,
+    smoothing=bndLayerWidth*smoothCoef,ratio=1.e-0
+  );
   
   int nInnerLines = be.n/2;
   // cout << be << endl;

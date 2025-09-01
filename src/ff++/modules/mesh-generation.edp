@@ -23,18 +23,19 @@ All the meshes share the same arguments:
   shape. The & ensures passing it by reference to avoid copy value problems.
 - int[int] free: labels of the free boundaries that will be remeshed with 
   splines.
+- real lengthScale: lengthScale to adimesnionalize the domain, 
+  {x', y'} = {x, y}/lengthScale.
+- real Nmax: Maximum number of points per border piece. If the mesh is very big, 
+  set bndDensity to a low value and control the number of bnd nodes with Nmax.
+
+Plus two optional arguments if the mesh has fixed and/or periodic borders
 - int[int] fixed: labels of the fixed boundaries (will impose v = 0 on those).
 - int[int] periodic: labels of the periodic boundaries. Always in pairs will be
   remesh by linear interpolation.
-- real lengthScale: lengthScale to adimesnionalize the domain, 
-  {x', y'} = {x, y}/lengthScale.
-- real Nmax: Maximum number of points per border. If the mesh is very big, set 
-  bndDensity to a low value and control the number of bnd nodes with Nmax.
 */
 
 func mesh fourCurveShape(
-  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
-  int[int] periodic, real lengthScale, real Nmax
+  real bndDensity, real[string]& meshParameters , int[int] free, real lengthScale, real Nmax
 ){
   /*
   [mesh] fourCurveShape returns a mesh with a boundary defined by four 
@@ -53,10 +54,9 @@ func mesh fourCurveShape(
     - "d": distance between the center of the Up & Down arches.
     - "symmAxis": orientation of the (not necessary symmetric) shape. Defines
     the line between the centers of the Up & Down arches.
-  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
-    will be ignored.
+  - int[int] free: free boundary label.
   - real lengthScale: length scale used to adimensionalize the mesh (x,y /= L).
-  - real Nmax: Maximum number of points per border.
+  - real Nmax: Maximum number of points per border piece.
 
   * Return type: mesh
   */
@@ -140,8 +140,8 @@ func mesh fourCurveShape(
 }
 
 func mesh oneCutSmooth(
-  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed, 
-  int[int] periodic, real lengthScale, real Nmax
+  real bndDensity, real[string]& meshParameters , int[int] free,
+  real lengthScale, real Nmax
 ){
   /*
   [mesh] oneCutSmooth returns a mesh with a boundary defined by circle with a
@@ -157,10 +157,9 @@ func mesh oneCutSmooth(
     - "r0": radius of the circumference (Front) arch.
     - "rArch": radius of the tangential arches that smooth the cut vertices. 
     - "symmAxis": orientation of the shape. Defines the mid-line of the cut.
-  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
-    will be ignored.
+  - int[int] free: free is the free boundary label.
   - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
-  - real Nmax: Maximum number of points per border.
+  - real Nmax: Maximum number of points per border piece.
 
   * Return type: mesh
   */
@@ -218,8 +217,8 @@ func mesh oneCutSmooth(
 }
 
 func mesh sinePerturb(
-  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
-  int[int] periodic, real lengthScale, real Nmax
+  real bndDensity, real[string]& meshParameters , int[int] free, 
+  real lengthScale, real Nmax
 ){
   /*
   [mesh] sinePerturb returns a mesh with a boundary defined by the sinusoidal 
@@ -233,10 +232,9 @@ func mesh sinePerturb(
     - "amp": Amplitude of the sinusoidal perturbations.
     - "q": perturbation wave-number (number of lobes).
     - "symmAxis": orientation of the shape. Defines the symmetry axis.
-  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
-    will be ignored.
+  - int[int] free: free is the free boundary label.
   - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
-  - real Nmax: Maximum number of points per border.
+  - real Nmax: Maximum number of points per border piece.
 
   * Return type: mesh
   */
@@ -262,8 +260,8 @@ func mesh sinePerturb(
 }
 
 func mesh twoCurvesTriangle(
-  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
-  int[int] periodic, real lengthScale, real Nmax
+  real bndDensity, real[string]& meshParameters , int[int] free,
+  real lengthScale, real Nmax
 ){
   /*
   [mesh] twoCurvesTriangle returns a mesh with a boundary defined by an 
@@ -279,10 +277,9 @@ func mesh twoCurvesTriangle(
     - "rSide": radius of the arches at the sides.
     - "rVertex": radius of the arches at the vertices.
     - "symmAxis": orientation of the upper vertex. Defines the symmetry axis.
-  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
-    will be ignored.
+  - int[int] free: free is the free boundary label.
   - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
-  - real Nmax: Maximum number of points per border.
+  - real Nmax: Maximum number of points per border piece.
 
   * Return type: mesh
   */
@@ -359,8 +356,8 @@ func mesh twoCurvesTriangle(
 }
 
 func mesh roundedTriangle(
-  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
-  int[int] periodic, real lengthScale, real Nmax
+  real bndDensity, real[string]& meshParameters , int[int] free,
+  real lengthScale, real Nmax
 ){
   /*
   [mesh] roundedTriangle returns a mesh with a boundary defined by a triangle 
@@ -372,10 +369,9 @@ func mesh roundedTriangle(
   - real[string]& meshParameters: parameters that define the shape:
     - "sideLength1:3": lengths of the traingle sides.
     - "rRound": radius of the rounded vertices.
-  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
-    will be ignored.
+  - int[int] free: free is the free boundary label.
   - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
-  - real Nmax: Maximum number of points per border.
+  - real Nmax: Maximum number of points per border piece.
 
   * Return type: mesh
   */
@@ -495,8 +491,8 @@ func mesh roundedTriangle(
 }
 
 func mesh circle(
-  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
-  int[int] periodic, real lengthScale, real Nmax
+  real bndDensity, real[string]& meshParameters , int[int] free,
+  real lengthScale, real Nmax
 ){
   /*
   [mesh] circle returns a circular mesh with radius r0.
@@ -505,10 +501,9 @@ func mesh circle(
   - real bndDensity: boundary density, num. of points per unit lenght at the boundary.
   - real[string]& meshParameters: parameters that define the shape:
     - "r0": circle radius.
-  - int[int] free, fixed, periodic: free is the free boundary label, other ones 
-    will be ignored.
+  - int[int] free: free is the free boundary label.
   - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
-  - real Nmax: Maximum number of points per border.
+  - real Nmax: Maximum number of points per border piece.
 
   * Return type: mesh
   */
@@ -554,7 +549,7 @@ func mesh sinusoidalSemiplane(
   - int[int] free, fixed, periodic: free is the label of the free boundary 
     (right); fixed for the fixed one (left) & periodic for the top and bottom.
   - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
-  - real Nmax: Maximum number of points per border.
+  - real Nmax: Maximum number of points per border piece.
 
   * Return type: mesh
   */
@@ -631,7 +626,7 @@ func mesh bufferSinusoidalSemiplane(
   - int[int] free, fixed, periodic: free is the label of the free boundary 
     (right); fixed for the fixed one (left) & periodic for the top and bottom.
   - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
-  - real Nmax: Maximum number of points per border.
+  - real Nmax: Maximum number of points per border piece.
 
   * Return type: mesh
   */

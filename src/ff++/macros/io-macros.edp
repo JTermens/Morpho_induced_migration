@@ -47,7 +47,7 @@ EndMacro
 //
 NewMacro macroInputNumerics(
   outerBndDensity, innerBndDensity, bndLayerWidth, dt, NiterTime, 
-  areaMinMaxRates, dsave, smoothCoef, keepPoints
+  areaMinMaxRates, dsave, smoothCoef, keepPoints, eps
   )
 // Numerical parameters for the simulations (global scope) ------------------
 DEFAULT (bndLayerWidth, "50")
@@ -60,6 +60,7 @@ DEFAULT (rateMinArea, "1/8")
 DEFAULT (dsave, "0")
 DEFAULT (smoothCoef, "0.5")
 DEFAULT (keepPoints, "0")
+DEFAULT (eps, "1e-12")
 \\
 real bndLayerWidth = $bndLayerWidth;    // Width of the boundary layer [μm].
 int outerBndDensity = $outerBndDensity; // num outer bnd nodes per unit length.
@@ -87,6 +88,9 @@ real smoothCoef = $smoothCoef;
 
 // Keep the same number of point upon remeshing.
 bool keepPoints = $keepPoints;
+
+// epsilon: user defined numerical tolerance.
+real eps = $eps;
 EndMacro
 
 

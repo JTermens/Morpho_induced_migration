@@ -172,8 +172,8 @@ func mesh periodicRemesh1FreeBnd(
 ){
 
   int[int] labelPerio =  periodic; // Periodic boundaries
-  int labelFree = free;   // Free boundary
-  int labelFixed = fixed;  // Fixed boundary, opposed to the free one
+  int labelFree = free[0];   // Free boundary
+  int labelFixed = fixed[0];  // Fixed boundary, opposed to the free one
 
   int[int] be(1); // To save begin and ends of the layer curve
   int minPoints = 5;

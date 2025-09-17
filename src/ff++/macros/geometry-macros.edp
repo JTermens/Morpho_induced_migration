@@ -81,10 +81,91 @@ NewMacro macroRemesh(
   );
   ELSE
   Th = closedRemesh(
-    Th0, outerBndDensity, innerBndDensity, bndLayerWidth, free,
+    Th, outerBndDensity, innerBndDensity, bndLayerWidth, free,
     smoothCoef, keepPoints
   );
 }
 EndMacro
 
+// macroExtractFreeBnd documentation
+// 
+NewMacro macroExtractFreeBnd(
+  bFree, lFree, nFree, indicesFree,/**/Th, free
+)
+// Extract the free boundary
+real[int,int] bFree(3,1);
+real lFree = extractborder(Th, free[0], bFree);
+int nFree = bFree.m; // instead of Th.nbe to avoid messing with labels
+
+// Retrieve the indices of the verices of bFree with the same ordering
+int[int] indicesFree(nFree);
+{
+  int iTri;
+  for (int k=0; k<nFree; k++){
+    // Find the triangle index of the kth bnd point
+    iTri = Th(bFree(0,k),bFree(1,k)).nuTriangle;
+
+    // Find index of the kth bnd point from its triangle index
+    for (int jTri=0; jTri<3; jTri++) {
+      if( abs(Th[iTri][jTri].x-bFree(0,k))<eps && abs(Th[iTri][jTri].y-bFree(1,k))<eps){
+        indicesFree(k) = Th[iTri][jTri];
+      }
+    }
+  }
+}
+EndMacro
+
+// macroNormalCorr documentation
+// 
+NewMacro macroNormalCorr(
+  Th,NormalSpace,NormalSpacePerio,bFree,nFree,indicesFree/**/normals
+)
+macro normals [normals#x,normals#y]// // Normal vectors at free bnd.
+IF periodic
+// For projecting the normals computed at the non-periodic space 
+// into the periodic one.
+NormalSpacePerio normals = [0,0];
+ELSE
+NormalSpace normals = [0,0]; // here the Dof of nx,ny are scramble.
+ENDIF
+{
+  // Normal vectors in [P1,P1], local Scope.
+  macro normalsLoc [normalsLoc#x,normalsLoc#y]//
+  NormalSpace normalsLoc = [0,0]; // here the Dof of nx,ny are scramble.
+
+  real[int] normalPrev(2), normalPost(2), normalMean(2);
+  int iBndElem; // index of the boundary element.
+  real lenPrev, lenPost; // Lengths of the previous & posterior edges.
+
+  // n^j_previous = ( -(y^j-y^{j-1}), x^j-x^{j-1} );
+  normalPrev = [
+    (bFree(1,nFree-1)-bFree(1,nFree-2)),
+   -(bFree(0,nFree-1)-bFree(0,nFree-2))
+  ];
+  lenPrev = sqrt(pow(normalPrev[0],2)+pow(normalPrev[1],2));
+
+  for (int k = 0; k < nFree-1; k++){
+    // n^j_posterior = ( -(y^{j+1}-y^j), x^{j+1}-x^j );
+    normalPost = [
+      (bFree(1,k+1)-bFree(1,k)),
+     -(bFree(0,k+1)-bFree(0,k))
+    ];
+    lenPost = sqrt(pow(normalPost[0],2)+pow(normalPost[1],2));
+    
+    normalMean = normalPrev*(lenPost/(lenPost+lenPrev)) + normalPost*(lenPrev/(lenPrev+lenPost));
+    normalMean /= sqrt(pow(normalMean[0],2)+pow(normalMean[1],2));
+
+    normalsLocx[](2*indicesFree(k))= normalMean[0]; 
+    normalsLocy[](2*indicesFree(k)+1) = normalMean[1];
+    normalPrev = normalPost; lenPrev = lenPost;
+  }
+
+  // Last normal, ensure periodicity or close the free boundary
+  normalsLocx[](2*indicesFree(nFree-1))= normalsLocx[](2*indicesFree(0));
+  normalsLocy[](2*indicesFree(nFree-1)+1) = normalsLocy[](2*indicesFree(0)+1);
+
+  // Project to the normal vector space outside the local scope.
+  normals = normalsLoc;
+}
+EndMacro
 

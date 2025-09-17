@@ -6,12 +6,16 @@
 
 // setFEMSpaces documentation
 // 
-NewMacro setFEMSpaces(PolSpace,VelSpace,NormalSpace,/**/Th,perio)
+NewMacro setFEMSpaces(
+  PolSpace,VelSpace,NormalSpace,NormalSpacePerio/**/Th,perio
+)
+// Ccorrected normal vector at the boundary, without periodicity
+fespace NormalSpace(Th,[P1,P1]);
 IF periodic
 // Polarity vector space. P2 ensures that div(pp) is smooth.
 fespace PolSpace(Th, [P2, P2],periodic=perio);
 // Corrected normal vector at the boundary & periodic geometry
-fespace NormalSpace(Th,[P1,P1],periodic=perio);
+fespace NormalSpacePerio(Th,[P1,P1],periodic=perio);
 \\
 IF INCOMPRESSIBLE
 // Velocity [P1b,P1b] and pressure P1 vector space & periodic geometry.
@@ -23,8 +27,6 @@ ENDIF
 ELSE
 // Polarity vector space. P2 ensures that div(pp) is smooth.
 fespace PolSpace(Th, [P2, P2]);
-// Ccorrected normal vector at the boundary
-fespace NormalSpace(Th,[P1,P1]);
 \\
 IF INCOMPRESSSIBLE
 // Velocity [P1b,P1b] and pressure P1 space.

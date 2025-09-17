@@ -1,8 +1,8 @@
 // Manage command-line arguments
 include "getARGV.idp"
 
-include "../src/ff++/modules/mesh-generation.edp"; // Load the mesh generation.
-include "../src/ff++/macros/observables-macros.edp"; // Load the operator solvers.
+include "../../src/ff++/modules/mesh-generation.edp"; // Load the mesh generation.
+include "../../src/ff++/macros/observables-macros.edp"; // Load the operator solvers.
 
 bool DEBUG = getARGV("-d", 0); // set to 1 to produce the plots.
 

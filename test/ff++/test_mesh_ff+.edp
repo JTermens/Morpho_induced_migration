@@ -7,9 +7,9 @@ load "gsl"
 // Manage command-line arguments
 include "getARGV.idp"
 
-include "../src/ff++/modules/mesh-generation.edp"; // Load the mesh generation functions
+include "../../src/ff++/modules/mesh-generation.edp"; // Load the mesh generation functions
 // Load the remeshing functions, used to adapt the meshes with a boundary layer
-include "../src/ff++/modules/remeshing.edp";
+include "../../src/ff++/modules/remeshing.edp";
 
 bool DEBUG = getARGV("-d", 0); // set to 1 to produce the plots.
 

@@ -1,0 +1,65 @@
+// Packages for advanced remeshing scheme
+load "Curvature"
+load "distance"
+load "isoline"
+load "gsl"
+
+// Manage command-line arguments
+include "getARGV.idp"
+
+include "../../src/ff++/modules/mesh-generation.edp"; // Load the mesh generation functions
+// Load the remeshing functions, used to adapt the meshes with a boundary layer
+include "../../src/ff++/modules/remeshing.edp";
+
+bool DEBUG = getARGV("-d", 0); // set to 1 to produce the plots.
+
+NewMacro plotMesh(Th, plotLabel, DEBUG)
+  if (DEBUG) {
+    plot(
+      Th, value = true, fill = false, nbiso=64, wait=true, 
+      cmm = plotLabel
+    );
+  }
+EndMacro
+
+// Numeric params
+real outerBndDensity = 30;
+real innerBndDensity = 10;
+real bndLayerWidth = 0.30;
+real lengthScale = 1;
+real Nmax = 1e12;
+
+
+int[int] free = [1];
+int[int] fixed = [-1];
+int[int] periodic = [-1,-1];
+
+// oneCutSmooth mesh
+real[string] meshParameters;
+meshParameters["symmAxis"] = pi/2;
+meshParameters["r0"] = 1;
+meshParameters["cut"] = 2*pi/3;
+meshParameters["fracRarc"] = 0.1;
+
+mesh Th = oneCutSmooth(innerBndDensity, meshParameters, free, lengthScale, Nmax);
+
+plotMesh(Th, "coarser non-adaptive oneCutSmooth mesh", DEBUG);
+
+// Save the non-periodic mesh
+savemesh(Th, "coarser_oneCutSmooth.msh");
+
+Th = oneCutSmooth(outerBndDensity, meshParameters, free, lengthScale, Nmax);
+
+plotMesh(Th, "finer non-adaptive oneCutSmooth mesh", DEBUG);
+
+// Save the non-periodic mesh
+savemesh(Th, "finer_oneCutSmooth.msh");
+
+// Remesh into an adaptive mesh
+Th = closedRemesh(
+  Th, outerBndDensity, innerBndDensity, bndLayerWidth, free, .5, 0
+);
+
+// Plot & save again
+plotMesh(Th, "adaptive oneCutSmooth mesh", DEBUG);
+savemesh(Th, "adaptive_oneCutSmooth.msh");

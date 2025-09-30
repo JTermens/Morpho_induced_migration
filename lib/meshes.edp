@@ -452,6 +452,245 @@ func mesh circle(
   return Th;
 }
 
+// Util functions ------------------------------------------------------------
+func real[int,int] computeArchlength(real[int,int] b0, int n0, int i0, int i1){
+  real[int,int] b1(3,n0);
+  b1(0,:) = b0(0,:); b1(1,:) = b0(1,:);
+  b1(2,i0) = 0;
+  for (int i=i0+1; i<i1; i++){
+    b1(2,i) = b1(2,i-1) + dist((b1(0,i)-b1(0,i-1)),(b1(1,i)-b1(1,i-1)));
+  }
+  return b1;
+}
+
+func real[int,int] twinPerioPoints(real [int,int] b0, int n0, real yTwin){
+  real[int,int] b1(3,n0);
+  for (int i=0; i<n0; i++){
+    b1(0,(n0-1)-i) = b0(0,i); b1(1,(n0-1)-i) = yTwin;
+  }
+  return computeArchlength(b1,n0,0,n0);
+}
+
+func real[int,int] linInterpX(real x0, real x1, real y0, int n){
+  real [int,int] b(2,n);
+  real lb = x1-x0;
+  for (int i=0; i<n; i++){
+    real xi = x0 + lb*(real(i)/(n-1));
+    b(0,i) = xi;
+    b(1,i) = y0;
+  }
+
+  return b;
+}
+
+func int[int] retrieveIndices(real[int,int] b0, int n0, mesh Th0){
+  int[int] indices(n0);
+
+  int iTri;
+  real eps = 1e-12;
+
+  mesh Th = Th0; // required for Th().nuTriangle to work
+
+  for (int k=0; k<n0; k++){
+    // Find the triangle index of the kth bnd point
+    iTri = Th(b0(0,k),b0(1,k)).nuTriangle;
+
+    // Find index of the kth bnd point from its triangle index
+    for (int jTri=0; jTri<3; jTri++) {
+      if( abs(Th0[iTri][jTri].x-b0(0,k))<eps && abs(Th0[iTri][jTri].y-b0(1,k))<eps){
+        indices(k) = Th0[iTri][jTri];
+      }
+    }
+  }
+
+  return indices;
+}
+
+func mesh periodicRemesh1FreeBnd(
+  mesh Th0, real obd, real ibd, real bndLayerWidth, int[int] free,
+  int[int] fixed, int[int] periodic, real smoothCoef
+){
+
+  int[int] labelPerio =  periodic; // Periodic boundaries
+  int labelFree = free[0];   // Free boundary
+  int labelFixed = fixed[0];  // Fixed boundary, opposed to the free one
+
+  int[int] be(1); // To save begin and ends of the layer curve
+  int minPoints = 5;
+  real eps = pow(10,-9);
+
+  // Extract the non-periodic boundary pieces
+  real[int,int] bFree(3,1); real lFree = extractborder(Th0,labelFree,bFree);             // extract free
+  real[int,int] bFixed(3,1); real lFixed = extractborder(Th0,labelFixed,bFixed);         // extract fixed
+
+  // ------------------------------------------------------------------------------------
+
+  // Define an inner border that defines the boundary layer through isolines
+  
+  real xLayer = 0;
+  // Find the extreme points of the periodic boundaries
+  real[int] pointsXPerio = [bFixed(0,bFixed.m-1), xLayer, bFree(0,0)];
+  real[int] pointsYPerio = [bFixed(1,bFixed.m-1), bFixed(1,0)];
+
+  mesh Th = Th0;
+  fespace Dh(Th, P1);
+
+  // Distance function (d is the minimal distance to the boundary)
+  varf vong(B, d)= on(labelFree,B=1);
+  real[int] ong=vong(0,Dh);
+  Dh B = 1, d;
+  B[] = ong ? 0 : B[];
+  distance(Th,B,d[]);
+  // plot(Th, d wait=1);
+
+  // Get the new inner boundary vertices (bLayer is the contour d==bndLayerWidth)
+  real[int,int] bLayer(3,1); 
+  int nLayer=isoline(
+    Th,d,iso=bndLayerWidth,close=0,bLayer,beginend=be,
+    smoothing=bndLayerWidth*smoothCoef,ratio=1.e-0
+  );
+  
+  int nInnerLines = be.n/2;
+  // cout << be << endl;
+
+  int[int] nInner(nInnerLines); // numer of points per loop
+  int nCorrectLines = 0; // number of loops with more than minPoints
+  // find number of points, count > minPoints & correct open ends
+  for (int i=0;  i < nInnerLines; i++){
+
+    real lInner = bLayer(2,be(i*2+1)-1);
+    nInner[i] = lround(ibd*lInner);
+    if(nInner[i] > minPoints){nCorrectLines++;}
+
+    if(dist((bLayer(0,be(i*2+1)-1)-bLayer(0,be(i*2))),(bLayer(1,be(i*2+1)-1)-bLayer(1,be(i*2)))) > eps){ // Open loop
+      bLayer(1,be(i*2)) = pointsYPerio[0]; // correct y-coords
+      bLayer(1,be(i*2+1)-1) = pointsYPerio[1];
+
+      nLayer = be(i*2+1)-be(i*2); // # points in the layer's isoline
+      xLayer = bLayer(0,be(i*2)); // x-coord of the layer
+      bLayer(0,be(i*2+1)-1) = xLayer; // correct x-coords
+
+      bLayer = computeArchlength(bLayer,bLayer.m,be(2*i),be(2*i+1));
+    }
+  }
+
+  // if the number of points is less than minPoints, filter the border for safety
+  int[int] nInnerF(nCorrectLines);
+  int[int] beF(2*nCorrectLines);
+
+  int j = 0;
+  for (int i=0;  i < nInnerLines; i++){
+    if(nInner[i] > minPoints){
+      nInnerF[j] = nInner[i];
+      beF[2*j] = be[i*2];
+      beF[2*j+1] = be[i*2+1];
+      j++;
+    }
+  }
+
+  // cout << nInner << "\n" << nInnerF << "\n" << endl;
+
+  border Inner(t=0,1;i) {P=Curve(bLayer,beF(i*2),beF(i*2+1)-1,t);} // Inner boundary multi-border
+  // cout << nInner << endl;
+
+  // ------------------------------------------------------------------------------------
+
+  // Find the extreme points of the periodic boundaries
+  pointsXPerio[1] = xLayer;
+  // cout << pointsXPerio << endl;
+
+  // We take extremaXPerio as the x-cords of the periodic bnds extremes
+  // and extremaYPerio as their y-coords 
+
+  // Chechk the free-perio junctions
+  bFree(0,bFree.m-1) = bFree(0,0); // Correct the x-coord in order to match the points
+  bFree(1,0) = pointsYPerio[0];
+  bFree(1,bFree.m-1) = pointsYPerio[1];
+
+  bFree = computeArchlength(bFree,bFree.m,0,bFree.m);
+
+  // Remesh the free boundary using an spline
+  gslspline splineXFree(gslinterpakimaperiodic, bFree(2, :), bFree(0, :)); 	// x(s) akima spline
+  gslspline splineYFree(gslinterpakimaperiodic, bFree(2, :), bFree(1, :)); 	// y(s) akima spline
+
+  int nFree = round(obd*lFree);	// new number of elements (prescribed density obd)
+  border Free(t=0,lFree){
+    x = splineXFree(t);
+    y = splineYFree(t);
+    label = labelFree;
+  }
+
+  // Keep the same vertices for the fixed
+  int nFixed = bFixed.m-1;
+  border Fixed(t=0,1){
+    P = Curve(bFixed,bFixed(2,lround(t*nFixed))/lFixed);
+    label = labelFixed;
+  }
+
+  // Define the periodic boundaries by linear interpolation
+  real lPerioB = pointsXPerio[1]-pointsXPerio[0];
+  real lPerioL = pointsXPerio[2]-pointsXPerio[1];
+  int nPerioB = lround(ibd*lPerioB);
+  int nPerioL = lround(obd*lPerioL);
+
+  real[int,int] bPerioB = computeArchlength(linInterpX(pointsXPerio[0],pointsXPerio[1],pointsYPerio[0],nPerioB),nPerioB,0,nPerioB);
+  real[int,int] bPerioL = computeArchlength(linInterpX(pointsXPerio[1],pointsXPerio[2],pointsYPerio[0],nPerioL),nPerioL,0,nPerioL);
+
+  // real[int,int] bPerio1B = twinPerioPoints(bPerio0B,pointsYPerio[1],nPerioB);
+  // real[int,int] bPerio1L = twinPerioPoints(bPerio0L,pointsYPerio[1],nPerioL);
+
+  // cout << nPerioL << endl;
+  // cout << linInterpX(pointsXPerio[1],pointsXPerio[2],pointsYPerio[0],nPerioL) << endl;
+  // cout << bPerioL << endl;
+
+  // Tried with diferent options, using splines  is the most robust
+  gslspline splineXPerioB(gslinterpakimaperiodic, bPerioB(2, :), bPerioB(0, :)); 	// x(s) akima spline
+  gslspline splineXPerioL(gslinterpakimaperiodic, bPerioL(2, :), bPerioL(0, :)); 	// x(s) akima spline
+
+  // cout << "(" << bFree(0,0)             << ", " << bFree(1,0)      << ");"
+  //      << "(" << splineXPerioL(lPerioB) << ", " << pointsYPerio[0] << ");" << endl;
+
+  border Perio0B(t=0,lPerioB){
+    label = labelPerio[0];
+    x = splineXPerioB(t); y = pointsYPerio[0];
+  }
+
+  border Perio0L(t=0,lPerioL){
+    label = labelPerio[0];
+    x = splineXPerioL(t); y = pointsYPerio[0];
+  }
+  
+  border Perio1B(t=lPerioB,0){
+    label = labelPerio[1];
+    x = splineXPerioB(t); y = pointsYPerio[1];
+  }
+
+  border Perio1L(t=lPerioL,0){
+    label = labelPerio[1];
+    x = splineXPerioL(t); y = pointsYPerio[1];
+  }
+
+  // plot(
+  //   Perio0B(nPerioB) + Perio0L(nPerioL) + Perio1B(nPerioB) + Perio1L(nPerioL) 
+  //   + Free(nFree) + Fixed(nFixed) + Inner(nInnerF), wait =1
+  // );
+
+  Th = buildmesh(
+    Perio0B(nPerioB) 
+    + Perio0L(nPerioL) 
+    + Perio1B(nPerioB) 
+    + Perio1L(nPerioL) 
+    + Free(nFree) 
+    + Fixed(nFixed) 
+    + Inner(nInnerF)/*,
+    fixedborder=1*/
+  );
+
+  Th = change(Th, rmInternalEdges=1);
+
+  return Th;
+}
+
 
 // // Construct the mesh -------------------------------------------------------------------------------------------------
 

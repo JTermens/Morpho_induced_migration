@@ -133,3 +133,74 @@ real a = 0; real b = 0; real c = 0; func d = 0;
   d = (zi*lengthScale)/(zi0*Lc); // Modified c for durotaxis.
 }
 EndMacro
+
+// macro outputIntegratedObservables documentation
+// 
+NewMacro outputIntegratedObservables(/**/intObs,outputPath,iTimeStep)
+{
+  string keys = "";
+  string data = "";
+  string fileName = "integrated_observables.csv";
+
+  for [iKey, iDatai : intObs]{
+    keys = keys + (iKey+",");
+    data = data + (iData+",");
+  }
+
+  // Trim the trailing comma
+  keys = keys(0:keys.length-2);
+  data = data(0:data.length-2);
+
+  // If we are at the first time iteration, create the output file.
+  if (iTimeStep == 0) {
+    {
+      ofstream createFile(outputPath+"/"+fileName);
+      createFile.fixed;
+      createFile << keys << endl;
+      createFile << data << endl;
+    }
+  } else { // Else, append the data.
+    {
+      ofstream appendFile(outputPath+"/"+fileName);
+      appendFile.fixed;
+      appendFile << data << endl;
+    }
+  }
+}
+EndMacro
+
+// macro outputLocalObservables documentation
+//
+NewMacro outputLocalObservables(
+  /**/Th,v,p,dv,dp,d2px,d2py,dPr,outputPath,iTimeStep
+)
+{
+  string fileName = "local_obs_"+(1000000+iTimeStep)+".txt";
+  {
+    int NbVertices = Th.nv;
+
+    ofstream createFile(outputPath+"/"+fileName);
+    createFile.fixed;
+
+    // Header
+    createFile << "#px  py  vx  vy  "
+               << "dpxx  dpxy  dpyx  dpyy  "
+               << "dvxx  dvxy  dvyx  dvyy  "
+               << "d2pxxx  d2pxxy  d2pxyx  d2pxyy  "
+               << "d2pyxx  d2pyxy  d2pyyx  d2pyyy" << endl;
+    // Data
+    for (int i = 0; i < NbVertices; i++){
+      createFile << p#x(Th(i).x,Th(i).y)  <<"  "<< p#y(Th(i).x,Th(i).y)     <<"  "
+              << v#x(Th(i).x,Th(i).y)     <<"  "<< v#y(Th(i).x,Th(i).y)     <<"  "  
+              << dp#xx(Th(i).x,Th(i).y)   <<"  "<< dp#xy(Th(i).x,Th(i).y)   <<"  "
+              << dp#yx(Th(i).x,Th(i).y)   <<"  "<< dp#yy(Th(i).x,Th(i).y)   <<"  "
+              << dv#xx(Th(i).x,Th(i).y)   <<"  "<< dv#xy(Th(i).x,Th(i).y)   <<"  "
+              << dv#yx(Th(i).x,Th(i).y)   <<"  "<< dv#yy(Th(i).x,Th(i).y)   <<"  "
+              << d2px#xx(Th(i).x,Th(i).y) <<"  "<< d2px#xy(Th(i).x,Th(i).y) <<"  "
+              << d2px#yx(Th(i).x,Th(i).y) <<"  "<< d2px#yy(Th(i).x,Th(i).y) <<"  "
+              << d2py#xx(Th(i).x,Th(i).y) <<"  "<< d2py#xy(Th(i).x,Th(i).y) <<"  "
+              << d2py#yx(Th(i).x,Th(i).y) <<"  "<< d2py#yy(Th(i).x,Th(i).y) << endl;
+      }
+  }
+}
+EndMacro

@@ -17,5 +17,5 @@ include "remeshing.edp";
 include "geometry-macros.edp"; // Mesh generation and remeshing.
 include "io-macros.edp";       // Input parameters and output fields.
 include "physics-macros.edp";  // Define the linear and bilinear forms.
-include "setup-macros.edp";    // FEMspaces and operator macros.
+include "observables-macros.edp";   // FEMspaces and operator macros.
 include "solvers-macros.edp";  // Solvers for the equations.

@@ -691,6 +691,82 @@ func mesh periodicRemesh1FreeBnd(
   return Th;
 }
 
+func mesh sinusoidalSemiplane(
+  real bndDensity, real[string]& meshParameters , int[int] free, int[int] fixed,
+  int[int] periodic, real lengthScale, real Nmax
+){
+  /*
+  [mesh] meshSemiplaneSinusoidal returns a rectangular mesh with nFigers 
+  sinusoidal fingers on its left side. The bopundary extremes always match with
+  a finger minimum.
+
+  Parameters:
+    - real bndDensity: boundary density, num. of points per unit lenght at the
+      boundary.
+    - real[string]& meshParameters: parameters that define the shape:
+      - "lx": width of the rectangle (x-axis). The total x-length is lx+2*amp.
+      - "amp": amplitude of the sinusoidal finger. Take into account 
+        that the finger overtakes the base rectangle by 2*amp, as it runs for 
+        a full wavelength. 
+      - "lFree": width of the rectangle (y-axis).
+      - "nFingers": num. of fingers. Their wavelength = lFree/n.
+  - int[int] free, fixed, periodic: free is the label of the free boundary 
+    (right); fixed for the fixed one (left) & periodic for the top and bottom.
+  - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
+  - real Nmax: Maximum number of points per border piece.
+
+  * Return type: mesh
+  */
+
+  // Unpack meshParameters.
+  real lx = meshParameters["lx"]; 
+  real lFree = meshParameters["lFree"];
+  real amp = meshParameters["amp"];
+  real nFingers = meshParameters["nFingers"];
+
+  // Unpack the labels.
+  int labelBottom = periodic[0]; // 1st periodic boundary (Bottom)
+  int labelTop = periodic[1];    // 2nd periodic boundary (Top)
+  int labelRight = free[0];      // Free boundary (right)
+  int labelLeft = fixed[0];      // Fixed boundary, opposed to the free one (left)
+
+  // Define the borders for both the bulk and the layer meshes
+  // Defien the borders for both the bulk and the layer meshes.
+  border Bottom(t=0, 1){
+    x = (lx*(t-1))/lengthScale; 
+    y = (-lFree/2.)/lengthScale;
+    label = labelBottom;
+  }
+
+  border Top(t=0, 1){
+    x = (0-lx*t)/lengthScale; 
+    y = (lFree/2.)/lengthScale; 
+    label = labelTop;
+  }
+
+  border Left(t=0,1){
+    x = (-lx)/lengthScale;
+    y = (lFree*(1/2.-t))/lengthScale;
+    label = labelLeft;
+  }
+
+  // change for a perturbed front, if needed. Mantain extreme points at x=0
+  border RightFinger(t=0,1){
+    x = (amp*(cos(pi*(2*nFingers*t-1))+1))/lengthScale;
+    y = (lFree*(t-1/2.))/lengthScale;
+    label = labelRight;
+  }
+
+  mesh Th = buildmesh(
+    Bottom(min(Nmax, bndDensity*lx/lengthScale))
+    + RightFinger(min(Nmax, bndDensity*lFree/lengthScale))
+    + Top(min(Nmax, bndDensity*lx/lengthScale))
+    + Left(min(Nmax, bndDensity*lFree/lengthScale))
+  );
+  
+  return Th;
+}
+
 
 // // Construct the mesh -------------------------------------------------------------------------------------------------
 

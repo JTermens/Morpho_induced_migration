@@ -161,7 +161,7 @@ for (int iCut=0; iCut<nCut; iCut++){
 
   // string fileNameMsh = "-";
   // if(saveLocalSols){
-    string fileNameMsh = "/msh/mesh_"+cutName+".msh";
+  string fileNameMsh = "/msh/mesh_"+cutName+".msh";
   // }
   
   real cut = CutList[iCut]; // Cut of the circular domain

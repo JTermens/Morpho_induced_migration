@@ -14,7 +14,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_contractility_exploration.edp";
+include "parameters_sets/params_exploration_semiplane_test.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;
@@ -27,6 +27,8 @@ int nAmp = AmpList.n;
 int nLc = LcList.n;
 int nZeta = ZetaList.n;
 int nLambda = LambdaList.n;
+
+real aVisor = 1.5;
 
 if (iRun == 0){
   exec("mkdir "+simulHomeDir);                // Make a home directory for the simulation
@@ -64,7 +66,7 @@ if (iRun == 0){
 
     //fileParamsMhs.fixed;
     fileParamsMhs << "Mesh_Parameters" << endl
-            << "q,Amp,Lx,Ly,obd,ibd,BndLayer,pathMesh" << endl;
+            << "amp,nFinguers,lx,lFree,obd,ibd,bLayerWidth,Area0,pathMesh" << endl;
   }
 
   {ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols); // Generate a separate file for the global variables (integrates ones)
@@ -104,23 +106,186 @@ macro pp(px,py) [px*px,px*py,py*px,py*py] //        // Active stress tensor
 
 macro Norm(u) dist(u#x,u#y) + 1.e-12 //             // Vector norm + offset to avoid 0-length vectors
 
-for (int iAmp = i0Amp[iRun]: iAmp<ifAmp[iRun]; iAmp++){
+for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
 
-  string AmpName = AmpNames[iAmp];
-  string fileNameMsh = "/msh/mesh_"+AmpName+".msh";
+  string fileNameMsh = "/msh/mesh_"+(iAmp+1)+"Amp.msh";
 
   // Mesh parameters
-  real Amp = AmpList[iAmp]; // Amplitude of the finguer perturbation
-  
+  real[string] meshParameters;
+  meshParameters["amp"] = AmpList[iAmp];
+  meshParameters["lx"] = lx;
+  meshParameters["lFree"] = l0;
+  meshParameters["nFinguers"] = nFinguers;
 
   // Mesh labels
   int[int] periodic = [1,3];
   int[int] free = [2];
   int[int] fixed = [4];
 
+  real eps = 1e-12; // numerical tolerance
+
+  func perio=[[periodic[1],x],[periodic[2],x]]; // Periodicity
+
   // Generate the initial mesh
-  mesh Th = sinusoidalSemiplane(obd, real[string]& meshParameters , int[int] free, int[int] fixed,
-  int[int] periodic, real lengthScale, real Nmax
-) 
+  mesh Th = sinusoidalSemiplane(
+    obd,meshParameters,free,fixed,periodic,l0,1e6
+  );
+
+  // Custom mesh adaptation
+  Th = periodicRemesh1FreeBnd(
+    Th,obd,ibd,bLayerWidth,free,fixed, periodic,.5
+  );
+
+  // Initial variables for shape characterization
+  real Area0 = Th.measure; // Inital Area of the Fluid Domain
+  {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
+
+    fileParamsMhs.fixed;
+    fileParamsMhs << meshParameters["amp"] <<","<< meshParameters["nFinguers"] <<","
+                  << meshParameters["lx"]  <<","<< meshParameters["lFree"]     <<","
+                  << obd                   <<","<< ibd                         <<","
+                  << bLayerWidth           <<","<< Area0                       <<","
+                  << fileNameMsh           << endl;
+    }
+
+  if (debug) {
+    plot(
+      Th, value = true, fill = false, nbiso=64, wait=true, 
+      cmm = "adaptive mesh;  A0="+Area0
+    );
+  }
+
+  // Save initial mesh
+  if (saveLocalSols){
+    savemesh(Th,simulHomeDir+fileNameMsh);
+  }
+  
+  // FEM spaces ---------------------------------------------------------------
+  fespace Pol(Th, [P2, P2],periodic=perio);          // For polarity vector
+  fespace Pola(Th, P2,periodic=perio);               // For |p| (not essential, just visualization)
+  fespace dPol(Th,[P2,P2,P2,P2],periodic=perio);     // For the gradient of the polarity vector
+
+  fespace Vel(Th, [P1b, P1b],periodic=perio);        // For velocity vector
+  fespace dVel(Th,[P1b,P1b,P1b,P1b],periodic=perio); // For the gradient of the velocity vector
+  fespace prodVel(Th, P1b,periodic=perio);
+
+  //fespace Vor(Th,P1b);                               // To compute the vorticity & divergence
+  fespace Nh(Th,[P1,P1]);                              // For the corrected normal vector at the boundary & non-periodic geometry
+  fespace NhPerio(Th,[P1,P1],periodic=perio);          // For the corrected normal vector at the boundary & periodic geometry
+  //---------------------------------------------------------------------------
+
+  // Extract the new boundary for future computations and compute its orientation
+  real[int,int] bFree(3,1); real sFree = extractborder(Th, free[0], bFree);
+  int nFree = bFree.m; // instead of Th.nbe to avoid problems with mesh labels
+
+  // Retrieve the indices of the verices of bFree with the same ordering ------
+  int[int] indicesFree(nFree);
+
+  int iTri;
+  for (int k=0; k<nFree; k++){
+    // Find the triangle index of the kth bnd point
+    iTri = Th(bFree(0,k),bFree(1,k)).nuTriangle;
+
+    // Find index of the kth bnd point from its triangle index
+    for (int jTri=0; jTri<3; jTri++) {
+      if( abs(Th[iTri][jTri].x-bFree(0,k))<eps && abs(Th[iTri][jTri].y-bFree(1,k))<eps){
+        indicesFree(k) = Th[iTri][jTri];
+      }
+    }
+  }
+
+  // Correction of the normal vectors at the boundary -------------------------
+
+  Nh normal = [0,0]; // here the Dof of nx,ny are scramble.
+  NhPerio normalPerio = [0,0];
+
+  real[int] nprev(2), npost(2), nmean(2);
+  int iBndElem; // index of the boundary element
+  real lenprev, lenpost;
+  nprev = [(bFree(1,nFree-1)-bFree(1,nFree-2)),-(bFree(0,nFree-1)-bFree(0,nFree-2))];
+  lenprev = sqrt(pow(nprev[0],2)+pow(nprev[1],2));
+
+  for (int k = 0; k < nFree-1; k++){
+    npost = [(bFree(1,k+1)-bFree(1,k)),-(bFree(0,k+1)-bFree(0,k))];
+    lenpost = sqrt(pow(npost[0],2)+pow(npost[1],2));
+    
+    nmean = nprev*(lenpost/(lenpost+lenprev)) + npost*(lenprev/(lenprev+lenpost));
+    nmean /= sqrt(pow(nmean[0],2)+pow(nmean[1],2));
+
+    nx[](2*indicesFree(k))= nmean[0]; ny[](2*indicesFree(k)+1) = nmean[1];
+    nprev = npost; lenprev = lenpost;
+  }
+
+  // Last normal, ensure periodicity
+  nx[](2*indicesFree(nFree-1))= nx[](2*indicesFree(0));
+  ny[](2*indicesFree(nFree-1)+1) = ny[](2*indicesFree(0)+1);
+
+
+  normalPerio = normal; // Project the normals computed at the non-periodic space into the periodic one.
+
+  if (debug) {
+    plot(Th,/*normal,*/normalPerio, value = true, fill = false, nbiso = 64, wait = true, cmm = "(nx,ny) periodic;",bb=[[-1*0.3,-aVisor*0.3],[aVisor*0.3,aVisor*0.3]]);
+  }
+  // --------------------------------------------------------------------------
+
+  for (int iLc=0; iLc<nLc; iLc++){
+    for (int iZeta=0; iZeta<nZeta; iZeta++){
+      for (int iLambda=0; iLambda<nLambda; iLambda++){
+        
+        // Problem Parameters
+        real Lc = LcList[iLc];             // Nematic length
+        real Zeta = ZetaList[iZeta];       // -Constractility
+        real Lambda = LambdaList[iLambda]; // Hydrodynamic screening length, sqrt(eta/xi)
+
+        // Adim parameters
+        real a = -Zeta/(zi*Lc); // Negative sign to compensate La = |zeta|/zi
+        real b = l0/Lambda;
+        real c = l0/Lc;
+        
+        string fileNameLocalSol = "/local_sols/sol_"+(iAmp+1)+"Amp_"+(iLc+1)+"Lc_"+(iZeta+1)+"Zeta_"+(iLambda+1)+"Lambda.txt";
+
+        // Define & solve the polarity equations ------------------------------
+        // P2 extension of polarity Dirichlet data
+        varf bndDirichlet(pD, q) = on(free[0], pDx = nxPerio) + on(free[0], pDy = nyPerio);
+        Pol pD=[0,0];
+        pDx[] = bndDirichlet(0, Pol, tgv = 1.0);
+
+        // Bilinear and linear variational forms P (Modified Homogeneous Drirchlet problem for p-pD)
+        varf ap(p, q) = int2d(Th)(
+            (grad(px)'*grad(qx) + grad(py)'*grad(qy))
+            + c*c*(p'*q)
+          )
+            + on(free[0], px = 0.0) + on(free[0], py=0.0) 
+            + on(fixed[0], px = 0.0) + on(fixed[0], py=0.0);
+
+        varf lp(p, q) = int2d(Th)(
+            - (grad(pDx)'*grad(qx) + grad(pDy)'*grad(qy)) 
+            - c*c*(pD'*q)
+          )
+            + on(free[0], px = 0.0) + on(free[0], py=0.0) 
+            + on(fixed[0], px = 0.0) + on(fixed[0], py=0.0);
+
+        // Assembly P
+        matrix Ap = ap(Pol, Pol, tgv = -2); // LHS matrix
+        real[int] bp = lp(0, Pol); // RHS
+
+        // P solution with vanishing Dirichlet data
+        real[int] solP(Pol.ndof);
+        //set(Ap,solver=sparsesolver);
+        solP=Ap^-1*bp;
+        Pol p=[0,0];
+        px[]=solP(0:Pol.ndof-1);
+
+        // P solution
+        p = p + pD;
+
+        plot(Th,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)", bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]);
+        Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2); // Abs(P)
+        plot(Th,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|", bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]);
+        
+        //
+      }
+    }
+  }
 
 }

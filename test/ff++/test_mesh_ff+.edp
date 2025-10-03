@@ -24,13 +24,19 @@ NewMacro evaluateMesh(Th, plotLabel, PERIODIC)
 cout << "OK";
 
 if (PERIODIC){
-  cout << endl;
+  // Custom mesh adaptation, create a boundary layer around the free boundary  
+  // with a higher triangle density. 
+  cout << " --Adaptive mesh: ";
+  Th = periodicRemesh1FreeBnd(
+    Th,outerBndDensity,innerBndDensity,bndLayerWidth,free,fixed,periodic,.5
+  );
+  cout << "OK" << endl;
 } else {
   // Custom mesh adaptation, create a boundary layer with a higher triangle 
   // density and a bulk with a lower one
   cout << " --Adaptive mesh: ";
   Th = closedRemesh(
-    Th,outerBndDensity,innerBndDensity,free,bndLayerWidth,.5,0
+    Th,outerBndDensity,innerBndDensity,bndLayerWidth,free,.5,0
   );
   cout << "OK" << endl;
 }
@@ -77,7 +83,7 @@ meshParameters["rRight"] = meshParameters["r0"]*0.25;
 meshParameters["d"] = meshParameters["r0"]*0.5;
 
 cout << "  - fourCurveShape: ";
-Th = fourCurveShape(outerBndDensity, meshParameters, free, fixed, periodic, lengthScale, Nmax);
+Th = fourCurveShape(outerBndDensity, meshParameters, free, lengthScale, Nmax);
 
 evaluateMesh(Th, "Adaptive fourCurvesShape mesh", PERIODIC)
 
@@ -86,7 +92,7 @@ meshParameters["cut"] = 2*pi/3;
 meshParameters["fracRarc"] = 0.1;
 
 cout << "  - oneCutSmooth: ";
-Th = oneCutSmooth(outerBndDensity, meshParameters, free, fixed, periodic, lengthScale, Nmax);
+Th = oneCutSmooth(outerBndDensity, meshParameters, free, lengthScale, Nmax);
 
 evaluateMesh(Th, "Adaptive oneCutSmooth mesh", PERIODIC)
 
@@ -95,7 +101,7 @@ meshParameters["amp"] = meshParameters["r0"]*0.5;
 meshParameters["q"] = 3;
 
 cout << "  - sinePerturb: ";
-Th = sinePerturb(outerBndDensity, meshParameters, free, fixed, periodic, lengthScale, Nmax);
+Th = sinePerturb(outerBndDensity, meshParameters, free, lengthScale, Nmax);
 
 evaluateMesh(Th, "Adaptive sinePerturb mesh", PERIODIC)
 
@@ -104,7 +110,7 @@ meshParameters["rVertex"] = meshParameters["r0"]*0.3;
 meshParameters["rSide"] = meshParameters["r0"]*0.35;
 
 cout << "  - twoCurvesTriangle: ";
-Th = twoCurvesTriangle(outerBndDensity, meshParameters, free, fixed, periodic, lengthScale, Nmax);
+Th = twoCurvesTriangle(outerBndDensity, meshParameters, free, lengthScale, Nmax);
 
 evaluateMesh(Th, "Adaptive twoCurvesTriangle mesh", PERIODIC)
 
@@ -115,13 +121,13 @@ meshParameters["sideLength3"] = meshParameters["r0"]*5.;
 meshParameters["rRound"] = 0.1*meshParameters["r0"];
 
 cout << "  - roundedTriangle: ";
-Th = roundedTriangle(outerBndDensity, meshParameters, free, fixed, periodic, lengthScale, Nmax);
+Th = roundedTriangle(outerBndDensity, meshParameters, free, lengthScale, Nmax);
 
 evaluateMesh(Th, "Adaptive roundedTriangle mesh", PERIODIC)
 
 // Test circle mesh
 cout << "  - circle: ";
-Th = circle(outerBndDensity, meshParameters, free, fixed, periodic, lengthScale, Nmax);
+Th = circle(outerBndDensity, meshParameters, free, lengthScale, Nmax);
 
 evaluateMesh(Th, "Adaptive circle mesh", PERIODIC)
 

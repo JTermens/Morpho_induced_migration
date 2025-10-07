@@ -8,7 +8,7 @@ string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_mot
 
 string simulName = "exploration_semiplane_test";
 
-real[int] AmpList = [50,200];
+real[int] AmpList = [10,50,100];
 real[int] LcList = [25,30,35,40];
 real[int] ZetaList = [0,2,10,20];
 real[int] LambdaList = [200];
@@ -16,12 +16,12 @@ real[int] LambdaList = [200];
 real zi = 0.1;                         // fixed traction offset [kPa/um]
 
 // Mesh parameters
-real lx = 1000;
+real lx = 2000;
 real l0 = 100;
 int nFinguers = 1;
-real obd = 50.;  	                      // Boundary mesh density
-real ibd = 20.;                         // Inner boundary mesh density
-real bLayerWidth = 50;
+real obd = 45.;  	                      // Boundary mesh density
+real ibd = 15.;                         // Inner boundary mesh density
+real bLayerWidth = 0.35;
 
 bool saveLocalSols = 1;
 

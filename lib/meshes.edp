@@ -722,7 +722,7 @@ func mesh sinusoidalSemiplane(
   real lx = meshParameters["lx"]; 
   real lFree = meshParameters["lFree"];
   real amp = meshParameters["amp"];
-  real nFingers = meshParameters["nFingers"];
+  int nFingers = meshParameters["nFingers"];
 
   // Unpack the labels.
   int labelBottom = periodic[0]; // 1st periodic boundary (Bottom)

@@ -34,6 +34,7 @@ if (iRun == 0){
   exec("mkdir "+simulHomeDir);                // Make a home directory for the simulation
   exec("mkdir "+simulHomeDir+"/msh");         // Make and save the meshes in a separeted directory
   exec("mkdir "+simulHomeDir+"/local_sols");  // Make and save the local solutions in a separeted directory
+  exec("mkdir "+simulHomeDir+"/free_bnd");    // Make and save the boundaries in a separeted directory
 
   {ofstream fileParams (simulHomeDir+fileNameParams); // Save the exploration parameters in separate file
 
@@ -115,7 +116,7 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
   meshParameters["amp"] = AmpList[iAmp];
   meshParameters["lx"] = lx;
   meshParameters["lFree"] = l0;
-  meshParameters["nFinguers"] = nFinguers;
+  meshParameters["nFingers"] = nFinguers;
 
   // Mesh labels
   int[int] periodic = [1,3];
@@ -124,12 +125,10 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
 
   real eps = 1e-12; // numerical tolerance
 
-  func perio=[[periodic[1],x],[periodic[2],x]]; // Periodicity
+  func perio=[[periodic[0],x],[periodic[1],x]]; // Periodicity
 
   // Generate the initial mesh
-  mesh Th = sinusoidalSemiplane(
-    obd,meshParameters,free,fixed,periodic,l0,1e6
-  );
+  mesh Th = sinusoidalSemiplane(obd, meshParameters, free, fixed, periodic, l0, 1e12);
 
   // Custom mesh adaptation
   Th = periodicRemesh1FreeBnd(
@@ -224,7 +223,10 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
   normalPerio = normal; // Project the normals computed at the non-periodic space into the periodic one.
 
   if (debug) {
-    plot(Th,/*normal,*/normalPerio, value = true, fill = false, nbiso = 64, wait = true, cmm = "(nx,ny) periodic;",bb=[[-1*0.3,-aVisor*0.3],[aVisor*0.3,aVisor*0.3]]);
+    plot(
+      Th,/*normal,*/normalPerio, value = true, fill = false, nbiso = 64, wait = true,
+      cmm = "(nx,ny) periodic;",bb=[[-1*0.3,-aVisor*0.3],[aVisor*0.3,aVisor*0.3]]
+    );
   }
   // --------------------------------------------------------------------------
 
@@ -238,11 +240,12 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         real Lambda = LambdaList[iLambda]; // Hydrodynamic screening length, sqrt(eta/xi)
 
         // Adim parameters
-        real a = -Zeta/(zi*Lc); // Negative sign to compensate La = |zeta|/zi
+        real a = -Zeta/(zi*Lc); // Negative sign to compensate a positive defined contractility
         real b = l0/Lambda;
         real c = l0/Lc;
         
         string fileNameLocalSol = "/local_sols/sol_"+(iAmp+1)+"Amp_"+(iLc+1)+"Lc_"+(iZeta+1)+"Zeta_"+(iLambda+1)+"Lambda.txt";
+        string fileNameFreeBnd = "/free_bnd/bnd_"+(iAmp+1)+"Amp_"+(iLc+1)+"Lc_"+(iZeta+1)+"Zeta_"+(iLambda+1)+"Lambda.txt";
 
         // Define & solve the polarity equations ------------------------------
         // P2 extension of polarity Dirichlet data
@@ -279,13 +282,176 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         // P solution
         p = p + pD;
 
-        plot(Th,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)", bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]);
-        Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2); // Abs(P)
-        plot(Th,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|", bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]);
+        // if (debug) {
+        //   plot(Th,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)"/*, bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]*/);
+        //   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2); // Abs(P)
+        //   plot(Th,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|"/*, bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]*/);
+        // }
+
+        // Define & solve the velocity equation -------------------------------
+        // Bilinear and linear variational forms V
+        varf av(v, u) = int2d(Th)(
+            ((Grad(vx,vy)+GradT(vx,vy))'*Grad(ux,uy))
+            + pow(b,2)*(v'*u)
+          ) 
+            + on(fixed[0], vx = 0.0) + on(fixed[0], vy = 0.0); // -viscosity -friction
+
+        varf lv(v, u) = int2d(Th)( 
+            + a*(pp(px,py)'*Grad(ux,uy))
+            + c*(p'*u)
+          ) 
+            + on(fixed[0], vx = 0.0) + on(fixed[0], vy = 0.0); //contractility +active traction
+
+        // Assembly V
+        matrix Av = av(Vel, Vel);
+        real[int] bv = lv(0, Vel);
+
+        // V solution
+        real[int] solV(Vel.ndof);
+        //set(Av,solver=sparsesolver);
+        solV=Av^-1*bv;
+        Vel v=[0,0];
+        vx[]=solV(0:Vel.ndof-1);
+
+        // if (debug) {
+        //   plot(Th,v, value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)"/*, bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]*/);
+        //   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2); // Abs(P)
+        //   plot(Th,vABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|v|"/*, bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]*/);
+        // }
+        //---------------------------------------------------------------------
+
+        // Compute the gradient of p for the posterior analysis ---------------
+        varf aGradP(dp, dq) = int2d(Th)(dp'*dq);
+        varf lGradP(dp, dq) = int2d(Th)(Grad(px,py)'*dq);
+
+        matrix AGradP = aGradP(dPol, dPol);  // LHS matrix
+        real[int] bGradP = lGradP(0, dPol);  // RHS vector
+
+        real[int] solGradP(dPol.ndof);
+        solGradP=AGradP^-1*bGradP;
+        dPol dp=[0,0,0,0];
+        dpxdx[]=solGradP(0:dPol.ndof-1);
+        //---------------------------------------------------------------------
+
+        // Compute the gradient of v for the posterior analysis ---------------
+        varf aGradV(dv, du) = int2d(Th)(dv'*du);
+        varf lGradV(dv, du) = int2d(Th)(Grad(vx,vy)'*du);
+
+        matrix AGradV = aGradV(dVel, dVel);	// LHS matrix
+        real[int] bGradV = lGradV(0, dVel); // RHS vector
+
+        real[int] solGradV(dVel.ndof);
+        solGradV=AGradV^-1*bGradV;
+        dVel dv=[0,0,0,0];
+        dvxdx[]=solGradV(0:dVel.ndof-1);
         
-        //
+
+        // Compute the Hessian of px for posterior analysis
+        varf aHessPx(d2px,d2qx) = int2d(Th)(d2px'*d2qx);
+        varf lHessPx(d2px,d2qx) = int2d(Th)(Hessian(px)'*d2qx);
+
+        matrix AHessPx = aHessPx(dPol, dPol);	// LHS matrix
+        real[int] bHessPx = lHessPx(0, dPol);	// RHS vector
+
+        real[int] solHessPx(dPol.ndof);
+        solHessPx=AHessPx^-1*bHessPx;
+        dPol d2px=[0,0,0,0];
+        dpxdxx[]=solHessPx(0:dPol.ndof-1);
+
+        // Compute the Hessian of py for posterior analysis
+        varf aHessPy(d2py,d2qy) = int2d(Th)(d2py'*d2qy);
+        varf lHessPy(d2py,d2qy) = int2d(Th)(Hessian(py)'*d2qy);
+
+        matrix AHessPy = aHessPy(dPol, dPol);	// LHS matrix
+        real[int] bHessPy = lHessPy(0, dPol);	// RHS vector
+
+        real[int] solHessPy(dPol.ndof);
+        solHessPy=AHessPy^-1*bHessPy;
+        dPol d2py=[0,0,0,0];
+        dpydxx[]=solHessPy(0:dPol.ndof-1);
+        //---------------------------------------------------------------------
+
+
+        // Compute the intial values of the global variables ------------------
+        real avgDivV = int2d(Th)(dvxdx+dvydy)/Area0;    // Average divergergence of the velocity
+        //---------------------------------------------------------------------
+
+        if (debug) {
+          cout << "{iAmp,iLc,iZeta,iLambda} = {"+iAmp+", "+iLc+", "+iZeta+", "+iLambda+"}; Amp = "+meshParameters["amp"]+";  -La/Lc = "+a+";  L0/Lc = "+c+";  L0/lambda = "+b << endl;
+          Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
+          plot(/*Th,*/vABS,normal, 
+            value = true,
+            fill = true,
+            nbiso = 64,
+            wait = false,
+            /*bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]],*/
+            cmm = "Amp = "+meshParameters["amp"]+";  a = "+a+";  b = "+b+";  c = "+c
+          );
+        }
+
+        // Save {px, py, vx, vy, dpxdx, dpxdy, dpydx, dpydy, dvxdx, dvxdy, dvydx, dvydy, 
+        // dpxdxx, dpxdxy, dpxdyx, dpxdyy, dpydxx, dpydxy, dpydyx, dpydyy} on each vertex:
+        // Memory efficient method, but needs connectivity data to reconstruct the mesh
+        if(saveLocalSols){
+          {
+            ofstream fileLocalSols (simulHomeDir+fileNameLocalSol);
+            
+            fileLocalSols.fixed;
+            int NbVertices = Th.nv;
+            fileLocalSols << "# LocalSolutions" << endl
+                          << "# NumFields: " << 20 << "  NumberVertices: " << NbVertices 
+                          << " Amp: " << meshParameters["amp"] << " a: " << a 
+                          << " b: " << b << " c: " << c << endl
+                          << "# px  py  vx  vy  dpxdx  dpxdy  dpydx  dpydy  dvxdx  dvxdy  dvydx  dvydy  " 
+                          << "dpxdxx  dpxdxy  dpxdyx  dpxdyy  dpydxx  dpydxy  dpydyx  dpydyy" << endl;
+            for (int i = 0; i < NbVertices; i++){
+              fileLocalSols << px(Th(i).x,Th(i).y) << "  " << py(Th(i).x,Th(i).y)     << "  "  // {px,py}
+                      << vx(Th(i).x,Th(i).y)       << "  " << vy(Th(i).x,Th(i).y)     << "  "  // {vx,vy}
+                      << dpxdx(Th(i).x,Th(i).y)    << "  " << dpxdy(Th(i).x,Th(i).y)  << "  "  // {dpxdx,dpxdy}
+                      << dpydx(Th(i).x,Th(i).y)    << "  " << dpydy(Th(i).x,Th(i).y)  << "  "  // {dpydx,dpydy}
+                      << dvxdx(Th(i).x,Th(i).y)    << "  " << dvxdy(Th(i).x,Th(i).y)  << "  "  // {dvxdx,dvxdy}
+                      << dvydx(Th(i).x,Th(i).y)    << "  " << dvydy(Th(i).x,Th(i).y)  << "  "  // {dvydx,dvydy}
+                      << dpxdxx(Th(i).x,Th(i).y)   << "  " << dpxdxy(Th(i).x,Th(i).y) << "  "  // {dpxdxx,dpxdxy}
+                      << dpxdyx(Th(i).x,Th(i).y)   << "  " << dpydyy(Th(i).x,Th(i).y) << "  "  // {dpxdyx,dpxdyy}
+                      << dpydxx(Th(i).x,Th(i).y)   << "  " << dpydxy(Th(i).x,Th(i).y) << "  "  // {dpydxx,dpydxy}
+                      << dpydyx(Th(i).x,Th(i).y)   << "  " << dpydyy(Th(i).x,Th(i).y) << endl; // {dpydyx,dpydyy}
+            }
+          }
+        }
+
+        // Save {x, y, px, py, vx, vy} on each vertex of the free boundary:
+        // Eases the posterior analysis
+        {
+            ofstream fileFreeBnd (simulHomeDir+fileNameFreeBnd);
+            
+            fileFreeBnd.fixed;
+            fileFreeBnd << "# FreeBoundary" << endl
+                          << "# NumFields: " << 7 << "  NumberVertices: " << nFree 
+                          << " Amp: " << meshParameters["amp"] << " a: " << a 
+                          << " b: " << b << " c: " << c << endl
+                          << "# x  y  s  px  py  vx  vy" << endl;
+            for (int i = 0; i < nFree; i++){
+              fileFreeBnd << bFree(0,i)   << "  " << bFree(1,i) << "  " << bFree(2,i)   << "  "  // {x,y,s}
+                      << px(bFree(0,i),bFree(1,i)) << "  " << py(bFree(0,i),bFree(1,i)) << "  "  // {px,py}
+                      << vx(bFree(0,i),bFree(1,i)) << "  " << vy(bFree(0,i),bFree(1,i)) << endl; // {vx,vy}
+            }
+          }
+
+        // Save Global Data (variables integratet over the domain)
+        {
+          ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols, append);
+          
+          // Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,vxFront,vyFront,vxRear,vyRear,pathMsh,pathLocalSol"
+
+          fileGlobalSols.fixed;
+          fileGlobalSols << iAmp        << "," << iLc              << ","  
+                         << iZeta       << "," << iLambda          << ","
+                         << Area0       << "," << avgDivV          << "," 
+                         << fileNameMsh << "," << fileNameLocalSol << ","
+                         << fileNameFreeBnd                        << endl;
+        }
       }
     }
   }
-
+  cout << "Amp = " << meshParameters["amp"] << " Finished!" << endl; 
 }

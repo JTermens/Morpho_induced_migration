@@ -74,10 +74,12 @@ if (iRun == 0){
 
     //fileGlobalSol.fixed;
     fileGlobalSols << "Global_Solutions" << endl
-            << "Amp.i,"<<"Lc.i,"<<"Zeta.i,"<<"Lambda.i,"
-            <<"pathMsh,pathLocalSol" << endl
-            << "adim,"<<"adim,"<<"adim,"<<"adim,"
-            <<"path,path" << endl;
+            << "Amp.i," << "Lc.i," << "Zeta.i," << "Lambda.i,"
+            << "avgDivV,xMin,yMin,xMax,yMax,vxMin,vxMax,dVx,"
+            << "pathMsh,pathLocalSol,pathFreeBnd" << endl
+            << "adim,"  << "adim," << "adim,"   << "adim,"
+            << "1/tscale,R,R,R,R,R/tscale,R/tscale,R/tscale,"
+            <<"path,path,path" << endl;
   }
 }
 
@@ -285,7 +287,7 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         // if (debug) {
         //   plot(Th,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)"/*, bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]*/);
         //   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2); // Abs(P)
-        //   plot(Th,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|"/*, bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]*/);
+        //   plot(Th,pABS, value = travgDivVue, fill = true, nbiso = 64, wait = true, cmm = "|p|"/*, bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]]*/);
         // }
 
         // Define & solve the velocity equation -------------------------------
@@ -376,6 +378,26 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         real avgDivV = int2d(Th)(dvxdx+dvydy)/Area0;    // Average divergergence of the velocity
         //---------------------------------------------------------------------
 
+        real[int] rMin = [bFree(0,0),bFree(1,0)]; // Point of the free boundary with a lower x.
+        real[int] rMax = [bFree(0,0),bFree(1,0)]; // Point of the free boundary with a larger x.
+
+        // Find the position and velocity of the free boundary x-maximum and minimum
+        for (int iFree=1; iFree>nFree; iFree++) {
+          real ix = bFree(0,iFree);
+          real iy = bFree(1,iFree);
+          if (ix > rMax[0]) {
+            rMax = [ix, iy]; // Check the maximum
+          } else if (iy > 0 && ix < rMin[0]) {
+            rMin = [ix, iy]; // Check the minimum (y > 0)
+          }
+        }
+
+        // Compute the velocities
+        real vxMin = vx(rMin[0],rMin[1]); // x-Velocity of rMin.
+        real vxMax = vx(rMax[0],rMax[1]); // x-Velocity of rMax.
+
+        real dVx = vxMax-vxMin;
+
         if (debug) {
           cout << "{iAmp,iLc,iZeta,iLambda} = {"+iAmp+", "+iLc+", "+iZeta+", "+iLambda+"}; Amp = "+meshParameters["amp"]+";  -La/Lc = "+a+";  L0/Lc = "+c+";  L0/lambda = "+b << endl;
           Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
@@ -441,12 +463,17 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         {
           ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols, append);
           
-          // Vxavg,Vyavg,Axcm,Aycm,Area,dAreadt,Ix,Iy,dIxdt,dIydt,avgDivV,divXcm,divYcm,divXavgcm,divYavgcm,vxFront,vyFront,vxRear,vyRear,pathMsh,pathLocalSol"
+          // i.Amp,i.Lc,i.Zeta,i.Lambda,avgDivV,xMin,yMin,xMax,yMax,vxMin,
+          // vxMax,dVx,pathMsh,pathLocalSol,pathFreeBnd
 
           fileGlobalSols.fixed;
           fileGlobalSols << iAmp        << "," << iLc              << ","  
                          << iZeta       << "," << iLambda          << ","
-                         << Area0       << "," << avgDivV          << "," 
+                         << avgDivV     << ","
+                         << xMin        << "," << yMin             << ","
+                         << xMax        << "," << yMax             << ","
+                         << vxMin       << "," << vxMax            << ","
+                         << dVx         << ","  
                          << fileNameMsh << "," << fileNameLocalSol << ","
                          << fileNameFreeBnd                        << endl;
         }

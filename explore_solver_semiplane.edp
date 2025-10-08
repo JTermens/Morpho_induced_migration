@@ -14,7 +14,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_exploration_semiplane_test.edp";
+include "parameters_sets/params_exploration_semiplane_detailed.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;

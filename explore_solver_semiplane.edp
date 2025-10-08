@@ -382,12 +382,13 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         real[int] rMax = [bFree(0,0),bFree(1,0)]; // Point of the free boundary with a larger x.
 
         // Find the position and velocity of the free boundary x-maximum and minimum
-        for (int iFree=1; iFree>nFree; iFree++) {
-          real ix = bFree(0,iFree);
-          real iy = bFree(1,iFree);
-          if (ix > rMax[0]) {
+        for (int i=1; i<nFree; i++){
+          real ix = bFree(0,i);
+          real iy = bFree(1,i);
+
+          if (ix >= rMax[0]) {
             rMax = [ix, iy]; // Check the maximum
-          } else if (iy > 0 && ix < rMin[0]) {
+          } else if (iy >= 0 && ix <= rMin[0]) {
             rMin = [ix, iy]; // Check the minimum (y > 0)
           }
         }

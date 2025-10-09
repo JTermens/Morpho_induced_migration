@@ -6,7 +6,7 @@ verbosity=0;
 // string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/test";
 string rootDir = "/home/joan/Documents/Simul_runs/exploration_semiplane";
 
-string simulName = "exploration_semiplane_detailed";
+string simulName = "exploration_semiplane_hi-res";
 
 real minAmp = 0;
 real maxAmp = 100;

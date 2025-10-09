@@ -39,5 +39,5 @@ real bLayerWidth = 0.35;
 
 bool saveLocalSols = 0;
 
-int[int] i0Amp = [0,5,10,15];
-int[int] ifAmp = [4,9,14,21];
+int[int] i0Amp = [0,50,100,150];
+int[int] ifAmp = [49,99,149,201];

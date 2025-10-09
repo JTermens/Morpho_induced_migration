@@ -440,11 +440,10 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
                       << dpydyx(Th(i).x,Th(i).y)   << "  " << dpydyy(Th(i).x,Th(i).y) << endl; // {dpydyx,dpydyy}
             }
           }
-        }
 
-        // Save {x, y, px, py, vx, vy} on each vertex of the free boundary:
-        // Eases the posterior analysis
-        {
+          // Save {x, y, px, py, vx, vy} on each vertex of the free boundary:
+          // Eases the posterior analysis
+          {
             ofstream fileFreeBnd (simulHomeDir+fileNameFreeBnd);
             
             fileFreeBnd.fixed;
@@ -459,6 +458,7 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
                       << vx(bFree(0,i),bFree(1,i)) << "  " << vy(bFree(0,i),bFree(1,i)) << endl; // {vx,vy}
             }
           }
+        }
 
         // Save Global Data (variables integratet over the domain)
         {

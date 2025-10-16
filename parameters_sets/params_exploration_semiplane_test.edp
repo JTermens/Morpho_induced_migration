@@ -10,7 +10,7 @@ string simulName = "exploration_semiplane_test";
 
 real[int] AmpList = [5,200];
 real[int] LcList = [15,40];
-real[int] ZetaList = [0,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,2000,3000,4000,5000,10000];
+real[int] ZetaList = -1*[0,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,2000,3000,4000,5000,10000];
 real[int] LambdaList = [400];
 
 real zi = 0.1;                         // fixed traction offset [kPa/um]

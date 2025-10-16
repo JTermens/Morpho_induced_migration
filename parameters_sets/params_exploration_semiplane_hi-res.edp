@@ -13,9 +13,9 @@ real maxAmp = 100;
 real dAmp = 1;
 // int nAmp = lrint((maxAmp-minAmp)/dAmp)+1; // 101; +1 to include the minimum value
 
-real minZeta = -50;
-real maxZeta = 100;
-real dZeta = 1;
+real minZeta = 50;
+real maxZeta = -100;
+real dZeta = -1;
 // int nZeta = lrint((maxZeta-minZeta)/dZeta)+1; // 151; +1 to include the minimum value
 
 real[int] AmpList(101);

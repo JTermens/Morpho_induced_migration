@@ -64,7 +64,7 @@ real Ycm0 = int2d(Th)(y)/Area0; //Initial y_cm
 if (debug) {
   plot(
     Th,value = true, fill = false, nbiso=64, wait=true, 
-    cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,yxm0)=("+Xcm0+","+Ycm0+")"
+    cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,ycm0)=("+Xcm0+","+Ycm0+")"
   );
 }
 //---------------------------------------------------------------------------------------------------------------------

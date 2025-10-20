@@ -1,0 +1,30 @@
+// Parameter file for a phase space exploration of durotaxis
+
+verbosity=0;
+// bool debug=1; 
+
+// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/test";
+string rootDir = "/home/joan/Documents/Simul_runs/exploration_semiplane";
+
+string simulName = "exploration_flat_front";
+
+real[int] AmpList = [0];
+real[int] LcList = [15,40];
+real[int] ZetaList = -1*[0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200];
+real[int] LambdaList = [400];
+
+real zi = 0.1;                         // fixed traction offset [kPa/um]
+
+// Mesh parameters
+real lx = 3200;
+real l0 = 100;
+int nFinguers = 1;
+real obd = 45.;  	                      // Boundary mesh density
+real ibd = 15.;                         // Inner boundary mesh density
+real bLayerWidth = 0.35;
+
+bool saveLocalSols = 0;
+bool saveFreeBnd = 1;
+
+int[int] i0Amp = [0];
+int[int] ifAmp = [1];

@@ -38,6 +38,7 @@ real ibd = 10.;                         // Inner boundary mesh density
 real bLayerWidth = 0.35;
 
 bool saveLocalSols = 0;
+bool saveFreeBnd = 0;
 
 int[int] i0Amp = [0,16,33,50,67,84];
 int[int] ifAmp = [15,32,49,66,83,100];

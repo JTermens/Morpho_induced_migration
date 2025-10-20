@@ -14,7 +14,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_exploration_semiplane_hi-res.edp";
+include "parameters_sets/params_exploration_flat_front.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;
@@ -145,6 +145,12 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
 
   // Initial variables for shape characterization
   real Area0 = Th.measure; // Inital Area of the Fluid Domain
+
+  string fileNameMsh = "-";
+  if (saveLocalSols) {
+    fileNameMsh = "/msh/mesh_"+(iAmp+1)+"Amp.msh";
+  }
+
   {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
 
     fileParamsMhs.fixed;
@@ -164,7 +170,6 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
 
   // Save initial mesh
   if (saveLocalSols){
-    string fileNameMsh = "/msh/mesh_"+(iAmp+1)+"Amp.msh";
     savemesh(Th,simulHomeDir+fileNameMsh);
   }
   
@@ -257,9 +262,6 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         real a = Zeta/(zi*Lc); // Negative sign to compensate a positive defined contractility
         real b = l0/Lambda;
         real c = l0/Lc;
-
-        string fileNameLocalSol = "-";
-        string fileNameFreeBnd = "-";
         
 
         // Define & solve the polarity equations ------------------------------
@@ -421,10 +423,10 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         }
 
 
-        string fileNameLocalSol = "-"
+        string fileNameLocalSol = "-";
         if(saveLocalSols){
 
-          string fileNameLocalSol = "/local_sols/sol_"+(iAmp+1)+"Amp_"+(iLc+1)+"Lc_"+(iZeta+1)+"Zeta_"+(iLambda+1)+"Lambda.txt";
+          fileNameLocalSol = "/local_sols/sol_"+(iAmp+1)+"Amp_"+(iLc+1)+"Lc_"+(iZeta+1)+"Zeta_"+(iLambda+1)+"Lambda.txt";
 
           // Save {px, py, vx, vy, dpxdx, dpxdy, dpydx, dpydy, dvxdx, dvxdy, 
           // dvydx, dvydy, dpxdxx, dpxdxy, dpxdyx, dpxdyy, dpydxx, dpydxy, 
@@ -459,8 +461,8 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
 
         string fileNameFreeBnd = "-";
         if (saveFreeBnd) {
-
-          string fileNameFreeBnd = "/free_bnd/bnd_"+(iAmp+1)+"Amp_"+(iLc+1)+"Lc_"+(iZeta+1)+"Zeta_"+(iLambda+1)+"Lambda.txt";
+          
+          fileNameFreeBnd = "/free_bnd/bnd_"+(iAmp+1)+"Amp_"+(iLc+1)+"Lc_"+(iZeta+1)+"Zeta_"+(iLambda+1)+"Lambda.txt";
 
           // Save {x, y, px, py, vx, vy} on each vertex of the free boundary:
           // Eases the posterior analysis

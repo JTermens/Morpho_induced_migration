@@ -14,7 +14,7 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_exploration_flat_front.edp";
+include "parameters_sets/params_exploration_hi-res.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;

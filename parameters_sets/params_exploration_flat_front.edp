@@ -27,4 +27,4 @@ bool saveLocalSols = 0;
 bool saveFreeBnd = 1;
 
 int[int] i0Amp = [0];
-int[int] ifAmp = [1];
+int[int] ifAmp = [0];

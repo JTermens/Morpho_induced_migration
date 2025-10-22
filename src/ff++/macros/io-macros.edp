@@ -12,8 +12,8 @@ real[string] meshParameters;
 { // Load the parameters as a dynamic map (dictionary) for an easy handling and robustness.
   string[int] meshKeys = $meshKeys;
   real[int] meshValues = $meshValues;
-  for [i, iKey : meshKeys]{
-    meshParameters[iKey] = meshValues[i];
+  for (int i=0; i < meshKeys.n; i++){
+    meshParameters[meshKeys[i]] = meshValues[i];
   }
 }
 EndMacro

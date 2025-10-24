@@ -19,12 +19,14 @@ include "parameters_sets/parameters_semiplane_evolution.edp"; // load the parame
 
 // Construct the mesh ---------------------------------------------------------
 
+real l0 = l0List[iSimul];
+
 // Mesh parameters
 real[string] meshParameters;
 meshParameters["amp"] = ampList[iSimul];
 meshParameters["lx"] = lx;
 meshParameters["lFree"] = l0List[iSimul];
-meshParameters["nFingers"] = nFinguers;
+meshParameters["nFingers"] = nFingers;
 
 // Mesh labels
 int[int] periodic = [1,3];
@@ -36,7 +38,7 @@ real eps = 1e-12; // numerical tolerance
 func perio=[[periodic[0],x],[periodic[1],x]]; // Periodicity
 
 // Generate the initial mesh
-mesh Th = sinusoidalSemiplane(obd, meshParameters, free, fixed, periodic, l0, 1e12);
+mesh Th = sinusoidalSemiplane(obd, meshParameters, free, fixed, periodic, meshParameters["lFree"], 1e12);
 
 // Custom mesh adaptation
 Th = periodicRemesh1FreeBnd(
@@ -66,12 +68,14 @@ real zi = ziList[iSimul];     // Traction [kPa/um].
 real lambda = sqrt(eta/xi);   // hydrodynamic sceening length.
 real La = zeta/zi;            // active length; < 0 (> 0) for contractile (extensile) stress
 real tscale = eta/(zi*Lc);    // Problem timescale
-real vscale = l0/tscale;      // Problem velocity scale
+real vscale = meshParameters["lFree"]/tscale; // Problem velocity scale
 
 // Problem Parameters
-real a = La/Lc;          // Active length, zeta/zi, and effective radius ratio.
-real b = l0/lambda;      // Effective radius and hydrodynamic length, sqrt(eta/xi), ratio.
-real c = l0/Lc;          // Effective radius and nematic length ratio.
+real a = La/Lc;          // Active length, zeta/zi, and lFree ratio.
+real b =  meshParameters["lFree"]/lambda; // Hydrodynamic length, sqrt(eta/xi), and lFree ratio.
+real c =  meshParameters["lFree"]/Lc; // lFree and nematic length ratio.
+
+real aVisor = 1.5;
 //-----------------------------------------------------------------------------
 
 
@@ -79,7 +83,7 @@ real c = l0/Lc;          // Effective radius and nematic length ratio.
 if (bsave){
   string simulHomeDir = rootDir+"/"+simulNames[iSimul];
   string fileNameParams = "/params.csv";
-  string fileNameGlobalSol = "/global_sol.csv";
+  string fileNameGlobalSols = "/global_sol.csv";
 
   // Make a home directory for the simulation.
   exec("mkdir "+simulHomeDir);
@@ -98,15 +102,17 @@ if (bsave){
     fileParams.fixed;
     fileParams << "amp,l0,lx,nFingers,obd,ibd,bLayerWidth,Lc,lambda,La,eta,xi,zi,zeta,dt,tscale,vscale,dsave" << endl;
     fileParams << "um,um,um,adim,adim,adim,adim,um,um,um,kPa*s,kPa*s/um^2,kPa/um,kPa,s,s,um/s,adim" << endl;
-    fileParams << amp         << "," << l0     << "," << lx        << ","
-               << nFingers    << "," << obd    << "," << ibd       << "," 
-               << bLayerWidth << "," << Lc     << "," << lambda    << ","
-               << La          << "," << eta    << "," << xi        << ","
-               << zi          << "," << zeta   << "," << tscale*dt << "," 
-               << tscale      << "," << vscale << "," << dsave     << endl;
+    fileParams << meshParameters["amp"] << ","
+               << meshParameters["lFree"] << "," 
+               << lx        << "," << nFingers    << "," << obd    << ","
+               << ibd       << "," << bLayerWidth << "," << Lc     << "," 
+               << lambda    << "," << La          << "," << eta    << "," 
+               << xi        << "," << zi          << "," << zeta   << "," 
+               << tscale*dt << "," << tscale      << "," << vscale << "," 
+               << dsave     << endl;
   }
   // Generate a separate file for the global variables (integrates ones)
-  {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol);  
+  {ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols);  
     //fileGlobalSol.fixed;
     fileGlobalSols << "Global_Solutions" << endl
             << "Time,avgDivV,xMin,yMin,xMax,yMax,vxMin,vxMax,dVx,"
@@ -483,10 +489,12 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   //---------------------------------------------------------------------------
 
   // Solve the velocity equation ----------------------------------------------
-  varf lv(v, u) = int2d(Th)(
+  varf lv(v, u) = int2d(Th)( 
       + a*(pp(px,py)'*Grad(ux,uy))
-      + d*(p'*u)
-    ); //contractility + active traction
+      + c*(p'*u)
+    ) //contractility +active traction
+    + on(fixed[0], vx = 0.0) + on(fixed[0], vy = 0.0);
+  
   // Assembly V
   matrix Av = av(Vel, Vel);  // LHS matrix
   real[int] bv = lv(0, Vel); // RHS
@@ -598,7 +606,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
       nbiso = 64,
       wait = false,
       /*bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]],*/
-      cmm = cmm = "iTime="+(iterTime)+"; "+"t="+(dt*iterTime)+
+      cmm = "iTime="+(iterTime)+"; "+"t="+(dt*iterTime)+
       "; Amp = "+meshParameters["amp"]+";  a = "+a+";  b = "+b+";  c = "+c
     );
   }
@@ -607,8 +615,8 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
   if(iterTime % dsave == 0 && bsave==1){
 
     string simulHomeDir = rootDir+"/"+simulNames[iSimul];
-    string fileNameGlobalSol = "/global_sol.csv";
-    string fileNameLocalSol = "/local_sol/sol_"+(1000000+iterTime)+".txt";
+    string fileNameGlobalSols = "/global_sol.csv";
+    string fileNameLocalSols = "/local_sols/sol_"+(1000000+iterTime)+".txt";
     string fileNameMsh = "/msh/mesh_"+(1000000+iterTime)+".msh";
     string fileNameFreeBnd = "/free_bnd/bnd_"+(1000000+iterTime)+".txt";
 
@@ -618,7 +626,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     // Memory efficient method, but needs connectivity data to 
     // reconstruct the mesh
     {
-      ofstream fileLocalSols (simulHomeDir+fileNameLocalSol);
+      ofstream fileLocalSols (simulHomeDir+fileNameLocalSols);
       
       fileLocalSols.fixed;
       int NbVertices = Th.nv;
@@ -661,10 +669,10 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
     }
 
     // Save Global Data (variables integratet over the domain)
-    {ofstream fileGlobalSol (simulHomeDir+fileNameGlobalSol, append);
+    {ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols, append);
       
-      fileGlobalSol.fixed;
-      fileGlobalSol  << iterTime*dt << "," << avgDivV  << ","
+      fileGlobalSols.fixed;
+      fileGlobalSols << iterTime*dt << "," << avgDivV  << ","
                      << rMin[0]     << "," << rMin[0]  << ","
                      << rMax[1]     << "," << rMax[1]  << ","
                      << vxMin       << "," << vxMax    << ","

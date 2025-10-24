@@ -35,12 +35,12 @@ real lx = 3200;
 // Numerical parameters of the simulations
 real obd = 40.;          // Outer boundary mesh density, obd points for adim. unit length.
 real ibd = 10.;          // Inner boundary mesh density.
-real bLayerWidth = 0.35; // Adim. width of the boundary layer (finer mesh), >= Lc/R0. 
+real bLayerWidth = 0.4; // Adim. width of the boundary layer (finer mesh), >= Lc/R0. 
 real dt = 1e-3;          // Adim. time step, real time step = dt * eta/(zi0*Lc).
 int NiterTime = 1000;    // Number of iterations, Max time = NiteTime * dt * eta/(zi0*Lc).
 bool keepPoints = 0;     // Keep the number of boundary points upon remeshing.
 
 // Save parameters
-bool bsave = 1;          // To save the solutions or not, handy for debugging.
+bool bsave = 0;          // To save the solutions or not, handy for debugging.
 int dsave = 10;          // Save frame gap. Usually we do not need that many solutions to
 

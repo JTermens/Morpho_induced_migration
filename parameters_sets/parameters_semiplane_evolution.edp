@@ -7,35 +7,40 @@ verbosity=0;
 string rootDir = "/home/joan/Documents/Simul_runs/durotaxis/durotaxis_0";
 
 int nSimul = 4;   // Number of simulations
-string[int] simulNames = ["0_durotaxis_0","pi3_durotaxis_0","2pi3_durotaxis_0","pi_durotaxis_0"];
+string[int] simulNames = [
+  "semiplane_zeta0_amp2",
+  "semiplane_zeta50_amp2",
+  "semiplane_zeta50_amp20",
+  "semiplane_zeta120_amp20",
+  "semiplane_zeta120_amp30",
+  "semiplane_zeta150_amp20"
+  ];
 
+//{{0, 0.02}, {50, 0.02}, {50, 0.2}, {120, 0.2}, {120, 0.3}, {150, 0.2}};
 
 // Physical parameters of each problem
-real[int] cutList = [0, pi/3, 2*pi/3, pi];         // Angular length of the cutted portion of the circle, [rad].
-real[int] R0List = [175.74, 178.33, 195.93, 248.54];       // Initial radius of the monolayer, [μm].
-real[int] LcList = [40, 40, 40, 40];         // Nematic length, sqrt(K/a), [μm].
-real[int] etaList = [2.5e4, 2.5e4, 2.5e4, 2.5e4];  // Monolayer viscosity, [kPa·s].
-real[int] xiList = [0.1, 0.1, 0.1, 0.1];       // Friction coef, [kPa·s/μm²].
-real[int] zetaList = [-25, -25, -25, -25];     // -Contractility coef, [kPa]. < 0 to generate contractile stress.
-real[int] zi0List = [0.1, 0.1, 0.1, 0.1];      // Offset traction coef, [kPa/μm]. Initial traction at the CM.
-real[int] gradZiList = [0, 0, 0, 0]; // Durotactic traction gradient, [kPa/μm²].
+real[int] ampList = [2, 2, 20, 20, 30, 20]; // Amplitude of the perturbation [um].
+real[int] zetaList = -1*[0, 50, 50, 120, 120, 150]; // -Contractility coef, [kPa]. < 0 to generate contractile stress.
+
+// Fixed parameters
+real[int] l0List = 100*[1, 1, 1, 1, 1, 1];     // Initial radius of the monolayer, [μm].
+real[int] LcList = 40*[1, 1, 1, 1, 1, 1];      // Nematic length, sqrt(K/a), [μm].
+real[int] etaList = 2.5e4*[1, 1, 1, 1, 1, 1];  // Monolayer viscosity, [kPa·s].
+real[int] xiList = 0.15625*[1, 1, 1, 1, 1, 1]; // Friction coef, [kPa·s/μm²].
+real[int] ziList = 0.1*[1, 1, 1, 1, 1, 1];     // Traction coef, [kPa/μm].
+
+int nFingers = 1;
+real lx = 3200;
 
 // Numerical parameters of the simulations
-int labelOut = 1;                    // Mesh identifiers
-real obd = 45.;                      // Outer boundary mesh density, obd points for adim. unit length.
-real ibd = 15.;                      // Inner boundary mesh density.
-real bLayerThickness = 0.25;         // Adim. width of the boundary layer (finer mesh), >= Lc/R0. 
-real dt = 1e-3;                      // Adim. time step, real time step = dt * eta/(zi0*Lc).
-int NiterTime = 2000;                // Number of iterations, Max time = NiteTime * dt * eta/(zi0*Lc).
-real rateMaxArea = 8;                // Stop the simulation when Area = rateMaxArea * (Initial Area).
-real rateMinArea = 1/8.;             // Stop the simulation when Area = rateMinArea * (Initial Area).
-bool keepPoints = 0;                 // Keep the number of boundary points upon remeshing.
+real obd = 40.;          // Outer boundary mesh density, obd points for adim. unit length.
+real ibd = 10.;          // Inner boundary mesh density.
+real bLayerWidth = 0.35; // Adim. width of the boundary layer (finer mesh), >= Lc/R0. 
+real dt = 1e-3;          // Adim. time step, real time step = dt * eta/(zi0*Lc).
+int NiterTime = 1000;    // Number of iterations, Max time = NiteTime * dt * eta/(zi0*Lc).
+bool keepPoints = 0;     // Keep the number of boundary points upon remeshing.
 
 // Save parameters
-bool bsave = 0;                      // To save the solutions or not, handy for debugging.
-int dsave = 20;                      // Save frame gap. Usually we do not need that many solutions to 
-                                     // represent an evolution and also it will save memory and loading time.
+bool bsave = 1;          // To save the solutions or not, handy for debugging.
+int dsave = 10;          // Save frame gap. Usually we do not need that many solutions to
 
-// Domain parameters
-real symmAxis = pi/2.;               // Angle of the symmetry axis of each assymetric shape.
-real fracRarc = 0.1;                 // Adimensionalized radius used to smooth the domain vertices.

@@ -386,7 +386,7 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         real lFree = (bFree(1,nFree-1)-bFree(1,0));
         real x0 = (1/lFree)*int1d(Th,free[0])(x);
         real dx0dt = (1/lFree)*int1d(Th,free[0])(vx);
-        real dx2dt = 2*int1d(Th,free[0])((x-x0)*(vx-dx0dt));
+        real dx2dt = (2/lFree)*int1d(Th,free[0])((x-x0)*(vx-dx0dt));
         //---------------------------------------------------------------------
 
         real[int] rMin = [bFree(0,0),bFree(1,0)]; // Point of the free boundary with a lower x.

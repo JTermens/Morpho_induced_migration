@@ -21,9 +21,9 @@ include "parameters_sets/parameters_semiplane_evolution.edp"; // load the parame
 
 // Mesh parameters
 real[string] meshParameters;
-meshParameters["amp"] = AmpList[iAmp];
+meshParameters["amp"] = ampList[iSimul];
 meshParameters["lx"] = lx;
-meshParameters["lFree"] = l0;
+meshParameters["lFree"] = l0List[iSimul];
 meshParameters["nFingers"] = nFinguers;
 
 // Mesh labels

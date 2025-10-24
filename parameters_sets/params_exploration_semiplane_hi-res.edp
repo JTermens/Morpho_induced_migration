@@ -14,15 +14,15 @@ real dAmp = 1;
 // int nAmp = lrint((maxAmp-minAmp)/dAmp)+1; // 101; +1 to include the minimum value
 
 real minZeta = 0;
-real maxZeta = -100;
+real maxZeta = -200;
 real dZeta = -1;
 // int nZeta = lrint((maxZeta-minZeta)/dZeta)+1; // 151; +1 to include the minimum value
 
 real[int] AmpList(101);
-real[int] ZetaList(101);
+real[int] ZetaList(201);
 
 for (int iAmp=0; iAmp<101; iAmp++) {AmpList[iAmp] = minAmp + dAmp*iAmp;}
-for (int iZeta=0; iZeta<151; iZeta++) {ZetaList[iZeta] = minZeta + dZeta*iZeta;}
+for (int iZeta=0; iZeta<201; iZeta++) {ZetaList[iZeta] = minZeta + dZeta*iZeta;}
 
 real[int] LcList = [15,40];
 real[int] LambdaList = [400];
@@ -38,7 +38,7 @@ real ibd = 10.; // Inner boundary mesh density
 real bLayerWidth = 0.35;
 
 bool saveLocalSols = 0;
-bool saveFreeBnd = 0;
+bool saveFreeBnd = 1;
 
 int[int] i0Amp = [0,16,33,50,67,84];
 int[int] ifAmp = [15,32,49,66,83,100];

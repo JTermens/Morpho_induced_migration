@@ -4,7 +4,7 @@
 verbosity=0;
 // bool debug=0;
 
-string rootDir = "/home/joan/Documents/Simul_runs/durotaxis/durotaxis_0";
+string rootDir = "/home/joan/Documents/Simul_runs/exploration_semiplane/evolutions";
 
 int nSimul = 4;   // Number of simulations
 string[int] simulNames = [

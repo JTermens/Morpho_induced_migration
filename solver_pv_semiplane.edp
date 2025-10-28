@@ -613,7 +613,7 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
 
   if (debug) {
     Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
-    plot(/*Th,vABS,normal,*/vx,v, 
+    plot(/*Th,vABS,normal,*//*vx,*/Th,v, 
       value = true,
       fill = true,
       nbiso = 64,

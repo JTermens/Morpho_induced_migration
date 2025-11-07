@@ -164,7 +164,8 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
   if (debug) {
     plot(
       Th, value = true, fill = false, nbiso=64, wait=true, 
-      cmm = "adaptive mesh;  A0="+Area0
+      cmm = "adaptive mesh;  A0="+Area0,
+      bb=[[-2,-0.75],[2*meshParameters["amp"]/meshParameters["lFree"],0.75]]
     );
   }
 
@@ -243,8 +244,9 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
 
   if (debug) {
     plot(
-      Th,/*normal,*/normalPerio, value = true, fill = false, nbiso = 64, wait = true,
-      cmm = "(nx,ny) periodic;",bb=[[-1*0.3,-aVisor*0.3],[aVisor*0.3,aVisor*0.3]]
+      Th,/*normal,*/normalPerio,
+      value = true, fill = false, nbiso = 64, wait = true, cmm = "(nx,ny) periodic;",
+      bb=[[-2,-0.75],[2*meshParameters["amp"]/meshParameters["lFree"],0.75]]
     );
   }
   // --------------------------------------------------------------------------
@@ -412,13 +414,14 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         if (debug) {
           cout << "{iAmp,iLc,iZeta,iLambda} = {"+iAmp+", "+iLc+", "+iZeta+", "+iLambda+"}; Amp = "+meshParameters["amp"]+";  La/Lc = "+a+";  L0/Lc = "+c+";  L0/lambda = "+b+"; ly = "+lFree << endl;
           Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
-          plot(/*Th,*/vABS,normal, 
+          plot(/*Th,vABS,normal,*/vx,v, 
             value = true,
             fill = true,
             nbiso = 64,
             wait = false,
-            /*bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]],*/
-            cmm = "Amp = "+meshParameters["amp"]+";  a = "+a+";  b = "+b+";  c = "+c
+            bb=[[rMin[0]-2,-0.75],[2.5*rMax[0],0.75]],
+            cmm = "Amp = "+meshParameters["amp"]+";  a = "+a+";  b = "+b+";  c = "+c+
+            ";\ndx0dt = "+dx0dt+";  dx2dt = "+dx2dt
           );
         }
 

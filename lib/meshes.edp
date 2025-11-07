@@ -369,11 +369,14 @@ func mesh closedRemesh(
 
   int[int] nInner(nInnerLoops); // numer of points per loop
   int nCorrectLoops = 0; // number of loops with more than minPoints
+  real[int] s0(nInnerLoops); // initial archlenght of the loop
   // find number of points and count > minPoints
+  // Also, filter for errors in the archlength
   for (int i=0;  i < nInnerLoops; i++){
     real lInner=ISO(2,be(i*2+1)-1);
+    s0[i] = ISO(2,be(i*2));
     nInner[i] = round(ibd*lInner);
-    if(nInner[i] > minPoints){nCorrectLoops++;}
+    if((nInner[i] > minPoints) && (s0[i] == 0)){nCorrectLoops++;}
   }
 
   // if the number of points is less than minPoints, filter the border for safety
@@ -382,7 +385,7 @@ func mesh closedRemesh(
 
   int j = 0;
   for (int i=0;  i < nInnerLoops; i++){
-    if(nInner[i] > minPoints){
+    if((nInner[i] > minPoints) && (s0[i] == 0)){
       nInnerFilter[j] = nInner[i];
       beFilter[2*j] = be[i*2];
       beFilter[2*j+1] = be[i*2+1];
@@ -554,13 +557,16 @@ func mesh periodicRemesh1FreeBnd(
   // cout << be << endl;
 
   int[int] nInner(nInnerLines); // numer of points per loop
+  real[int] s0(nInnerLines); // initial archlenght of the loop
   int nCorrectLines = 0; // number of loops with more than minPoints
   // find number of points, count > minPoints & correct open ends
+  // Also, filter for errors in the archlength
   for (int i=0;  i < nInnerLines; i++){
 
     real lInner = bLayer(2,be(i*2+1)-1);
+    s0[i] = bLayer(2,be(i*2));
     nInner[i] = lround(ibd*lInner);
-    if(nInner[i] > minPoints){nCorrectLines++;}
+    if((nInner[i] > minPoints) && (s0[i] == 0)){nCorrectLines++;}
 
     if(dist((bLayer(0,be(i*2+1)-1)-bLayer(0,be(i*2))),(bLayer(1,be(i*2+1)-1)-bLayer(1,be(i*2)))) > eps){ // Open loop
       bLayer(1,be(i*2)) = pointsYPerio[0]; // correct y-coords
@@ -580,18 +586,18 @@ func mesh periodicRemesh1FreeBnd(
 
   int j = 0;
   for (int i=0;  i < nInnerLines; i++){
-    if(nInner[i] > minPoints){
+    if((nInner[i] > minPoints) && (s0[i] == 0)) {
       nInnerF[j] = nInner[i];
       beF[2*j] = be[i*2];
       beF[2*j+1] = be[i*2+1];
       j++;
     }
   }
-
-  // cout << nInner << "\n" << nInnerF << "\n" << endl;
+  //  cout << "# Lines = " << nCorrectLines << "; " << endl;
 
   border Inner(t=0,1;i) {P=Curve(bLayer,beF(i*2),beF(i*2+1)-1,t);} // Inner boundary multi-border
   // cout << nInner << endl;
+  // plot(Inner(nInnerF),wait=true);
 
   // ------------------------------------------------------------------------------------
 

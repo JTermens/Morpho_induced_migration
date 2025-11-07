@@ -51,7 +51,8 @@ real Areai = Area0;
 
 if (debug) {
   plot(
-    Th, value = true, fill = false, nbiso=64, wait=true, 
+    Th, value = true, fill = false, nbiso=64, wait=true,
+    bb=[[-2,-0.75],[2*meshParameters["amp"]/meshParameters["lFree"],0.75]],
     cmm = "adaptive mesh;  A0="+Area0
   );
 }
@@ -74,8 +75,6 @@ real vscale = meshParameters["lFree"]/tscale; // Problem velocity scale
 real a = La/Lc;          // Active length, zeta/zi, and lFree ratio.
 real b =  meshParameters["lFree"]/lambda; // Hydrodynamic length, sqrt(eta/xi), and lFree ratio.
 real c =  meshParameters["lFree"]/Lc; // lFree and nematic length ratio.
-
-real aVisor = 1.5;
 //-----------------------------------------------------------------------------
 
 
@@ -227,8 +226,10 @@ normalPerio = normal; // Project the normals computed at the non-periodic space 
 
 if (debug) {
   plot(
-    Th,/*normal,*/normalPerio, value = true, fill = false, nbiso = 64, wait = true,
-    cmm = "(nx,ny) periodic;",bb=[[-1*0.3,-aVisor*0.3],[aVisor*0.3,aVisor*0.3]]
+    Th,/*normal,*/normalPerio, 
+    value = true, fill = false, nbiso = 64,
+    wait = true, cmm = "(nx,ny) periodic;",
+    bb=[[-2,-0.75],[2*meshParameters["amp"]/meshParameters["lFree"],0.75]]
   );
 }
 // ----------------------------------------------------------------------------
@@ -271,9 +272,15 @@ p = p + pD;
 if (debug) {
   // plot(Th,px, value = true, fill = true, nbiso = 64, wait = true, cmm = "px");
   // plot(Th,py, value = true, fill = true, nbiso = 64, wait = true, cmm = "py");
-  plot(Th,p, value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)");
+  plot(Th,p, 
+    value = true, fill = true, nbiso = 64, wait = true, cmm = "(px,py)",
+    bb=[[-2,-0.75],[2*meshParameters["amp"]/meshParameters["lFree"],0.75]]
+  );
   Pola pABS = sqrt(px(x,y)^2 + py(x,y)^2); // Abs(P)
-  plot(Th,pABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|");
+  plot(Th,pABS,
+    value = true, fill = true, nbiso = 64, wait = true, cmm = "|p|",
+    bb=[[-2,-0.75],[2*meshParameters["amp"]/meshParameters["lFree"],0.75]]
+  );
 }
 
 // Define & solve the velocity equation ---------------------------------------
@@ -304,9 +311,15 @@ vx[]=solV(0:Vel.ndof-1);
 if (debug) {
   // plot(Th,vx, value = true, fill = true, nbiso = 64, wait = true, cmm = "vx");
   // plot(Th,vy, value = true, fill = true, nbiso = 64, wait = true, cmm = "vy");
-  plot(Th,v, value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)");
+  plot(Th,v,
+    value = true, fill = true, nbiso = 64, wait = true, cmm = "(vx,vy)",
+    bb=[[-2,-0.75],[2*meshParameters["amp"]/meshParameters["lFree"],0.75]]
+  );
   Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2); // Abs(P)
-  plot(Th,vABS, value = true, fill = true, nbiso = 64, wait = true, cmm = "|v|");
+  plot(Th,vx,
+    value = true, fill = true, nbiso = 64, wait = true, cmm = "|v|",
+    bb=[[-2,-0.75],[2*meshParameters["amp"]/meshParameters["lFree"],0.75]]
+  );
 }
 //-----------------------------------------------------------------------------
 
@@ -600,14 +613,16 @@ for (int iterTime=0 ; iterTime<NiterTime ; iterTime++) {
 
   if (debug) {
     Pola vABS = sqrt(vx(x,y)^2 + vy(x,y)^2);
-    plot(/*Th,*/vABS,normal, 
+    plot(/*Th,vABS,normal,*//*vx,*/Th,v, 
       value = true,
       fill = true,
       nbiso = 64,
       wait = false,
-      /*bb=[[-2*0.5,-aVisor*0.5],[aVisor*0.5,aVisor*0.5]],*/
+      bb=[[rMin[0]-2,-0.75],[2.5*rMax[0],0.75]],
       cmm = "iTime="+(iterTime)+"; "+"t="+(dt*iterTime)+
-      "; Amp = "+meshParameters["amp"]+";  a = "+a+";  b = "+b+";  c = "+c
+      "; Amp = "+meshParameters["amp"]+";  a = "+a+";  b = "+b+";  c = "+c+
+      ";\ndx0dt = "+dx0dt+";  dx2dt = "+dx2dt+
+      ";\ny-Amplitude = "+(bFree(1,nFree-1)-bFree(1,0))
     );
   }
 

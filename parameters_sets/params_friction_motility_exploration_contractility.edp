@@ -8,7 +8,7 @@ verbosity=0;
 string rootDir = "/home/joan/Documents/Simul_runs/phase_space_exploration";
 
 // string simulName = "exploration_7Lcx5Lambda";
-string simulName = "exploration_6Lcx25Zetax32Lambda";
+string simulName = "exploration_6Lcx25Zetax32Lambda_incomp";
 
 string[int] CutNameList = ["pi"];
 real[int] CutList = [pi];                   // Fixed shape

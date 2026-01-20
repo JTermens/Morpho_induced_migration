@@ -1,6 +1,15 @@
-/*
+/* lib/meshes.edp
+Author: Joan Térmens (https://github.com/JTermens)
+Last update: 20-01-2026
 
+Catalog of FreeFem++ meshes for the repository associated to the paper
+Termens et al 2025, Cell clusters sense their global shape to drive collective migration. 
+It includes the following mesh generation functions:
+
+Closed meshes:
+- oneCutSmooth
 */
+
 func mesh oneCutSmooth(
   int bndDensity, real cut, real r0, real rArch, real symmAxis, int labelBnd, 
   real lengthScale, real Nmax
@@ -35,34 +44,34 @@ func mesh oneCutSmooth(
   real lenCut = sqrt((OxRight-OxLeft)*(OxRight-OxLeft) + (OyRight-OyLeft)*(OyRight-OyLeft));
 
   border GammaArchLeft(t=0,1){
-    x = OxLeft+rArch*cos(cutAxis-t1*(1-t)); 
-    y = OyLeft+rArch*sin(cutAxis-t1*(1-t)); 
+    x = (OxLeft+rArch*cos(cutAxis-t1*(1-t)))/lengthScale; 
+    y = (OyLeft+rArch*sin(cutAxis-t1*(1-t)))/lengthScale; 
     label = labelBnd;
   };
 
   border GammaCut(t=0,1){
-    x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t);
-    y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t);
+    x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t)/lengthScale;
+    y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t)/lengthScale;
     label = labelBnd;
   };
 
   border GammaArchRight(t=0,1){
-    x = OxRight+rArch*cos(cutAxis+t1*t); 
-    y = OyRight+rArch*sin(cutAxis+t1*t);
+    x = (OxRight+rArch*cos(cutAxis+t1*t))/lengthScale; 
+    y = (OyRight+rArch*sin(cutAxis+t1*t))/lengthScale;
     label = labelBnd;
   };
 
   border GammaArchFront(t=0,1){
-    x = r0*cos(cutAxis+t1+2*(pi-t1)*t);
-    y = r0*sin(cutAxis+t1+2*(pi-t1)*t);
+    x = (r0*cos(cutAxis+t1+2*(pi-t1)*t))/lengthScale;
+    y = (r0*sin(cutAxis+t1+2*(pi-t1)*t))/lengthScale;
     label = labelBnd;
   };
 
-  mesh Th=/*buildmesh*/emptymesh(
-    GammaArchLeft(bndDensity*rArch*t1)
-    + GammaCut(bndDensity*lenCut)
-    + GammaArchRight(bndDensity*rArch*t1)
-    + GammaArchFront(bndDensity*r0*2*(pi-t1))
+  mesh Th=buildmesh(
+    GammaArchLeft(min(Nmax, bndDensity*rArch*t1/lengthScale))
+    + GammaCut(min(Nmax, bndDensity*lenCut/lengthScale))
+    + GammaArchRight(min(Nmax, bndDensity*rArch*t1/lengthScale))
+    + GammaArchFront(min(Nmax, bndDensity*r0*2*(pi-t1)/lengthScale))
   );
 
   return Th;

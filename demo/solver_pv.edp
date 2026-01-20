@@ -8,6 +8,10 @@ load "isoline"
 load "gsl"
 // include <iostream>; // If needed
 
+// Include the modules containing the mesh-generation and remeshing functions.
+include "lib/mesh-generation.edp";
+include "lib/remeshing.edp";
+
 verbosity = 0;                    // Verbosity level.
 bool debug = 1;                   // if true, gives extra plots and console logs.
 bool err = 0;                     // Whether the simulations ends with an error or not. 
@@ -15,11 +19,7 @@ bool err = 0;                     // Whether the simulations ends with an error 
 string rootDir = ".";                 // Folder to save the results, . indicates pwd.
 string simulName = "semicircle_test"; // Name of the sample simulation
 
-
-include "remeshing.edp"; // load the remeshing function
-
 // Simulation parameters ----------------------------------------------------------------------------------------------
-
 
 // Physical parameters of the problem
 real R0 = 200;                  // Initial radius of the monolayer, [μm].
@@ -28,7 +28,6 @@ real eta = 2.5e4;               // Monolayer viscosity, [kPa·s].
 real xi = 0.1;                  // Friction coef, [kPa·s/μm²].
 real zeta = -25;                // -Contractility coef, [kPa]. < 0 to generate contractile stress.
 real zi = 0.1;                  // Traction coef, [kPa/μm]. Initial traction at the CM.
-
 
 // Numerical parameters of the simulations
 int labelOut = 1;                // Mesh identifiers
@@ -61,8 +60,7 @@ real bLayerThickness = max(1/c,0.15); // Adim. width of the boundary layer (fine
 // Construct the mesh -------------------------------------------------------------------------------------------------
 
 // Simple circular mesh with radius = 1 (adim.)
-border Circle(t=0,1){x = cos(2*pi*t); y = sin(2*pi*t); label = labelOut;}
-mesh Th = buildmesh(Circle(2*pi*obd));
+mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
 
 
 // Extract outer boundary

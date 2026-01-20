@@ -1,0 +1,50 @@
+/*
+
+*/
+func mesh oneCutSmooth(
+  int obd, real cut, real r0, real rArch, real symmAxis, int labelBnd
+){
+  // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
+
+  real cutAxis = symmAxis+pi;
+  real t1 = acos((cos(cut/2.)-(rArch/r0))/(1-(rArch/r0)));
+
+  real OxRight = (r0-rArch)*cos(cutAxis+t1);
+  real OyRight = (r0-rArch)*sin(cutAxis+t1);
+  real OxLeft = (r0-rArch)*cos(cutAxis-t1);
+  real OyLeft = (r0-rArch)*sin(cutAxis-t1);
+  real lenCut = sqrt((OxRight-OxLeft)*(OxRight-OxLeft) + (OyRight-OyLeft)*(OyRight-OyLeft));
+
+  border GammaArchLeft(t=0,1){
+    x = OxLeft+rArch*cos(cutAxis-t1*(1-t)); 
+    y = OyLeft+rArch*sin(cutAxis-t1*(1-t)); 
+    label = labelBnd;
+  };
+
+  border GammaCut(t=0,1){
+    x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t);
+    y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t);
+    label = labelBnd;
+  };
+
+  border GammaArchRight(t=0,1){
+    x = OxRight+rArch*cos(cutAxis+t1*t); 
+    y = OyRight+rArch*sin(cutAxis+t1*t);
+    label = labelBnd;
+  };
+
+  border GammaArchFront(t=0,1){
+    x = r0*cos(cutAxis+t1+2*(pi-t1)*t);
+    y = r0*sin(cutAxis+t1+2*(pi-t1)*t);
+    label = labelBnd;
+  };
+
+  mesh Th=/*buildmesh*/emptymesh(
+    GammaArchLeft(obd*rArch*t1)
+    + GammaCut(obd*lenCut)
+    + GammaArchRight(obd*rArch*t1)
+    + GammaArchFront(obd*r0*2*(pi-t1))
+  );
+
+  return Th;
+}

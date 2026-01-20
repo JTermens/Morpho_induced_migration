@@ -2,9 +2,28 @@
 
 */
 func mesh oneCutSmooth(
-  int obd, real cut, real r0, real rArch, real symmAxis, int labelBnd
+  int bndDensity, real cut, real r0, real rArch, real symmAxis, int labelBnd, 
+  real lengthScale, real Nmax
 ){
-  // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
+  /*
+  [mesh] oneCutSmooth returns a mesh with a boundary defined by circle with a
+  strigth cut of angular length cut, perpendicular to a ray in the symmAxis 
+  direction. The vertices of the cut are smoothed by tangential arches of 
+  radius rArch.
+
+  Parameters:
+  - real bndDensity: boundary density, num. of points per unit lenght at the 
+  boundary.
+  - real cut: angluar length of the straight cut line.
+  - real r0: radius of the circumference (Front) arch.
+  - real rArch: radius of the tangential arches that smooth the cut vertices. 
+  - real symmAxis: orientation of the shape. Defines the mid-line of the cut.
+  - int labelBnd: free boundary label.
+  - real lengthScale: length scale to adimensionalize the mesh (x, y /= L).
+  - real Nmax: Maximum number of points per border piece.
+
+  * Return type: mesh
+  */
 
   real cutAxis = symmAxis+pi;
   real t1 = acos((cos(cut/2.)-(rArch/r0))/(1-(rArch/r0)));
@@ -40,10 +59,10 @@ func mesh oneCutSmooth(
   };
 
   mesh Th=/*buildmesh*/emptymesh(
-    GammaArchLeft(obd*rArch*t1)
-    + GammaCut(obd*lenCut)
-    + GammaArchRight(obd*rArch*t1)
-    + GammaArchFront(obd*r0*2*(pi-t1))
+    GammaArchLeft(bndDensity*rArch*t1)
+    + GammaCut(bndDensity*lenCut)
+    + GammaArchRight(bndDensity*rArch*t1)
+    + GammaArchFront(bndDensity*r0*2*(pi-t1))
   );
 
   return Th;

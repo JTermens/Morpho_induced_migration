@@ -19,49 +19,53 @@ bool err = 0;                     // Whether the simulations ends with an error 
 string rootDir = ".";                 // Folder to save the results, . indicates pwd.
 string simulName = "semicircle_test"; // Name of the sample simulation
 
-// Simulation parameters ----------------------------------------------------------------------------------------------
+// Simulation parameters --------------------------------------------------------------------------
 
 // Physical parameters of the problem
-real R0 = 200;                  // Initial radius of the monolayer, [μm].
-real Lc = 40;                   // Nematic length, sqrt(K/a), [μm].
-real eta = 2.5e4;               // Monolayer viscosity, [kPa·s].
-real xi = 0.1;                  // Friction coef, [kPa·s/μm²].
-real zeta = -25;                // -Contractility coef, [kPa]. < 0 to generate contractile stress.
-real zi = 0.1;                  // Traction coef, [kPa/μm]. Initial traction at the CM.
+real Lc = 40;            // Nematic length, sqrt(K/a), [μm].
+real eta = 2.5e4;        // Monolayer viscosity, [kPa·s].
+real xi = 0.1;           // Friction coef, [kPa·s/μm²].
+real zeta = -25;         // -Contractility coef, [kPa]. < 0 to generate contractile stress.
+real zi = 0.1;           // Traction coef, [kPa/μm]. Initial traction at the CM.
+
+// Domain parameters
+real cut = pi;           // Angular length of the cutted circle chord, [rad].
+real R0 = 200;           // Initial radius of the monolayer, [μm].
+real symmAxis = pi/2.;   // Angle of the symmetry axis of each assymetric shape. [rad]
+real fracRarc = 0.1;     // Percent of r0 to smooth the domain vertices.
 
 // Numerical parameters of the simulations
-int labelOut = 1;                // Mesh identifiers
-real obd = 45.;                  // Outer boundary mesh density, obd points for adim. unit length.
-real ibd = 15.;                  // Inner boundary mesh density.
-real dt = 5e-4;                  // Adim. time step, real time step = dt * eta/(zi*Lc).
-int NiterTime = 2000;            // Number of iterations, Max time = NiteTime * dt * eta/(zi0*Lc).
-real rateMaxArea = 8;            // Stop the simulation when Area = rateMaxArea * (Initial Area).
-real rateMinArea = 1/8.;         // Stop the simulation when Area = rateMinArea * (Initial Area).
-bool keepPoints = 0;             // Keep the number of boundary points upon remeshing.
+int labelOut = 1;        // Mesh identifiers
+real obd = 45.;          // Outer boundary mesh density, obd points for adim. unit length.
+real ibd = 15.;          // Inner boundary mesh density.
+real dt = 5e-4;          // Adim. time step, real time step = dt * eta/(zi*Lc).
+int NiterTime = 2000;    // Number of iterations, Max time = NiteTime * dt * eta/(zi0*Lc).
+real rateMaxArea = 8;    // Stop the simulation when Area = rateMaxArea * (Initial Area).
+real rateMinArea = 1/8.; // Stop the simulation when Area = rateMinArea * (Initial Area).
+bool keepPoints = 0;     // Keep the number of boundary points upon remeshing.
 
 // Save parameters
-bool bsave = 1;                  // To save the solutions or not, handy for debugging.
-int dsave = 20;                  // Save frame gap. Usually we do not need that many solutions to 
-                                 // represent an evolution and also it will save memory and loading time.
+bool bsave = 1;          // To save the solutions or not, handy for debugging.
+int dsave = 20;          // Save frame gap. Usually we do not need that many solutions to 
+                         // represent an evolution and also it will save memory and loading time.
 
 // Problem length & timescales
 real lambda = sqrt(eta/xi);      // hydrodynamic sceening length
 real La = zeta/zi;               // active length; < 0 (> 0) for contractile (extensile) stress
 real tscale = eta/(zi*Lc);       // Problem timescale
 
-// Problem Parameters
+// Problem adim. Parameters
 real a = La/Lc;                  // Active length, zeta/zi, and effective radius ratio
 real b = R0/lambda;              // Effective radius and hydrodynamic length, sqrt(eta/xi), ratio
 real c = R0/Lc;                  // Effective radius and nematic length ratio
 real bLayerThickness = max(1/c,0.15); // Adim. width of the boundary layer (finer mesh), >= Lc/R0.
-//---------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 
 
-// Construct the mesh -------------------------------------------------------------------------------------------------
+// Construct the mesh -----------------------------------------------------------------------------
 
-// Simple circular mesh with radius = 1 (adim.)
+// 
 mesh Th = oneCutSmooth(obd,cut,1,fracRarc,symmAxis,labelOut);
-
 
 // Extract outer boundary
 // extractborder gives bOut(3,Th.nbe) with 1st point == last point
@@ -84,7 +88,7 @@ if (debug) {
     cmm = "adaptive mesh;  A0="+Area0+",  (xcm0,ycm0)=("+Xcm0+","+Ycm0+")"
   );
 }
-//---------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 
 
 // Create folder structure, parameters' file & header of the global solutions' file -----------------------------------

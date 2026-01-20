@@ -183,34 +183,34 @@ func mesh oneCutSmooth(
   real lenCut = sqrt((OxRight-OxLeft)*(OxRight-OxLeft) + (OyRight-OyLeft)*(OyRight-OyLeft));
 
   border ArchLeft(t=0,1){
-    x = (OxLeft+rArch*cos(cutAxis-t1*(1-t))); 
-    y = (OyLeft+rArch*sin(cutAxis-t1*(1-t))); 
+    x = (OxLeft+rArch*cos(cutAxis-t1*(1-t)))/lengthScale; 
+    y = (OyLeft+rArch*sin(cutAxis-t1*(1-t)))/lengthScale; 
     label = labelBnd;
   };
 
   border Cut(t=0,1){
-    x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t);
-    y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t);
+    x = ((OxLeft+rArch*cos(cutAxis))+(OxRight-OxLeft)*t)/lengthScale;
+    y = ((OyLeft+rArch*sin(cutAxis))+(OyRight-OyLeft)*t)/lengthScale;
     label = labelBnd;
   };
 
   border ArchRight(t=0,1){
-    x = (OxRight+rArch*cos(cutAxis+t1*t)); 
-    y = (OyRight+rArch*sin(cutAxis+t1*t));
+    x = (OxRight+rArch*cos(cutAxis+t1*t))/lengthScale; 
+    y = (OyRight+rArch*sin(cutAxis+t1*t))/lengthScale;
     label = labelBnd;
   };
 
   border ArchFront(t=0,1){
-    x = (r0*cos(cutAxis+t1+2*(pi-t1)*t));
-    y = (r0*sin(cutAxis+t1+2*(pi-t1)*t));
+    x = (r0*cos(cutAxis+t1+2*(pi-t1)*t))/lengthScale;
+    y = (r0*sin(cutAxis+t1+2*(pi-t1)*t))/lengthScale;
     label = labelBnd;
   };
 
   mesh Th=buildmesh(
-    ArchLeft(min(Nmax, bndDensity*rArch*t1))
-    + Cut(min(Nmax, bndDensity*lenCut))
-    + ArchRight(min(Nmax, bndDensity*rArch*t1))
-    + ArchFront(min(Nmax, bndDensity*r0*2*(pi-t1)))
+    ArchLeft(min(Nmax, bndDensity*rArch*t1/lengthScale))
+    + Cut(min(Nmax, bndDensity*lenCut/lengthScale))
+    + ArchRight(min(Nmax, bndDensity*rArch*t1/lengthScale))
+    + ArchFront(min(Nmax, bndDensity*r0*2*(pi-t1)/lengthScale))
   );
 
   return Th;

@@ -76,7 +76,7 @@ func mesh fourCurveShape(
 }
 
 func mesh oneCutSmooth(
-  int obd, real cut,real r0, real rArch, real symmAxis, int labelBnd
+  int obd, real cut, real r0, real rArch, real symmAxis, int labelBnd
 ){
   // Perturbations of the circular domain with 1 cut, smoth with 1/f = 0
 

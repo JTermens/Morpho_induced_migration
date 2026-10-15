@@ -16,7 +16,7 @@ real dAmp = 0.75;
 real minZeta = 0;
 real maxZeta = -200;
 real dZeta = -1;
-// int nZeta = lrint((maxZeta-minZeta)/dZeta)+1; // 151; +1 to include the minimum value
+// int nZeta = lrint((maxZeta-minZeta)/dZeta)+1; // 201; +1 to include the minimum value
 
 real[int] AmpList(101);
 real[int] ZetaList(201);

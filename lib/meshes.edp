@@ -626,10 +626,17 @@ func mesh periodicRemesh1FreeBnd(
     label = labelFree;
   }
 
-  // Keep the same vertices for the fixed
-  int nFixed = bFixed.m-1;
+  // // Keep the same vertices for the fixed
+  // int nFixed = bFixed.m-1;
+  // border Fixed(t=0,1){
+  //   P = Curve(bFixed,bFixed(2,lround(t*nFixed))/lFixed);
+  //   label = labelFixed;
+  // }
+
+  // Linearly remesh the fixed boundary with a lower bulk density (ibd)
+  int nFixed = round(ibd*lFixed);
   border Fixed(t=0,1){
-    P = Curve(bFixed,bFixed(2,lround(t*nFixed))/lFixed);
+    P = Curve(bFixed,t);
     label = labelFixed;
   }
 
@@ -710,9 +717,9 @@ func mesh sinusoidalSemiplane(
     - real bndDensity: boundary density, num. of points per unit lenght at the
       boundary.
     - real[string]& meshParameters: parameters that define the shape:
-      - "lx": width of the rectangle (x-axis). The total x-length is lx+2*amp.
+      - "lx": width of the rectangle (x-axis). The total x-length is lx+amp.
       - "amp": amplitude of the sinusoidal finger. Take into account 
-        that the finger overtakes the base rectangle by 2*amp, as it runs for 
+        that the finger overtakes the base rectangle by +-amp, as it runs for 
         a full wavelength. 
       - "lFree": width of the rectangle (y-axis).
       - "nFingers": num. of fingers. Their wavelength = lFree/n.
@@ -736,16 +743,15 @@ func mesh sinusoidalSemiplane(
   int labelRight = free[0];      // Free boundary (right)
   int labelLeft = fixed[0];      // Fixed boundary, opposed to the free one (left)
 
-  // Define the borders for both the bulk and the layer meshes
   // Defien the borders for both the bulk and the layer meshes.
   border Bottom(t=0, 1){
-    x = (lx*(t-1))/lengthScale; 
+    x = ((lx-amp)*t-lx)/lengthScale; 
     y = (-lFree/2.)/lengthScale;
     label = labelBottom;
   }
 
   border Top(t=0, 1){
-    x = (0-lx*t)/lengthScale; 
+    x = (-amp-(lx-amp)*t)/lengthScale; 
     y = (lFree/2.)/lengthScale; 
     label = labelTop;
   }
@@ -758,7 +764,7 @@ func mesh sinusoidalSemiplane(
 
   // change for a perturbed front, if needed. Mantain extreme points at x=0
   border RightFinger(t=0,1){
-    x = (amp*(cos(pi*(2*nFingers*t-1))+1))/lengthScale;
+    x = (amp*cos(pi*(2*nFingers*t-1)))/lengthScale;
     y = (lFree*(t-1/2.))/lengthScale;
     label = labelRight;
   }

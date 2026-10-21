@@ -13,7 +13,7 @@ include "lib/mesh-generation.edp";
 include "lib/remeshing.edp";
 
 verbosity = 0;                    // Verbosity level.
-bool debug = 1;                   // if true, gives extra plots and console logs.
+bool debug = 0;                   // if true, gives extra plots and console logs.
 bool err = 0;                     // Whether the simulations ends with an error or not. 
 
 string rootDir = ".";                 // Folder to save the results, . indicates pwd.

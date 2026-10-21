@@ -15,8 +15,8 @@ bool err = 0;
 
 //include <iostream>;
 // include "parameters_sets/semiplane/params_exploration_semiplane_hi-res.edp";
-include "parameters_sets/semiplane/params_exploration_semiplane_qLambda.edp";
-// include "parameters_sets/semiplane/params_exploration_semiplane_qLc.edp";
+// include "parameters_sets/semiplane/params_exploration_semiplane_qLambda.edp";
+include "parameters_sets/semiplane/params_exploration_semiplane_qLc.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;
@@ -126,7 +126,7 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
   meshParameters["amp"] = AmpList[iAmp];
   meshParameters["lx"] = lx;
   meshParameters["lFree"] = l0;
-  meshParameters["nFingers"] = nFinguers;
+  meshParameters["nFingers"] = nFingers;
   meshParameters["lengthScale"] = l0;
 
   // Mesh labels
@@ -159,7 +159,7 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
   {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
 
     fileParamsMhs.fixed;
-    fileParamsMhs << meshParameters["amp"]         <<","<< meshParameters["nFinguers"] <<","
+    fileParamsMhs << meshParameters["amp"]         <<","<< meshParameters["nFingers"] <<","
                   << meshParameters["lx"]          <<","<< meshParameters["lFree"]     <<","
                   << meshParameters["lengthScale"] << ","
                   << obd                           <<","<< ibd                         <<","

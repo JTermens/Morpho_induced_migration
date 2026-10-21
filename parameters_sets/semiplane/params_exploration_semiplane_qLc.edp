@@ -3,7 +3,7 @@
 verbosity=0;
 // bool debug=1; 
 
-// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/test";
+// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/exploration_semiplane";
 string rootDir = "/home/joan/Documents/Simul_runs/exploration_semiplane";
 
 string simulName = "exploration_semiplane_qLc";
@@ -16,8 +16,8 @@ real zi = 0.1;
 
 // Mesh parameters
 real lx = 4000;
-real l0 = pi*LcList[0];
-int nFinguers = 1;
+real l0 = 2*pi*LcList[0];
+int nFingers = 1;
 real obd = 40.; // Boundary mesh density
 real ibd = 10.; // Inner boundary mesh density
 real bLayerWidth = 0.35;

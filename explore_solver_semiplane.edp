@@ -14,7 +14,9 @@ bool debug = getARGV("-d", 1);
 bool err = 0;
 
 //include <iostream>;
-include "parameters_sets/params_exploration_semiplane_hi-res.edp";
+// include "parameters_sets/semiplane/params_exploration_semiplane_hi-res.edp";
+// include "parameters_sets/semiplane/params_exploration_semiplane_qLambda.edp";
+include "parameters_sets/semiplane/params_exploration_semiplane_qLc.edp";
 include "lib/meshes.edp"; // load the mesh generation & remeshing functions
 
 string simulHomeDir = rootDir+"/"+simulName;
@@ -73,7 +75,7 @@ if (iRun == 0){
 
     //fileParamsMhs.fixed;
     fileParamsMhs << "Mesh_Parameters" << endl
-            << "amp,nFingers,lx,lFree,obd,ibd,bLayerWidth,Area0,pathMesh" << endl;
+            << "amp,nFingers,lx,lFree,lengthScale,obd,ibd,bLayerWidth,Area0,pathMesh" << endl;
   }
 
   {ofstream fileGlobalSols (simulHomeDir+fileNameGlobalSols); // Generate a separate file for the global variables (integrates ones)
@@ -124,7 +126,8 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
   meshParameters["amp"] = AmpList[iAmp];
   meshParameters["lx"] = lx;
   meshParameters["lFree"] = l0;
-  meshParameters["nFingers"] = nFinguers;
+  meshParameters["nFingers"] = nFingers;
+  meshParameters["lengthScale"] = l0;
 
   // Mesh labels
   int[int] periodic = [1,3];
@@ -136,7 +139,9 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
   func perio=[[periodic[0],x],[periodic[1],x]]; // Periodicity
 
   // Generate the initial mesh
-  mesh Th = sinusoidalSemiplane(obd, meshParameters, free, fixed, periodic, l0, 1e12);
+  mesh Th = sinusoidalSemiplane(
+    obd, meshParameters, free, fixed, periodic, meshParameters["lengthScale"], 1e12
+  );
 
   // Custom mesh adaptation
   Th = periodicRemesh1FreeBnd(
@@ -154,11 +159,12 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
   {ofstream fileParamsMhs (simulHomeDir+fileNameParamsMhs, append);
 
     fileParamsMhs.fixed;
-    fileParamsMhs << meshParameters["amp"] <<","<< meshParameters["nFinguers"] <<","
-                  << meshParameters["lx"]  <<","<< meshParameters["lFree"]     <<","
-                  << obd                   <<","<< ibd                         <<","
-                  << bLayerWidth           <<","<< Area0                       <<","
-                  << fileNameMsh           << endl;
+    fileParamsMhs << meshParameters["amp"]         <<","<< meshParameters["nFingers"] <<","
+                  << meshParameters["lx"]          <<","<< meshParameters["lFree"]     <<","
+                  << meshParameters["lengthScale"] << ","
+                  << obd                           <<","<< ibd                         <<","
+                  << bLayerWidth                   <<","<< Area0                       <<","
+                  << fileNameMsh                   << endl;
     }
 
   if (debug) {
@@ -257,13 +263,13 @@ for (int iAmp = i0Amp[iRun]; iAmp<=ifAmp[iRun]; iAmp++){
         
         // Problem Parameters
         real Lc = LcList[iLc];             // Nematic length
-        real Zeta = ZetaList[iZeta];       // -Constractility
+        real Zeta = ZetaList[iZeta];       // Constractility
         real Lambda = LambdaList[iLambda]; // Hydrodynamic screening length, sqrt(eta/xi)
 
         // Adim parameters
-        real a = Zeta/(zi*Lc); // Negative sign to compensate a positive defined contractility
-        real b = l0/Lambda;
-        real c = l0/Lc;
+        real a = Zeta/(zi*Lc);
+        real b = meshParameters["lengthScale"]/Lambda;
+        real c = meshParameters["lengthScale"]/Lc;
         
 
         // Define & solve the polarity equations ------------------------------

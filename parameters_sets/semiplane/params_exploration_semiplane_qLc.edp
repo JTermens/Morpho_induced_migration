@@ -15,10 +15,10 @@ real[int] LambdaList = [500];
 real zi = 0.1;
 
 // Mesh parameters
-real lx = 4000;
 real l0 = 2*pi*LcList[0];
+real lx = 25*l0;
 int nFingers = 1;
-real obd = 40.; // Boundary mesh density
+real obd = 50.; // Boundary mesh density
 real ibd = 10.; // Inner boundary mesh density
 real bLayerWidth = 0.35;
 
@@ -26,20 +26,20 @@ real bLayerWidth = 0.35;
 
 // Perturbation amplitude
 real minAmp = 0;
-real maxAmp = 0.6*l0;
-real dAmp = (maxAmp-minAmp)/100;
-// int nAmp = lrint((maxAmp-minAmp)/dAmp)+1; // 101; +1 to include the minimum value
+real maxAmp = 0.8*l0;
+real dAmp = (maxAmp-minAmp)/200;
+// int nAmp = lrint((maxAmp-minAmp)/dAmp)+1; // 201; +1 to include the minimum value
 
 // Monolayer contractility
 real minZeta = 0;
-real maxZeta = -250;
+real maxZeta = -200;
 real dZeta = -1;
-// int nZeta = lrint((maxZeta-minZeta)/dZeta)+1; // 251; +1 to include the minimum value
+// int nZeta = lrint((maxZeta-minZeta)/dZeta)+1; // 201; +1 to include the minimum value
 
-real[int] AmpList(101);
-real[int] ZetaList(251);
+real[int] AmpList(201);
+real[int] ZetaList(201);
 
-for (int iAmp=0; iAmp<101; iAmp++) {AmpList[iAmp] = minAmp + dAmp*iAmp;}
+for (int iAmp=0; iAmp<201; iAmp++) {AmpList[iAmp] = minAmp + dAmp*iAmp;}
 for (int iZeta=0; iZeta<201; iZeta++) {ZetaList[iZeta] = minZeta + dZeta*iZeta;}
 
 bool saveLocalSols = 0;

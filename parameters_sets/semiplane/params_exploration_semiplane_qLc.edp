@@ -3,10 +3,10 @@
 verbosity=0;
 // bool debug=1; 
 
-// string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/exploration_semiplane";
-string rootDir = "/home/joan/Documents/Simul_runs/exploration_semiplane";
+string rootDir = "/home/joan/Documents/Tesi_doct/Projects/Spontaneous_tissue_motility/Simul_runs/exploration_semiplane";
+// string rootDir = "/home/joan/Documents/Simul_runs/exploration_semiplane";
 
-string simulName = "exploration_semiplane_qLc";
+string simulName = "exploration_semiplane_qLc_v2";
 
 // Fixed parameters
 real[int] LcList = [25];
